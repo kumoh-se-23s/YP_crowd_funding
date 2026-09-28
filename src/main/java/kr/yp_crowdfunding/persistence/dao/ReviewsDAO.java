@@ -1,7 +1,6 @@
 package kr.yp_crowdfunding.persistence.dao;
 
 import kr.yp_crowdfunding.persistence.dto.ReviewDTO;
-import kr.yp_crowdfunding.persistence.dto.UserDTO;
 
 import javax.sql.DataSource;
 import java.sql.*;
