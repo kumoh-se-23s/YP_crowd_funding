@@ -31,7 +31,7 @@ public class CategoriesDAO extends DAO{
     //Create(생성) 기능
     public void insert(CategoryDTO categoryDTO) throws SQLException {
         final String INSERT_SQL =
-                "INSERT INTO categories (categotry) VALUES (?)";
+                "INSERT INTO categories (category) VALUES (?)";
 
         try(Connection conn = dataSource.getConnection();
             PreparedStatement psmt = conn.prepareStatement(INSERT_SQL)){

@@ -107,7 +107,7 @@ public class UsersDAO extends DAO {
     //Update(수정) 기능
     public void update(UserDTO userDTO) throws SQLException {
         //id(pk), regdate는 수정 불가 type은 수정 허용하긴 해야하려나?
-        final String UPDATE_SQL = "UPDATE users SET address = ?, name = ?, type = ?, loginId = ?, password = ? WHERE id = ?";
+        final String UPDATE_SQL = "UPDATE users SET address = ?, name = ?, type = ?, login_id = ?, password = ? WHERE id = ?";
 
         try(Connection conn = dataSource.getConnection();
             PreparedStatement psmt = conn.prepareStatement(UPDATE_SQL)){
@@ -135,5 +135,4 @@ public class UsersDAO extends DAO {
             psmt.executeUpdate();
         }
     }
-
 }

@@ -32,7 +32,7 @@ public class ReviewsDAO extends DAO{
 
     public void insert(ReviewDTO reviewDTO) throws SQLException {
         final String INSERT_SQL =
-                "INSERT INTO review (userID, projectID, rewardName, star, contents, date) VALUES (?, ?, ?, ?, ?, ?)";
+                "INSERT INTO review (user_id, project_id, rewardName, star, contents, date) VALUES (?, ?, ?, ?, ?, ?)";
 
         try(Connection conn = dataSource.getConnection();
             PreparedStatement psmt = conn.prepareStatement(INSERT_SQL)){
@@ -49,7 +49,7 @@ public class ReviewsDAO extends DAO{
     }
     //Read(조회) 리뷰는 해당 상품에 대해 전체 조회가 기본이니 전체 조회로 만들겟음
     public List<ReviewDTO> findAll(long projectId) throws SQLException {
-        final String FIND_ALL_SQL = "SELECT * FROM review WHERE projectID = ?";
+        final String FIND_ALL_SQL = "SELECT * FROM review WHERE project_id = ?";
         List<ReviewDTO> result = new ArrayList<>();
 
         try(Statement statement = dataSource.getConnection().createStatement();
@@ -71,7 +71,7 @@ public class ReviewsDAO extends DAO{
 
     //Update(수정) 기능
     public void update(ReviewDTO reviewDTO) throws SQLException {
-        final String UPDATE_SQL = "UPDATE review SET star = ?, contents = ? WHERE id = ? AND projectID = ?";
+        final String UPDATE_SQL = "UPDATE review SET star = ?, contents = ? WHERE user_id = ? AND project_id = ?";
 
         try(Connection conn = dataSource.getConnection();
         PreparedStatement psmt = conn.prepareStatement(UPDATE_SQL)){
@@ -87,7 +87,7 @@ public class ReviewsDAO extends DAO{
 
     //delete(삭제) 기능
     public void delete(long userID, long projectID) throws SQLException {
-        final String DELETE_SQL = "DELETE FROM review WHERE userID = ?  AND projectID = ?";
+        final String DELETE_SQL = "DELETE FROM review WHERE user_id = ?  AND project_id = ?";
 
         try(Connection conn = dataSource.getConnection();
         PreparedStatement psmt = conn.prepareStatement(DELETE_SQL)){

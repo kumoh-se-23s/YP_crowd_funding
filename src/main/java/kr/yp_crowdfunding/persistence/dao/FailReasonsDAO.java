@@ -32,7 +32,7 @@ public class FailReasonsDAO extends DAO{
     //Create(생성) 기능
     public void insert(FailReasonDTO failReasonDTO) throws SQLException {
         final String INSERT_SQL =
-                "INSERT INTO failReason (project_Id, reason, date) VALUES (?, ?, ?)";
+                "INSERT INTO failReason (project_id, reason, date) VALUES (?, ?, ?)";
 
         try(Connection conn = dataSource.getConnection();
             PreparedStatement psmt = conn.prepareStatement(INSERT_SQL)){

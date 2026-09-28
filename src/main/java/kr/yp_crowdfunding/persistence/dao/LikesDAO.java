@@ -33,7 +33,7 @@ public class LikesDAO extends DAO {
     //Create(생성) 좋아요 추가
     public void insert(LikeDTO likeDTO) throws SQLException {
         final String INSERT_SQL =
-                "INSERT INTO likes (user_id, project_Id) VALUES (?, ?)";
+                "INSERT INTO likes (user_id, project_id) VALUES (?, ?)";
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement psmt = conn.prepareStatement(INSERT_SQL)) {
