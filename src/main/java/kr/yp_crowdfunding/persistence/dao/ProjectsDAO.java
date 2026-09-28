@@ -120,4 +120,13 @@ public class ProjectsDAO extends DAO {
             psmt.executeUpdate();
         }
     }
+
+    public void delete(ProjectDTO projectDTO) throws SQLException {
+        final String DELETE_SQL = "DELETE FROM projects WHERE id = ?";
+        try (Connection conn = dataSource.getConnection();
+        PreparedStatement psmt = conn.prepareStatement(DELETE_SQL)) {
+            psmt.setLong(1, projectDTO.getId());
+            psmt.executeUpdate();
+        }
+    }
 }
