@@ -1,26 +1,47 @@
-plugins {
-    id 'java'
-}
+//서브 모듈 빌드세팅
+subprojects {
+    apply plugin: 'java'
 
-group = 'org.example19937'
-version = '1.0-SNAPSHOT'
+    group = 'ypfunding'
+    version = '1.0-SNAPSHOT'
 
-repositories {
-    mavenCentral()
-}
+    repositories {
+        mavenCentral()
+    }
 
-dependencies {
-    testImplementation platform('org.junit:junit-bom:6.0.0')
-    testImplementation 'org.junit.jupiter:junit-jupiter'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-    // Source: https://mvnrepository.com/artifact/mysql/mysql-connector-java
-    implementation("mysql:mysql-connector-java:8.0.33")
-    // Source: https://mvnrepository.com/artifact/org.projectlombok/lombok
-    compileOnly "org.projectlombok:lombok:1.18.48"
-    annotationProcessor "org.projectlombok:lombok:1.18.48"
-    implementation 'org.apache.commons:commons-dbcp2:2.11.0'
-}
+    //자바 버전 관리
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(25)
+        }
+    }
 
-test {
-    useJUnitPlatform()
+    //인코딩 타입 관리
+    tasks.withType(JavaCompile).configureEach {
+        options.encoding = 'UTF-8'
+    }
+
+    //롬복 버전 관리
+    def lombokVersion = '1.18.48'
+
+    dependencies {
+        //lombok
+        compileOnly "org.projectlombok:lombok:${lombokVersion}"
+        annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+        testCompileOnly "org.projectlombok:lombok:${lombokVersion}"
+        testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+
+        //JUnit (테스트 프레임워크)
+        testImplementation platform('org.junit:junit-bom:6.0.0')
+        testImplementation 'org.junit.jupiter:junit-jupiter'
+        testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    }
+
+    tasks.named('test') {
+        useJUnitPlatform()
+
+        testLogging {
+            events 'passed', 'skipped', 'failed'
+        }
+    }
 }

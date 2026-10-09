@@ -1,0 +1,10 @@
+# 테스트 전용 설정 양식
+# 사용법은 application.properties와 같음
+# 운영용과 "다른 스키마(crowdfunding_test)"를 쓰는 이유:
+#   테스트는 매번 데이터를 지우고 다시 넣으므로 간단한 테스트 자주 하기 좋음
+#   같은 스키마를 쓰면 시연용 사전 데이터가 테스트 때문에 망가짐
+
+db.url=jdbc:mysql://localhost:3306/crowdfunding_test?serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true&useSSL=false
+
+db.username=
+db.password=

@@ -1,0 +1,22 @@
+dependencies {
+    // common 모듈의 DTO, enum, 상수를 사용하므로 implement
+    implementation project(':common')
+
+    // MySQL JDBC 드라이버
+    implementation 'com.mysql:mysql-connector-j:8.4.0'
+
+    // 커넥션 풀 (Apache Commons DBCP2)
+    implementation 'org.apache.commons:commons-dbcp2:2.13.0'
+
+    // MyBatis: 조건·정렬에 따라 SQL 문장이 바뀌는 동적 조회에만 사용
+    // Spring 없이 단독으로 Java API 방식(@SelectProvider)
+    implementation 'org.mybatis:mybatis:3.5.17'
+}
+
+sourceSets {
+    test{
+        resources{
+            srcDir rootProject.file('sql')
+        }
+    }
+}

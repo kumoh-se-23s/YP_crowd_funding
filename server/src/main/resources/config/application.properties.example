@@ -1,0 +1,10 @@
+# 같은 폴더에 이 파일을 복사해서 이름을 application.properties 로 바꾸고 자기 PC의 MySQL 계정 정보를 채워 사용
+# application.properties 는 .gitignore 에 있으므로 Git에 올라가지 않음 (올라가서는 안됨)
+# 키 이름은 AppProperties.java 가 읽는 이름과 같아야 함)
+
+#url (MySQL 포트가 다르거나 원격접속시만 localhost:3306 부분 변경 (보통 변경할 일 없음))
+db.url=jdbc:mysql://localhost:3306/crowdfunding?serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true&useSSL=false
+
+# MySQL 계정 (이 두개만 각자 채워 사용할 것, 따옴표 없이 쓰면 됨)
+db.username=
+db.password=

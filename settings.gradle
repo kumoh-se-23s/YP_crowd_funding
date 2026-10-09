@@ -1,1 +1,5 @@
-rootProject.name = 'AssignmentTemp'
+//프로젝트 네임
+rootProject.name = 'ypfunding'
+
+//모듈 정의
+include 'common', 'server'

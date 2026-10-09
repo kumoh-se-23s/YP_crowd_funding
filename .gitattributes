@@ -1,1 +1,11 @@
-* text eol=lf
+# 기본: 텍스트 파일은 저장소에 LF로 저장
+* text=auto eol=lf
+
+# Windows랑 Linux랑 줄바꿈 문자가 달라서 불필요한 커밋 들어갈 수 있으므로 git에서 통일해서 통제
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# 바이너리 파일은 줄바꿈 변환 X(파일 깨짐)
+*.jar binary
+*.png binary
+*.jpg binary
