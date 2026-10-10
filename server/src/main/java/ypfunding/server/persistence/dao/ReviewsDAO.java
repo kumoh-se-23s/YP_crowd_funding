@@ -1,13 +1,14 @@
 package ypfunding.server.persistence.dao;
 
 import ypfunding.common.dto.ReviewDTO;
+import ypfunding.server.util.DynamicSQLUtil;
 
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
 public class ReviewsDAO extends DAO{
-    public enum Columns{
+    public enum Columns implements ColumnsEnum{
         FUND_ID("fund_id"),
         STAR("star"),
         CONTENT("content"),
@@ -29,10 +30,10 @@ public class ReviewsDAO extends DAO{
     }
 
     public void insert(Connection conn, ReviewDTO reviewDTO) throws SQLException {
-        final String INSERT_SQL =
-                "INSERT INTO review (fund_id, star, content, date) VALUES (?, ?, ?, ?";
+        String sql = DynamicSQLUtil.generate("INSERT INTO review ({}) VALUES ({})",
+                Columns.FUND_ID, Columns.STAR, Columns.CONTENT, Columns.DATE);
 
-        try(PreparedStatement psmt = conn.prepareStatement(INSERT_SQL)){
+        try(PreparedStatement psmt = conn.prepareStatement(sql)){
 
             psmt.setLong(1, reviewDTO.getFundID());
             psmt.setLong(2, reviewDTO.getStar());

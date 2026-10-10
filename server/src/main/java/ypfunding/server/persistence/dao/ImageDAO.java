@@ -6,7 +6,7 @@ import java.sql.ResultSet;
 
 public class ImageDAO extends DAO{
 
-    public enum Columns{
+    public enum Columns implements ColumnsEnum{
         IMAGE_ID("image_id"),
         REWARD_ID("reward_id"),
         NAME("name"),

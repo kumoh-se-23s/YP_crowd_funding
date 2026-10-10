@@ -9,7 +9,7 @@ import java.sql.SQLException;
 
 public class LikesDAO extends DAO {
 
-    public enum Columns {
+    public enum Columns implements ColumnsEnum{
         USER_ID("user_id"),
         PROJECT_ID("project_id");
         private final String name;

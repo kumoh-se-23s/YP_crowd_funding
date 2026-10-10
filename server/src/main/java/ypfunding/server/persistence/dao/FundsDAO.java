@@ -5,7 +5,7 @@ import ypfunding.common.dto.FundDTO;
 import java.sql.ResultSet;
 
 public class FundsDAO extends DAO{
-    public enum Columns{
+    public enum Columns implements ColumnsEnum{
         FUND_ID("fund_id"),
         USER_ID("user_id"),
         PROJECT_ID("project_id"),

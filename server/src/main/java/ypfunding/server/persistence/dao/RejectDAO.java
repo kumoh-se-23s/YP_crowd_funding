@@ -11,7 +11,7 @@ import java.util.List;
 
 public class RejectDAO extends DAO{
 
-    public enum Columns{
+    public enum Columns implements ColumnsEnum{
         REJECTREASON_ID("rejectreason_id"),
         PROJECT_ID("project_id"),
         REASON("reason"),

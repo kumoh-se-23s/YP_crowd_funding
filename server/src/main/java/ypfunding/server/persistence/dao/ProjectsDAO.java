@@ -8,7 +8,7 @@ import java.util.List;
 
 public class ProjectsDAO extends DAO {
 
-    public enum Columns{
+    public enum Columns implements ColumnsEnum{
         PROJECT_ID("project_id"),
         USER_ID("user_id"),
         TITLE("title"),

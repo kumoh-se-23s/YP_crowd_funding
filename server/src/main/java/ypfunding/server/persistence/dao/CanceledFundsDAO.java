@@ -5,7 +5,7 @@ import ypfunding.common.dto.CanceledFundDTO;
 import java.sql.ResultSet;
 
 public class CanceledFundsDAO extends DAO{
-    public enum Columns{
+    public enum Columns implements ColumnsEnum{
         CANCELED_FUND_ID("canceled_fund_id"),
         USER_ID("user_id"),
         PROJECT_ID("project_id"),

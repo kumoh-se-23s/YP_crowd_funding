@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class CategoryDAO extends DAO{
-    public enum Columns{
+    public enum Columns implements ColumnsEnum{
         CATEGORY_ID("category_id"),
         PROJECT_ID("project_id"),
         CATEGORY_NAME("category_name");

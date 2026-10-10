@@ -5,7 +5,7 @@ import ypfunding.common.dto.RewardDTO;
 import java.sql.ResultSet;
 
 public class RewardsDAO extends DAO{
-    public enum Columns{
+    public enum Columns implements ColumnsEnum{
         REWARD_ID("reward_id"),
         PROJECT_ID("project_id"),
         NAME("name"),

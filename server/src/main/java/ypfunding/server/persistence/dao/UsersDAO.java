@@ -8,7 +8,7 @@ import java.util.List;
 
 public class UsersDAO extends DAO {
 
-    public enum Columns{
+    public enum Columns implements ColumnsEnum{
         USER_ID("user_id"),
         LOGIN_ID("login_id"),
         PASSWORD("password"),
