@@ -30,7 +30,7 @@ public class ReviewsDAO extends DAO{
     }
 
     public void insert(Connection conn, ReviewDTO reviewDTO) throws SQLException {
-        String sql = DynamicSQLUtil.generate("INSERT INTO review ({}) VALUES ({})",
+        String sql = DynamicSQLUtil.generate("INSERT INTO reviews ({}) VALUES ({})",
                 Columns.FUND_ID, Columns.STAR, Columns.CONTENT, Columns.DATE);
 
         try(PreparedStatement psmt = conn.prepareStatement(sql)){
