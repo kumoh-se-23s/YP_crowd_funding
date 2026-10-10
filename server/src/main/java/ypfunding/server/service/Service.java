@@ -1,7 +1,7 @@
-package kr.yp_crowdfunding.service;
+package ypfunding.server.service;
 
 import lombok.RequiredArgsConstructor;
-import kr.yp_crowdfunding.persistence.dao.DAO;
+import ypfunding.server.persistence.dao.DAO;
 
 @RequiredArgsConstructor
 public class Service<T extends DAO> {

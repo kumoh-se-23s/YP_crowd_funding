@@ -1,6 +1,6 @@
-package kr.yp_crowdfunding.service;
+package ypfunding.server.service;
 
-import kr.yp_crowdfunding.persistence.dao.LikesDAO;
+import ypfunding.server.persistence.dao.LikesDAO;
 
 public class LikeService extends Service<LikesDAO>{
     public LikeService(LikesDAO dao) {

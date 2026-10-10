@@ -1,6 +1,6 @@
-package kr.yp_crowdfunding.service;
+package ypfunding.server.service;
 
-import kr.yp_crowdfunding.persistence.dao.ReviewsDAO;
+import ypfunding.server.persistence.dao.ReviewsDAO;
 
 public class ReviewService extends Service<ReviewsDAO>{
     public ReviewService(ReviewsDAO dao) {

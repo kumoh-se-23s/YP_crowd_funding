@@ -1,4 +1,4 @@
-package kr.yp_crowdfunding.persistence.dto;
+package ypfunding.common.dto;
 
 import lombok.Getter;
 import lombok.Setter;

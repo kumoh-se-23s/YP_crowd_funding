@@ -1,6 +1,6 @@
-package kr.yp_crowdfunding.service;
+package ypfunding.server.service;
 
-import kr.yp_crowdfunding.persistence.dao.FundsDAO;
+import ypfunding.server.persistence.dao.FundsDAO;
 
 public class FundService extends Service<FundsDAO>{
     public FundService(FundsDAO dao) {

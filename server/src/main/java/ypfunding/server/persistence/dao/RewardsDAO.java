@@ -1,13 +1,14 @@
-package kr.yp_crowdfunding.persistence.dao;
+package ypfunding.server.persistence.dao;
 
 import javax.sql.DataSource;
 
-public class FundsDAO extends DAO{
+public class RewardsDAO extends DAO{
     public enum Columns{
-        USER_ID("user_id"),
         PROJECT_ID("project_id"),
-        REWARD_NAME("reward_name"),
-        DATE("date");
+        NAME("name"),
+        DESCRIPTION("description"),
+        PRICE("price"),
+        COUNT("count");
 
         private final String name;
         Columns(String name){
@@ -20,7 +21,7 @@ public class FundsDAO extends DAO{
         }
     }
 
-    public FundsDAO(DataSource dataSource) {
+    public RewardsDAO(DataSource dataSource) {
         super(dataSource);
     }
 }

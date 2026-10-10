@@ -1,7 +1,7 @@
-package kr.yp_crowdfunding.service;
+package ypfunding.server.service;
 
-import kr.yp_crowdfunding.persistence.dao.UsersDAO;
-import kr.yp_crowdfunding.persistence.dto.UserDTO;
+import ypfunding.server.persistence.dao.UsersDAO;
+import ypfunding.common.dto.UserDTO;
 
 import java.sql.SQLException;
 import java.util.List;

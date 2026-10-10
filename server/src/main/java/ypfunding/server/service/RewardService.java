@@ -1,6 +1,6 @@
-package kr.yp_crowdfunding.service;
+package ypfunding.server.service;
 
-import kr.yp_crowdfunding.persistence.dao.RewardsDAO;
+import ypfunding.server.persistence.dao.RewardsDAO;
 
 public class RewardService extends Service<RewardsDAO>{
     public RewardService(RewardsDAO dao) {
