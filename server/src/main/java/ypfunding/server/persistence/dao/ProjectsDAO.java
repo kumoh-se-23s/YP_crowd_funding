@@ -1,9 +1,7 @@
 package ypfunding.server.persistence.dao;
 
-import ypfunding.common.dto.LikeDTO;
 import ypfunding.common.dto.ProjectDTO;
 
-import javax.sql.DataSource;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,35 +28,33 @@ public class ProjectsDAO extends DAO {
         }
     }
 
-    public ProjectsDAO(DataSource dataSource) {
-        super(dataSource);
+    private void fillDataFromResultSet(ProjectDTO projectDTO, PreparedStatement psmt) throws SQLException {
+        psmt.setString(1, projectDTO.getTitle());
+        psmt.setInt(2, projectDTO.getDuration());
+        psmt.setDate(3, new Date(projectDTO.getStartDate().getTime()));
+        psmt.setLong(4, projectDTO.getGoal());
+        psmt.setLong(5,projectDTO.getWriterID());
+        psmt.setString(6,projectDTO.getApprovalStatus().name());
     }
-
     //Create(생성) 좋아요 추가
-    public void insert(ProjectDTO projectDTO) throws SQLException {
+
+    public void insert(Connection conn, ProjectDTO projectDTO) throws SQLException {
         final String INSERT_SQL =
                 "INSERT INTO projects (title, duration, startDate, goal, writerId, approvalStatus) VALUES (?, ?, ?, ?, ?, ?)";
 
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement psmt = conn.prepareStatement(INSERT_SQL)) {
+        try (PreparedStatement psmt = conn.prepareStatement(INSERT_SQL)) {
 
-            psmt.setString(1, projectDTO.getTitle());
-            psmt.setInt(2, projectDTO.getDuration());
-            psmt.setDate(3, new java.sql.Date(projectDTO.getStartDate().getTime()));
-            psmt.setLong(4, projectDTO.getGoal());
-            psmt.setLong(5,projectDTO.getWriterID());
-            psmt.setString(6,projectDTO.getApprovalStatus().name());
+            fillDataFromResultSet(projectDTO, psmt);
 
             psmt.executeUpdate();
         }
     }
 
-    public ProjectDTO getById(ProjectDTO projectDTO) throws SQLException {
+    public ProjectDTO getById(Connection conn, ProjectDTO projectDTO) throws SQLException {
         final String GET_BY_ID_SQL = "SELECT * FROM projects WHERE id = ?";
         ProjectDTO dto = null;
 
-        try (Connection conn = dataSource.getConnection();
-        PreparedStatement psmt = conn.prepareStatement(GET_BY_ID_SQL)) {
+        try (PreparedStatement psmt = conn.prepareStatement(GET_BY_ID_SQL)) {
             psmt.setLong(1, projectDTO.getId());
 
 
@@ -79,11 +75,11 @@ public class ProjectsDAO extends DAO {
         }
         return dto;
     }
-    public List<ProjectDTO> getAllProjects() throws SQLException {
+    public List<ProjectDTO> getAllProjects(Connection conn) throws SQLException {
         final String sql = "select * from projects";
         List<ProjectDTO> result = new ArrayList<>();
 
-        try(Statement statement = dataSource.getConnection().createStatement()){
+        try(Statement statement = conn.createStatement()){
             ResultSet rs = statement.executeQuery(sql);
             while(rs.next()){
                 ProjectDTO dto = new ProjectDTO();
@@ -104,27 +100,20 @@ public class ProjectsDAO extends DAO {
 
 
     //Update(수정) 기능
-    public void update(ProjectDTO projectDTO) throws SQLException {
+    public void update(Connection conn, ProjectDTO projectDTO) throws SQLException {
         final String UPDATE_SQL = "UPDATE projects SET title = ?, duration = ?, startDate = ?, goal = ?, writerId = ?, approvalStatus = ?  WHERE id = ?";
 
-        try (Connection conn = dataSource.getConnection();
-        PreparedStatement psmt = conn.prepareStatement(UPDATE_SQL)) {
-            psmt.setString(1, projectDTO.getTitle());
-            psmt.setInt(2, projectDTO.getDuration());
-            psmt.setDate(3, new java.sql.Date(projectDTO.getStartDate().getTime()));
-            psmt.setLong(4, projectDTO.getGoal());
-            psmt.setLong(5,projectDTO.getWriterID());
-            psmt.setString(6,projectDTO.getApprovalStatus().name());
+        try (PreparedStatement psmt = conn.prepareStatement(UPDATE_SQL)) {
+            fillDataFromResultSet(projectDTO, psmt);
             psmt.setLong(7,projectDTO.getId());
 
             psmt.executeUpdate();
         }
     }
 
-    public void delete(ProjectDTO projectDTO) throws SQLException {
+    public void delete(Connection conn, ProjectDTO projectDTO) throws SQLException {
         final String DELETE_SQL = "DELETE FROM projects WHERE id = ?";
-        try (Connection conn = dataSource.getConnection();
-        PreparedStatement psmt = conn.prepareStatement(DELETE_SQL)) {
+        try (PreparedStatement psmt = conn.prepareStatement(DELETE_SQL)) {
             psmt.setLong(1, projectDTO.getId());
             psmt.executeUpdate();
         }

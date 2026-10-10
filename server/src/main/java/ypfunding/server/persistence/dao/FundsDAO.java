@@ -20,7 +20,5 @@ public class FundsDAO extends DAO{
         }
     }
 
-    public FundsDAO(DataSource dataSource) {
-        super(dataSource);
-    }
+
 }

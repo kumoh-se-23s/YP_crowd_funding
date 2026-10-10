@@ -1,7 +1,5 @@
 package ypfunding.server.persistence.dao;
 
-import javax.sql.DataSource;
-
 public class RewardsDAO extends DAO{
     public enum Columns{
         PROJECT_ID("project_id"),
@@ -21,7 +19,4 @@ public class RewardsDAO extends DAO{
         }
     }
 
-    public RewardsDAO(DataSource dataSource) {
-        super(dataSource);
-    }
 }

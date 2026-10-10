@@ -1,18 +1,18 @@
 package ypfunding.server.service;
 
-import ypfunding.server.persistence.dao.ProjectsDAO;
 import ypfunding.common.dto.ProjectDTO;
+import ypfunding.server.persistence.TransactionManager;
+import ypfunding.server.persistence.dao.ProjectsDAO;
 
-import java.sql.SQLException;
 import java.util.List;
 
 public class ProjectService extends Service<ProjectsDAO>{
-    public ProjectService(ProjectsDAO dao) {
-        super(dao);
+    public ProjectService(TransactionManager transactionManager, ProjectsDAO dao) {
+        super(transactionManager, dao);
     }
 
-    public List<ProjectDTO> getAllProjects() throws SQLException {
-        return dao.getAllProjects();
+    public List<ProjectDTO> getAllProjects() {
+        return transactionManager.execute(dao::getAllProjects);
     }
 
 }

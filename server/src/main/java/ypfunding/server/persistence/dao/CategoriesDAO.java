@@ -3,7 +3,6 @@ package ypfunding.server.persistence.dao;
 
 import ypfunding.common.dto.CategoryDTO;
 
-import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -25,17 +24,14 @@ public class CategoriesDAO extends DAO{
             return name;
         }
     }
-    public CategoriesDAO(DataSource dataSource) {
-        super(dataSource);
-    }
+
 
     //Create(생성) 기능
-    public void insert(CategoryDTO categoryDTO) throws SQLException {
+    public void insert(Connection conn, CategoryDTO categoryDTO) throws SQLException {
         final String INSERT_SQL =
                 "INSERT INTO categories (category) VALUES (?)";
 
-        try(Connection conn = dataSource.getConnection();
-            PreparedStatement psmt = conn.prepareStatement(INSERT_SQL)){
+        try(PreparedStatement psmt = conn.prepareStatement(INSERT_SQL)){
 
             psmt.setString(1, categoryDTO.getCategory().name());
             psmt.executeUpdate();
@@ -49,12 +45,11 @@ public class CategoriesDAO extends DAO{
     //2. Id(숫자) 기반 조회로 만들것인지, BOOK(문자) 기반 조회로 만들것인지
     //사실 둘다 만들어버려도 ok긴함 --> 대신 실행과정에서 어떻게 조회하고 싶은지
     //CLI면 숫자가 편할거고 GUI면 텍스트(어차피 클릭인데 정보는 텍스트 일거니)가 편하지 않을까? 라는 생각을 가지고 있긴함.
-    public List<CategoryDTO> getProjectsByCategory(CategoryDTO.Category categoryType) throws SQLException {
+    public List<CategoryDTO> getProjectsByCategory(Connection conn, CategoryDTO.Category categoryType) throws SQLException {
         final String READ_SQL = "SELECT * FROM categories WHERE category = ?";
         List<CategoryDTO> resultList = new ArrayList<>();
 
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement psmt = conn.prepareStatement(READ_SQL)) {
+        try (PreparedStatement psmt = conn.prepareStatement(READ_SQL)) {
 
              psmt.setString(1, categoryType.name());
 

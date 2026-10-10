@@ -2,7 +2,6 @@ package ypfunding.server.persistence.dao;
 
 import ypfunding.common.dto.ReviewDTO;
 
-import javax.sql.DataSource;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,16 +25,11 @@ public class ReviewsDAO extends DAO{
             return name;
         }
     }
-    public ReviewsDAO(DataSource dataSource) {
-        super(dataSource);
-    }
-
-    public void insert(ReviewDTO reviewDTO) throws SQLException {
+    public void insert(Connection conn, ReviewDTO reviewDTO) throws SQLException {
         final String INSERT_SQL =
                 "INSERT INTO review (user_id, project_id, rewardName, star, contents, date) VALUES (?, ?, ?, ?, ?, ?)";
 
-        try(Connection conn = dataSource.getConnection();
-            PreparedStatement psmt = conn.prepareStatement(INSERT_SQL)){
+        try(PreparedStatement psmt = conn.prepareStatement(INSERT_SQL)){
 
             psmt.setLong(1, reviewDTO.getUserID());
             psmt.setLong(2, reviewDTO.getProjectID());
@@ -48,33 +42,35 @@ public class ReviewsDAO extends DAO{
         }
     }
     //Read(조회) 리뷰는 해당 상품에 대해 전체 조회가 기본이니 전체 조회로 만들겟음
-    public List<ReviewDTO> findAll(long projectId) throws SQLException {
+    public List<ReviewDTO> findAll(Connection conn, long projectId) throws SQLException {
         final String FIND_ALL_SQL = "SELECT * FROM review WHERE project_id = ?";
         List<ReviewDTO> result = new ArrayList<>();
 
-        try(Statement statement = dataSource.getConnection().createStatement();
-            ResultSet rs = statement.executeQuery(FIND_ALL_SQL)){
+        try(PreparedStatement statement = conn.prepareStatement(FIND_ALL_SQL)){
+            statement.setLong(1, projectId);
 
-            while (rs.next()){
-                ReviewDTO reviewDTO = new ReviewDTO();
-                reviewDTO.setUserID(rs.getLong(Columns.USER_ID.toString()));
-                reviewDTO.setProjectID(rs.getLong(Columns.PROJECT_ID.toString()));
-                reviewDTO.setRewardName(rs.getString(Columns.REWARD_NAME.toString()));
-                reviewDTO.setStar(rs.getInt(Columns.STAR.toString()));
-                reviewDTO.setContents(rs.getString(Columns.CONTENTS.toString()));
-                reviewDTO.setDate(rs.getTimestamp(Columns.DATE.toString()));
-                result.add(reviewDTO);
+            try(ResultSet rs = statement.executeQuery()){
+                while (rs.next()){
+                    ReviewDTO reviewDTO = new ReviewDTO();
+                    reviewDTO.setUserID(rs.getLong(Columns.USER_ID.toString()));
+                    reviewDTO.setProjectID(rs.getLong(Columns.PROJECT_ID.toString()));
+                    reviewDTO.setRewardName(rs.getString(Columns.REWARD_NAME.toString()));
+                    reviewDTO.setStar(rs.getInt(Columns.STAR.toString()));
+                    reviewDTO.setContents(rs.getString(Columns.CONTENTS.toString()));
+                    reviewDTO.setDate(rs.getTimestamp(Columns.DATE.toString()));
+                    result.add(reviewDTO);
+                }
             }
+
         }
         return result;
     }
 
     //Update(수정) 기능
-    public void update(ReviewDTO reviewDTO) throws SQLException {
+    public void update(Connection conn, ReviewDTO reviewDTO) throws SQLException {
         final String UPDATE_SQL = "UPDATE review SET star = ?, contents = ? WHERE user_id = ? AND project_id = ?";
 
-        try(Connection conn = dataSource.getConnection();
-        PreparedStatement psmt = conn.prepareStatement(UPDATE_SQL)){
+        try(PreparedStatement psmt = conn.prepareStatement(UPDATE_SQL)){
 
             psmt.setLong(1, reviewDTO.getStar());
             psmt.setString(2, reviewDTO.getContents());
@@ -86,11 +82,10 @@ public class ReviewsDAO extends DAO{
     }
 
     //delete(삭제) 기능
-    public void delete(long userID, long projectID) throws SQLException {
+    public void delete(Connection conn, long userID, long projectID) throws SQLException {
         final String DELETE_SQL = "DELETE FROM review WHERE user_id = ?  AND project_id = ?";
 
-        try(Connection conn = dataSource.getConnection();
-        PreparedStatement psmt = conn.prepareStatement(DELETE_SQL)){
+        try(PreparedStatement psmt = conn.prepareStatement(DELETE_SQL)){
 
             psmt.setLong(1, userID);
             psmt.setLong(2, projectID);

@@ -1,9 +1,7 @@
 package ypfunding.server.persistence.dao;
 
-import ypfunding.common.dto.FailReasonDTO;
 import ypfunding.common.dto.LikeDTO;
 
-import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -26,17 +24,13 @@ public class LikesDAO extends DAO {
         }
     }
 
-    public LikesDAO(DataSource dataSource) {
-        super(dataSource);
-    }
 
     //Create(생성) 좋아요 추가
-    public void insert(LikeDTO likeDTO) throws SQLException {
+    public void insert(Connection conn, LikeDTO likeDTO) throws SQLException {
         final String INSERT_SQL =
                 "INSERT INTO likes (user_id, project_id) VALUES (?, ?)";
 
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement psmt = conn.prepareStatement(INSERT_SQL)) {
+        try (PreparedStatement psmt = conn.prepareStatement(INSERT_SQL)) {
 
             psmt.setLong(1, likeDTO.getUserID());
             psmt.setLong(2, likeDTO.getProjectID());
@@ -46,11 +40,10 @@ public class LikesDAO extends DAO {
     }
 
     //Delete 좋아요 취소
-    public void delete(long userId, long projectId) throws SQLException {
+    public void delete(Connection conn, long userId, long projectId) throws SQLException {
         final String DELETE_SQL = "DELETE FROM likes WHERE user_id = ? AND project_id = ?";
 
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement psmt = conn.prepareStatement(DELETE_SQL)) {
+        try ( PreparedStatement psmt = conn.prepareStatement(DELETE_SQL)) {
 
             psmt.setLong(1, userId);
             psmt.setLong(2, projectId);
@@ -60,11 +53,10 @@ public class LikesDAO extends DAO {
     }
 
     //Read, 전체 좋아요 개수 조회 기능
-    public int getLikeCount(long projectId) throws SQLException {
+    public int getLikeCount(Connection conn, long projectId) throws SQLException {
         final String GET_COUNT_SQL = "SELECT COUNT(*) FROM likes WHERE project_id = ?";
 
-        try (Connection conn = dataSource.getConnection();
-        PreparedStatement psmt = conn.prepareStatement(GET_COUNT_SQL)) {
+        try (PreparedStatement psmt = conn.prepareStatement(GET_COUNT_SQL)) {
             psmt.setLong(1, projectId);
 
             try (ResultSet rs = psmt.executeQuery()) {
