@@ -2,7 +2,6 @@ package ypfunding.server.persistence.dao;
 
 import ypfunding.common.dto.UserDTO;
 
-import javax.sql.DataSource;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,9 +28,6 @@ public class UsersDAO extends DAO {
         }
     }
 
-    public UsersDAO(DataSource dataSource) {
-        super(dataSource);
-    }
 
     private void fillDataFromResultSet(UserDTO dto, ResultSet rs) throws SQLException {
         dto.setUserID(rs.getLong(Columns.ID.name));
