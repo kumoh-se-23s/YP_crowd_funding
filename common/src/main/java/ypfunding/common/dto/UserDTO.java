@@ -17,9 +17,9 @@ public class UserDTO {
 
     private Long userID;
     private String loginID;
-    private String address;
-    private String name;
-    private UserType userType;
     private String encryptedPassword;
+    private String name;
+    private String address;
+    private UserType userType;
     private Date regDate;
 }

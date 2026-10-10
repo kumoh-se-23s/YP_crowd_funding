@@ -15,11 +15,13 @@ public class ProjectDTO {
         PENDING, APPROVED, REJECTED
     }
 
-    private Long id;
+    private Long projectId;
+    private Long userId;
     private String title;
+    private String description;
+    private Long goal;
     private Integer duration;
     private Date startDate;
-    private Long goal;
-    private Long writerID;
+    private Date endDate;
     private ApprovalStatus approvalStatus;
 }

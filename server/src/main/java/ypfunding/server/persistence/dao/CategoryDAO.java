@@ -10,10 +10,11 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CategoriesDAO extends DAO{
+public class CategoryDAO extends DAO{
     public enum Columns{
+        CATEGORY_ID("category_id"),
         PROJECT_ID("project_id"),
-        CATEGORY("category");
+        CATEGORY_NAME("category_name");
         private final String name;
         Columns(String name){
             this.name = name;
@@ -25,6 +26,10 @@ public class CategoriesDAO extends DAO{
         }
     }
 
+    public void fillDataFromResultSet(CategoryDTO dto, ResultSet rs){
+        //TODO
+    }
+
 
     //Create(생성) 기능
     public void insert(Connection conn, CategoryDTO categoryDTO) throws SQLException {
@@ -33,7 +38,7 @@ public class CategoriesDAO extends DAO{
 
         try(PreparedStatement psmt = conn.prepareStatement(INSERT_SQL)){
 
-            psmt.setString(1, categoryDTO.getCategory().name());
+            psmt.setString(1, categoryDTO.getCategoryName().name());
             psmt.executeUpdate();
 
         }
@@ -58,8 +63,8 @@ public class CategoriesDAO extends DAO{
                 while (rs.next()) {
                     CategoryDTO dto = new CategoryDTO();
 
-                    dto.setProjectID(rs.getLong(Columns.PROJECT_ID.toString()));
-                    dto.setCategory(CategoryDTO.Category.valueOf(rs.getString(Columns.CATEGORY.toString())));
+                    dto.setProjectId(rs.getLong(Columns.PROJECT_ID.toString()));
+                    dto.setCategoryName(CategoryDTO.Category.valueOf(rs.getString(Columns.CATEGORY_ID.toString())));
 
                     resultList.add(dto);
                 }

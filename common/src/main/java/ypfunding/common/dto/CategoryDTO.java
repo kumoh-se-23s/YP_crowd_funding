@@ -10,9 +10,31 @@ import lombok.ToString;
 public class CategoryDTO {
 
     public enum Category{
-        GAME, PET, BOOK
+        TECH_HOME_APPLIANCES,
+        HOME_LIVING,
+        BEAUTY,
+        FASHION,
+        FOOD,
+        BOOK,
+        KIDS,
+        SPORTS,
+        GOODS,
+        TRAVEL,
+        FANDOM,
+        PET,
+        DESIGN,
+        ART,
+        CAR,
+        GAME,
+        MOVIE,
+        MUSIC,
+        PHOTO,
+        WEBTOON,
+        MEMBERSHIP,
+        SOCIAL
     }
 
-    private Long projectID;
-    private Category category;
+    private Long projectId;
+    private Long categoryId;
+    private Category categoryName;
 }

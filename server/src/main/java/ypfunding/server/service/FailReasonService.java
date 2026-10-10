@@ -1,10 +1,10 @@
 package ypfunding.server.service;
 
 import ypfunding.server.persistence.TransactionManager;
-import ypfunding.server.persistence.dao.FailReasonsDAO;
+import ypfunding.server.persistence.dao.RejectDAO;
 
-public class FailReasonService extends Service<FailReasonsDAO>{
-    public FailReasonService(TransactionManager transactionManager, FailReasonsDAO dao) {
+public class FailReasonService extends Service<RejectDAO>{
+    public FailReasonService(TransactionManager transactionManager, RejectDAO dao) {
         super(transactionManager, dao);
     }
 }

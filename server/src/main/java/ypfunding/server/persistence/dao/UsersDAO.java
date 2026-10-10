@@ -9,13 +9,14 @@ import java.util.List;
 public class UsersDAO extends DAO {
 
     public enum Columns{
-        ID("id"),
-        ADDRESS("address"),
-        NAME("name"),
-        TYPE("type"),
+        USER_ID("user_id"),
+        LOGIN_ID("login_id"),
         PASSWORD("password"),
-        REGDATE("regDate"),
-        LOGIN_ID("login_id");
+        SALT("salt"),
+        NAME("name"),
+        ADDRESS("address"),
+        USERTYPE("usertype"),
+        REGDATE("regdate");
 
         private final String name;
         Columns(String name){
@@ -30,13 +31,13 @@ public class UsersDAO extends DAO {
 
 
     private void fillDataFromResultSet(UserDTO dto, ResultSet rs) throws SQLException {
-        dto.setUserID(rs.getLong(Columns.ID.name));
-        dto.setAddress(rs.getString(Columns.ADDRESS.name));
-        dto.setName(rs.getString(Columns.NAME.name));
-        dto.setUserType(UserDTO.UserType.valueOf(rs.getString(Columns.TYPE.name)));
-        dto.setEncryptedPassword(rs.getString(Columns.PASSWORD.name));
-        dto.setRegDate(rs.getDate(Columns.REGDATE.name));
+        dto.setUserID(rs.getLong(Columns.USER_ID.name));
         dto.setLoginID(rs.getString(Columns.LOGIN_ID.name));
+        dto.setEncryptedPassword(rs.getString(Columns.PASSWORD.name));
+        dto.setName(rs.getString(Columns.NAME.name));
+        dto.setAddress(rs.getString(Columns.ADDRESS.name));
+        dto.setUserType(UserDTO.UserType.valueOf(rs.getString(Columns.USERTYPE.name)));
+        dto.setRegDate(rs.getDate(Columns.REGDATE.name));
     }
 
     //Create(생성) 기능

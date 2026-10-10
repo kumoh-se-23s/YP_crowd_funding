@@ -9,9 +9,9 @@ import java.util.Date;
 @Getter
 @Setter
 @ToString
-public class FailReasonDTO {
-    private Long id;
+public class RejectDTO {
+    private Long rejectReasonId;
     private Long projectID;
     private String reason;
-    private Date date;
+    private Date createdAt;
 }

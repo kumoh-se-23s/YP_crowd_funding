@@ -13,9 +13,10 @@ public class RewardDTO {
     //심하면 변경 이전의 name의 data들이 그냥 방치되어있을 수도 있음
     //단일pk로 rewardId 만들 필요 성의 대한 회의 필요
     //그리고 중복 불가를 pk말고 그냥 unique 속성 활용으로 고려해도 될듯?
-    private Long projectID;
+    private Long rewardId;
+    private Long projectId;
     private String name;
+    private Long price;
     private String description;
-    private Integer price;
-    private Integer count;
+    private Long stock;
 }

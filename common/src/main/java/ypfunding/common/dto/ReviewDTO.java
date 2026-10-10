@@ -11,10 +11,8 @@ import java.util.Date;
 @Setter
 @ToString
 public class ReviewDTO {
-    private Long userID;
-    private Long projectID;
-    private String rewardName;
+    private Long fundID;
     private Integer star;
-    private String contents;
+    private String content;
     private Date date;
 }

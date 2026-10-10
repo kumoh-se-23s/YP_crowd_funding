@@ -9,12 +9,14 @@ import java.util.List;
 public class ProjectsDAO extends DAO {
 
     public enum Columns{
-        ID("id"),
+        PROJECT_ID("project_id"),
+        USER_ID("user_id"),
         TITLE("title"),
+        DESCRIPTION("description"),
+        GOAL("goal"),
         DURATION("duration"),
         START_DATE("start_date"),
-        GOAL("goal"),
-        WRITER("writer"),
+        END_DATE("end_date"),
         APPROVAL_STATUS("approval_status");
 
         private final String name;
@@ -33,7 +35,7 @@ public class ProjectsDAO extends DAO {
         psmt.setInt(2, projectDTO.getDuration());
         psmt.setDate(3, new Date(projectDTO.getStartDate().getTime()));
         psmt.setLong(4, projectDTO.getGoal());
-        psmt.setLong(5,projectDTO.getWriterID());
+        psmt.setLong(5,projectDTO.getUserId());
         psmt.setString(6,projectDTO.getApprovalStatus().name());
     }
     //Create(생성) 좋아요 추가
@@ -55,18 +57,18 @@ public class ProjectsDAO extends DAO {
         ProjectDTO dto = null;
 
         try (PreparedStatement psmt = conn.prepareStatement(GET_BY_ID_SQL)) {
-            psmt.setLong(1, projectDTO.getId());
+            psmt.setLong(1, projectDTO.getProjectId());
 
 
             try (ResultSet rs = psmt.executeQuery()) {
                 if (rs.next()) {
                     dto = new ProjectDTO();
-                    dto.setId(rs.getLong("id"));
+                    dto.setProjectId(rs.getLong("id"));
                     dto.setTitle(rs.getString("title"));
                     dto.setDuration(rs.getInt("duration"));
                     dto.setStartDate(rs.getDate("startDate"));
                     dto.setGoal(rs.getLong("goal"));
-                    dto.setWriterID(rs.getLong("writerId"));
+                    dto.setUserId(rs.getLong("writerId"));
                     dto.setApprovalStatus(ProjectDTO.ApprovalStatus.valueOf(rs.getString("approvalStatus")));
                     return dto;
 
@@ -84,12 +86,12 @@ public class ProjectsDAO extends DAO {
             while(rs.next()){
                 ProjectDTO dto = new ProjectDTO();
 
-                dto.setId(rs.getLong(Columns.ID.name));
+                dto.setProjectId(rs.getLong(Columns.PROJECT_ID.name));
+                dto.setUserId(rs.getLong(Columns.USER_ID.name));
                 dto.setTitle(rs.getString(Columns.TITLE.name));
                 dto.setDuration(rs.getInt(Columns.DURATION.name));
                 dto.setStartDate(rs.getDate(Columns.START_DATE.name));
                 dto.setGoal(rs.getLong(Columns.GOAL.name));
-                dto.setWriterID(rs.getLong(Columns.WRITER.name));
                 dto.setApprovalStatus(ProjectDTO.ApprovalStatus.valueOf(rs.getString(Columns.APPROVAL_STATUS.name)));
 
                 result.add(dto);
@@ -105,7 +107,7 @@ public class ProjectsDAO extends DAO {
 
         try (PreparedStatement psmt = conn.prepareStatement(UPDATE_SQL)) {
             fillDataFromResultSet(projectDTO, psmt);
-            psmt.setLong(7,projectDTO.getId());
+            psmt.setLong(7,projectDTO.getProjectId());
 
             psmt.executeUpdate();
         }
@@ -114,7 +116,7 @@ public class ProjectsDAO extends DAO {
     public void delete(Connection conn, ProjectDTO projectDTO) throws SQLException {
         final String DELETE_SQL = "DELETE FROM projects WHERE id = ?";
         try (PreparedStatement psmt = conn.prepareStatement(DELETE_SQL)) {
-            psmt.setLong(1, projectDTO.getId());
+            psmt.setLong(1, projectDTO.getProjectId());
             psmt.executeUpdate();
         }
     }

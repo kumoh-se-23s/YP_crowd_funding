@@ -24,6 +24,10 @@ public class LikesDAO extends DAO {
         }
     }
 
+    public void fillDataFromResultSet(LikeDTO dto, ResultSet rs){
+        //TODO
+    }
+
 
     //Create(생성) 좋아요 추가
     public void insert(Connection conn, LikeDTO likeDTO) throws SQLException {
