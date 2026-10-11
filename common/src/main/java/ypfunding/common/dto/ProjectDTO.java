@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 
 @Getter
@@ -21,7 +22,7 @@ public class ProjectDTO {
     private String description;
     private Long goal;
     private Integer duration;
-    private Date startDate;
-    private Date endDate;
+    private LocalDateTime startDate;
+    private LocalDateTime endDate;
     private ApprovalStatus approvalStatus;
 }

@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 
 @Getter
@@ -19,5 +20,5 @@ public class FundDTO {
     private Long projectID;
     private Long rewardId;
     private Long quantity;
-    private Date date;
+    private LocalDateTime date;
 }

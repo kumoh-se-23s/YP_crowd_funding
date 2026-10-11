@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 
 @Getter
@@ -21,5 +22,5 @@ public class UserDTO {
     private String name;
     private String address;
     private UserType userType;
-    private Date regDate;
+    private LocalDateTime regDate;
 }

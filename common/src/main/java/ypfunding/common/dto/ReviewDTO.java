@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 
 
@@ -14,5 +15,5 @@ public class ReviewDTO {
     private Long fundID;
     private Integer star;
     private String content;
-    private Date date;
+    private LocalDateTime date;
 }

@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 
 @Getter
@@ -21,5 +22,5 @@ public class CanceledFundDTO {
     private Long rewardId;
     private Long quantity;
     private Long content;
-    private Date cancelDate;
+    private LocalDateTime cancelDate;
 }

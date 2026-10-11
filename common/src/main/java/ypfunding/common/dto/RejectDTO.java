@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 
 @Getter
@@ -13,5 +14,5 @@ public class RejectDTO {
     private Long rejectReasonId;
     private Long projectID;
     private String reason;
-    private Date createdAt;
+    private LocalDateTime createdAt;
 }
