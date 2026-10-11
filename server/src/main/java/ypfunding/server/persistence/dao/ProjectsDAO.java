@@ -1,6 +1,7 @@
 package ypfunding.server.persistence.dao;
 
 import ypfunding.common.dto.ProjectDTO;
+import ypfunding.server.util.DynamicSQLUtil;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -40,20 +41,27 @@ public class ProjectsDAO extends DAO {
     }
     //Create(생성) 좋아요 추가
 
+    //endDate는 유도속성으로 insert에서는 제외
     public void insert(Connection conn, ProjectDTO projectDTO) throws SQLException {
-        final String INSERT_SQL =
-                "INSERT INTO projects (title, duration, startDate, goal, writerId, approvalStatus) VALUES (?, ?, ?, ?, ?, ?)";
+        final String INSERT_SQL = DynamicSQLUtil.generate("INSERT INTO projects ({}) VALUES ({})",
+                Columns.USER_ID, Columns.TITLE, Columns.DESCRIPTION, Columns.GOAL,
+                Columns.START_DATE, Columns.DURATION, Columns.APPROVAL_STATUS);
 
-        try (PreparedStatement psmt = conn.prepareStatement(INSERT_SQL)) {
+        try (PreparedStatement ps = conn.prepareStatement(INSERT_SQL)) {
+            ps.setLong(1, projectDTO.getUserId());
+            ps.setString(2, projectDTO.getTitle());
+            ps.setString(3, projectDTO.getDescription());
+            ps.setLong(4, projectDTO.getGoal());
+            ps.setInt(5, projectDTO.getDuration());
+            //기본 insert때 pending으로 지정
+            ps.setString(6, ProjectDTO.ApprovalStatus.PENDING.name());
 
-            fillDataFromResultSet(projectDTO, psmt);
-
-            psmt.executeUpdate();
+            ps.executeUpdate();
         }
     }
-
     public ProjectDTO getById(Connection conn, ProjectDTO projectDTO) throws SQLException {
-        final String GET_BY_ID_SQL = "SELECT * FROM projects WHERE id = ?";
+        final String GET_BY_ID_SQL = DynamicSQLUtil.generate("SELECT * FROM projects WHERE project_id = ({})",
+                Columns.PROJECT_ID);
         ProjectDTO dto = null;
 
         try (PreparedStatement psmt = conn.prepareStatement(GET_BY_ID_SQL)) {
