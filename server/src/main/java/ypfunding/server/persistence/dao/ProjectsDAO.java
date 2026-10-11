@@ -4,7 +4,6 @@ import ypfunding.common.dto.ProjectDTO;
 import ypfunding.server.util.DynamicSQLUtil;
 
 import java.sql.*;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,6 +39,7 @@ public class ProjectsDAO extends DAO {
         psmt.setLong(5,projectDTO.getUserId());
         psmt.setString(6,projectDTO.getApprovalStatus().name());
     }
+    //Create(생성) 좋아요 추가
 
     //endDate는 유도속성으로 insert에서는 제외
     public void insert(Connection conn, ProjectDTO projectDTO) throws SQLException {
@@ -59,23 +59,31 @@ public class ProjectsDAO extends DAO {
             ps.executeUpdate();
         }
     }
-
-    //프로젝트ID를 통해 상세 조회
-    //무거운 dto말고 projectId를 넘겨 받아서 optimize
-    public ProjectDTO findById(Connection conn, long projectId) throws SQLException {
-        final String FIND_BY_ID_SQL = "SELECT * FROM projects WHERE project_id = ?";
+    public ProjectDTO findById(Connection conn, ProjectDTO projectDTO) throws SQLException {
+        final String FIND_BY_ID_SQL = DynamicSQLUtil.generate("SELECT * FROM projects WHERE project_id = ({})",
+                Columns.PROJECT_ID);
         ProjectDTO dto = null;
 
-        try (PreparedStatement ps = conn.prepareStatement(FIND_BY_ID_SQL)) {
-            ps.setLong(1, projectId);
+        try (PreparedStatement psmt = conn.prepareStatement(FIND_BY_ID_SQL)) {
+            psmt.setLong(1, projectDTO.getProjectId());
 
-            try (ResultSet rs = ps.executeQuery()) {
+
+            try (ResultSet rs = psmt.executeQuery()) {
                 if (rs.next()) {
-                    return toDTO(rs);
+                    dto = new ProjectDTO();
+                    dto.setProjectId(rs.getLong("id"));
+                    dto.setTitle(rs.getString("title"));
+                    dto.setDuration(rs.getInt("duration"));
+                    dto.setStartDate(rs.getDate("startDate"));
+                    dto.setGoal(rs.getLong("goal"));
+                    dto.setUserId(rs.getLong("writerId"));
+                    dto.setApprovalStatus(ProjectDTO.ApprovalStatus.valueOf(rs.getString("approvalStatus")));
+                    return dto;
+
                 }
-                return null;
             }
         }
+        return dto;
     }
     public List<ProjectDTO> getAllProjects(Connection conn) throws SQLException {
         final String sql = "select * from projects";
@@ -119,21 +127,5 @@ public class ProjectsDAO extends DAO {
             psmt.setLong(1, projectDTO.getProjectId());
             psmt.executeUpdate();
         }
-    }
-
-    private ProjectDTO toDTO(ResultSet rs) throws SQLException {
-        ProjectDTO dto = new ProjectDTO();
-        dto.setProjectId(rs.getLong("project_id"));
-        dto.setUserId(rs.getLong("user_id"));
-        dto.setTitle(rs.getString("title"));
-        dto.setDescription(rs.getString("description"));
-        dto.setGoal(rs.getLong("goal"));
-        dto.setDuration(rs.getInt("duration"));
-        dto.setApprovalStatus(ProjectDTO.ApprovalStatus.valueOf(rs.getString("approvalStatus")));
-
-        dto.setStartDate(rs.getObject("start_date", LocalDateTime.class));
-        dto.setEndDate(rs.getObject("end_date", LocalDateTime.class));
-
-        return dto;
     }
 }
