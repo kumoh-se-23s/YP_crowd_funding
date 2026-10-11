@@ -59,12 +59,12 @@ public class ProjectsDAO extends DAO {
             ps.executeUpdate();
         }
     }
-    public ProjectDTO getById(Connection conn, ProjectDTO projectDTO) throws SQLException {
-        final String GET_BY_ID_SQL = DynamicSQLUtil.generate("SELECT * FROM projects WHERE project_id = ({})",
+    public ProjectDTO findById(Connection conn, ProjectDTO projectDTO) throws SQLException {
+        final String FIND_BY_ID_SQL = DynamicSQLUtil.generate("SELECT * FROM projects WHERE project_id = ({})",
                 Columns.PROJECT_ID);
         ProjectDTO dto = null;
 
-        try (PreparedStatement psmt = conn.prepareStatement(GET_BY_ID_SQL)) {
+        try (PreparedStatement psmt = conn.prepareStatement(FIND_BY_ID_SQL)) {
             psmt.setLong(1, projectDTO.getProjectId());
 
 
