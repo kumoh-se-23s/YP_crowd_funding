@@ -32,6 +32,15 @@ public class ProjectsDAO extends DAO {
         }
     }
 
+    private void fillDataFromResultSet(ProjectDTO projectDTO, PreparedStatement psmt) throws SQLException {
+        psmt.setString(1, projectDTO.getTitle());
+        psmt.setInt(2, projectDTO.getDuration());
+        psmt.setObject(3, projectDTO.getStartDate());
+        psmt.setLong(4, projectDTO.getGoal());
+        psmt.setLong(5,projectDTO.getUserId());
+        psmt.setString(6,projectDTO.getApprovalStatus().name());
+    }
+
     // =================================================================
     // 1. CREATE SECTION
     // =================================================================
@@ -57,15 +66,6 @@ public class ProjectsDAO extends DAO {
         ps.setInt(6, projectDTO.getDuration());
         //기본 insert때 pending으로 지정
         ps.setString(7, ProjectDTO.ApprovalStatus.PENDING.name());
-    }
-
-    private void fillDataFromResultSet(ProjectDTO projectDTO, PreparedStatement psmt) throws SQLException {
-        psmt.setString(1, projectDTO.getTitle());
-        psmt.setInt(2, projectDTO.getDuration());
-        psmt.setObject(3, projectDTO.getStartDate());
-        psmt.setLong(4, projectDTO.getGoal());
-        psmt.setLong(5,projectDTO.getUserId());
-        psmt.setString(6,projectDTO.getApprovalStatus().name());
     }
 
     // =================================================================
@@ -116,6 +116,7 @@ public class ProjectsDAO extends DAO {
         return result;
     }
 
+    //ResultSet 묶기
     private ProjectDTO toDTO(ResultSet rs) throws SQLException {
         ProjectDTO dto = new ProjectDTO();
         dto.setProjectId(rs.getLong("project_id"));
