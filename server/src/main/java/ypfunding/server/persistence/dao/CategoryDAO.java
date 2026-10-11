@@ -31,8 +31,10 @@ public class CategoryDAO extends DAO{
         //TODO
     }
 
+    // =================================================================
+    // 1. CREATE SECTION
+    // =================================================================
 
-    //Create(생성) 기능
     public void insert(Connection conn, CategoryDTO categoryDTO) throws SQLException {
         final String INSERT_SQL = DynamicSQLUtil.generate("INSERT INTO category ({}) VALUES ({})",
                 Columns.CATEGORY_ID, Columns.PROJECT_ID, Columns.CATEGORY_NAME);
@@ -47,7 +49,10 @@ public class CategoryDAO extends DAO{
         }
     }
 
-    //Read(조회) 기능
+    // =================================================================
+    // 2. READ SECTION
+    // =================================================================
+
     public List<CategoryDTO> getProjectsByCategory(Connection conn, CategoryDTO categoryDTO) throws SQLException {
         final String READ_SQL = DynamicSQLUtil.generate("SELECT * FROM category WHERE project_id = ({})",
                 Columns.CATEGORY_ID);
@@ -73,7 +78,11 @@ public class CategoryDAO extends DAO{
         return resultList;
     }
 
-    //UPDATE 수정 기능(카테고리 잘못 기입)
+    // =================================================================
+    // 3. UPDATE SECTION
+    // =================================================================
+
+    //카테고리 수정 기능(카테고리 잘못 기입)
     public void update(Connection conn, CategoryDTO categoryDTO) throws SQLException {
         final String UPDATE_SQL = DynamicSQLUtil.generate("UPDATE category SET ({}) WHERE project_id = ({})",
                 Columns.CATEGORY_NAME, Columns.PROJECT_ID);
@@ -85,4 +94,9 @@ public class CategoryDAO extends DAO{
             psmt.executeUpdate();
         }
     }
+
+    // =================================================================
+    // 4. DELETE SECTION
+    // =================================================================
+
 }

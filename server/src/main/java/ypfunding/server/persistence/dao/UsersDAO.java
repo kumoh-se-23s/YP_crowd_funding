@@ -29,6 +29,10 @@ public class UsersDAO extends DAO {
         }
     }
 
+    // =================================================================
+    // 1. CREATE SECTION
+    // =================================================================
+
 
     private void fillDataFromResultSet(UserDTO dto, ResultSet rs) throws SQLException {
         dto.setUserID(rs.getLong(Columns.USER_ID.name));
@@ -40,7 +44,6 @@ public class UsersDAO extends DAO {
         dto.setRegDate(rs.getDate(Columns.REGDATE.name));
     }
 
-    //Create(생성) 기능
     public void insert(Connection conn, UserDTO userDTO) throws SQLException {
         final String INSERT_SQL =
                 "INSERT INTO users (address, name, type, regdate, login_id, password) VALUES (?, ?, ?, ?, ?, ?)";
@@ -58,7 +61,10 @@ public class UsersDAO extends DAO {
         }
     }
 
-    //Read(조회)기능
+    // =================================================================
+    // 2. READ SECTION
+    // =================================================================
+
     public UserDTO getUserById(Connection conn, long id) throws SQLException {
         final String READ_SQL = "SELECT * FROM users WHERE id = ?";
         UserDTO dto = null;
@@ -96,7 +102,10 @@ public class UsersDAO extends DAO {
         return result;
     }
 
-    //Update(수정) 기능
+    // =================================================================
+    // 3. UPDATE SECTION
+    // =================================================================
+
     public void update(Connection conn, UserDTO userDTO) throws SQLException {
         //id(pk), regdate는 수정 불가 type은 수정 허용하긴 해야하려나?
         final String UPDATE_SQL = "UPDATE users SET address = ?, name = ?, type = ?, login_id = ?, password = ? WHERE id = ?";
@@ -113,6 +122,10 @@ public class UsersDAO extends DAO {
             psmt.executeUpdate();
         }
     }
+
+    // =================================================================
+    // 4. DELETE SECTION
+    // =================================================================
 
     //Delete(삭제) 기능
     //아마 update로 삭제된 유저 덮을거 같긴한데 혹시 모를 삭제 대비로 만들긴 함

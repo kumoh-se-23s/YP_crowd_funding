@@ -29,6 +29,10 @@ public class ReviewsDAO extends DAO{
         //TODO
     }
 
+    // =================================================================
+    // 1. CREATE SECTION
+    // =================================================================
+
     public void insert(Connection conn, ReviewDTO reviewDTO) throws SQLException {
         String sql = DynamicSQLUtil.generate("INSERT INTO reviews ({}) VALUES ({})",
                 Columns.FUND_ID, Columns.STAR, Columns.CONTENT, Columns.DATE);
@@ -43,6 +47,11 @@ public class ReviewsDAO extends DAO{
             psmt.executeUpdate();
         }
     }
+
+    // =================================================================
+    // 2. READ SECTION
+    // =================================================================
+
     //Read(조회) 리뷰는 해당 상품에 대해 전체 조회가 기본이니 전체 조회로 만들겟음
     public List<ReviewDTO> findAll(Connection conn, long projectId) throws SQLException {
         final String FIND_ALL_SQL = "SELECT * FROM review WHERE project_id = ?";
@@ -65,6 +74,11 @@ public class ReviewsDAO extends DAO{
         }
         return result;
     }
+
+    // =================================================================
+    // 3. UPDATE SECTION
+    // =================================================================
+
 //
 //    //Update(수정) 기능
 //    public void update(Connection conn, ReviewDTO reviewDTO) throws SQLException {
@@ -81,7 +95,10 @@ public class ReviewsDAO extends DAO{
 //        }
 //    }
 
-    //delete(삭제) 기능
+    // =================================================================
+    // 4. DELETE SECTION
+    // =================================================================
+
     public void delete(Connection conn, long userID, long projectID) throws SQLException {
         final String DELETE_SQL = "DELETE FROM review WHERE user_id = ?  AND project_id = ?";
 

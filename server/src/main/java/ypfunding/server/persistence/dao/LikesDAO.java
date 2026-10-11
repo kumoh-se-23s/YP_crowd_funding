@@ -28,8 +28,11 @@ public class LikesDAO extends DAO {
         //TODO
     }
 
+    // =================================================================
+    // 1. CREATE SECTION
+    // =================================================================
 
-    //Create(생성) 좋아요 추가
+    //좋아요 추가
     public void insert(Connection conn, LikeDTO likeDTO) throws SQLException {
         final String INSERT_SQL =
                 "INSERT INTO likes (user_id, project_id) VALUES (?, ?)";
@@ -43,18 +46,9 @@ public class LikesDAO extends DAO {
         }
     }
 
-    //Delete 좋아요 취소
-    public void delete(Connection conn, long userId, long projectId) throws SQLException {
-        final String DELETE_SQL = "DELETE FROM likes WHERE user_id = ? AND project_id = ?";
-
-        try ( PreparedStatement psmt = conn.prepareStatement(DELETE_SQL)) {
-
-            psmt.setLong(1, userId);
-            psmt.setLong(2, projectId);
-
-            psmt.executeUpdate();
-        }
-    }
+    // =================================================================
+    // 2. READ SECTION
+    // =================================================================
 
     //Read, 전체 좋아요 개수 조회 기능
     public int getLikeCount(Connection conn, long projectId) throws SQLException {
@@ -74,4 +68,21 @@ public class LikesDAO extends DAO {
 
     //단일 인원 좋아요 기능 필요??
     //update는 필요 X로 판단.
+
+    // =================================================================
+    // 3. DELETE SECTION
+    // =================================================================
+
+    //좋아요 취소
+    public void delete(Connection conn, long userId, long projectId) throws SQLException {
+        final String DELETE_SQL = "DELETE FROM likes WHERE user_id = ? AND project_id = ?";
+
+        try ( PreparedStatement psmt = conn.prepareStatement(DELETE_SQL)) {
+
+            psmt.setLong(1, userId);
+            psmt.setLong(2, projectId);
+
+            psmt.executeUpdate();
+        }
+    }
 }

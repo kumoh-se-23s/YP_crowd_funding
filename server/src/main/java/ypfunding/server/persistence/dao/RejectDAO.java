@@ -32,8 +32,11 @@ public class RejectDAO extends DAO{
         //TODO
     }
 
+    // =================================================================
+    // 1. CREATE SECTION
+    // =================================================================
 
-    //Create(생성) 기능
+
     public void insert(Connection conn, RejectDTO rejectDTO) throws SQLException {
         final String INSERT_SQL =
                 "INSERT INTO failReason (project_id, reason, date) VALUES (?, ?, ?)";
@@ -48,7 +51,10 @@ public class RejectDAO extends DAO{
         }
     }
 
-    //Read(조회) 기능
+    // =================================================================
+    // 2. READ SECTION
+    // =================================================================
+
     //얘는 일반적으로 프로젝트에서 가져와야하는거 같으니 조회기준을 projectId로 전체 조회
     //단일 조회는 필요하려나?
     public List<RejectDTO> getFailReasons(Connection conn, long projectId) throws SQLException {
@@ -74,6 +80,11 @@ public class RejectDAO extends DAO{
         }
         return resultList;
     }
+
+    // =================================================================
+    // 3. UPDATE SECTION
+    // =================================================================
+
     //Update는 오타 대비로 만들어둠
     public void update(Connection conn, RejectDTO rejectDTO) throws SQLException {
         //reason은 내용 수정, id는 수정할 대상 지정
@@ -87,6 +98,10 @@ public class RejectDAO extends DAO{
             psmt.executeUpdate();
         }
     }
+
+    // =================================================================
+    // 4. DELETE SECTION
+    // =================================================================
 
     //Delete 펀딩이 종료 되었을 때 자원관리를 위해 밀어주는 용도로 필요할 듯
     public void delete(Connection conn, long projectId) throws SQLException {
