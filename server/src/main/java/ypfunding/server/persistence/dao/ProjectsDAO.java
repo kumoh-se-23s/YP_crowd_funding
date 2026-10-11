@@ -4,6 +4,7 @@ import ypfunding.common.dto.ProjectDTO;
 import ypfunding.server.util.DynamicSQLUtil;
 
 import java.sql.*;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,15 +32,9 @@ public class ProjectsDAO extends DAO {
         }
     }
 
-    private void fillDataFromResultSet(ProjectDTO projectDTO, PreparedStatement psmt) throws SQLException {
-        psmt.setString(1, projectDTO.getTitle());
-        psmt.setInt(2, projectDTO.getDuration());
-        psmt.setDate(3, new Date(projectDTO.getStartDate().getTime()));
-        psmt.setLong(4, projectDTO.getGoal());
-        psmt.setLong(5,projectDTO.getUserId());
-        psmt.setString(6,projectDTO.getApprovalStatus().name());
-    }
-    //Create(생성) 좋아요 추가
+    // =================================================================
+    // 1. CREATE SECTION
+    // =================================================================
 
     //endDate는 유도속성으로 insert에서는 제외
     public void insert(Connection conn, ProjectDTO projectDTO) throws SQLException {
@@ -48,43 +43,54 @@ public class ProjectsDAO extends DAO {
                 Columns.START_DATE, Columns.DURATION, Columns.APPROVAL_STATUS);
 
         try (PreparedStatement ps = conn.prepareStatement(INSERT_SQL)) {
-            ps.setLong(1, projectDTO.getUserId());
-            ps.setString(2, projectDTO.getTitle());
-            ps.setString(3, projectDTO.getDescription());
-            ps.setLong(4, projectDTO.getGoal());
-            ps.setInt(5, projectDTO.getDuration());
-            //기본 insert때 pending으로 지정
-            ps.setString(6, ProjectDTO.ApprovalStatus.PENDING.name());
-
+            setInsertParameters(ps, projectDTO);
             ps.executeUpdate();
         }
     }
-    public ProjectDTO findById(Connection conn, ProjectDTO projectDTO) throws SQLException {
-        final String FIND_BY_ID_SQL = DynamicSQLUtil.generate("SELECT * FROM projects WHERE project_id = ({})",
-                Columns.PROJECT_ID);
+    //insert 내부 파라미터 설정
+    private void setInsertParameters(PreparedStatement ps, ProjectDTO projectDTO) throws SQLException {
+        ps.setLong(1, projectDTO.getUserId());
+        ps.setString(2, projectDTO.getTitle());
+        ps.setString(3, projectDTO.getDescription());
+        ps.setLong(4, projectDTO.getGoal());
+        ps.setObject(5, projectDTO.getStartDate());
+        ps.setInt(6, projectDTO.getDuration());
+        //기본 insert때 pending으로 지정
+        ps.setString(7, ProjectDTO.ApprovalStatus.PENDING.name());
+    }
+
+    private void fillDataFromResultSet(ProjectDTO projectDTO, PreparedStatement psmt) throws SQLException {
+        psmt.setString(1, projectDTO.getTitle());
+        psmt.setInt(2, projectDTO.getDuration());
+        psmt.setObject(3, projectDTO.getStartDate());
+        psmt.setLong(4, projectDTO.getGoal());
+        psmt.setLong(5,projectDTO.getUserId());
+        psmt.setString(6,projectDTO.getApprovalStatus().name());
+    }
+
+    // =================================================================
+    // 2. READ SECTION
+    // =================================================================
+
+    //프로젝트ID를 통해 상세 조회
+    //무거운 dto말고 projectId를 넘겨 받아서 optimize
+    public ProjectDTO findById(Connection conn, long projectId) throws SQLException {
+        final String FIND_BY_ID_SQL = "SELECT * FROM projects WHERE project_id = ?";
         ProjectDTO dto = null;
 
-        try (PreparedStatement psmt = conn.prepareStatement(FIND_BY_ID_SQL)) {
-            psmt.setLong(1, projectDTO.getProjectId());
+        try (PreparedStatement ps = conn.prepareStatement(FIND_BY_ID_SQL)) {
+            ps.setLong(1, projectId);
 
-
-            try (ResultSet rs = psmt.executeQuery()) {
+            try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    dto = new ProjectDTO();
-                    dto.setProjectId(rs.getLong("id"));
-                    dto.setTitle(rs.getString("title"));
-                    dto.setDuration(rs.getInt("duration"));
-                    dto.setStartDate(rs.getDate("startDate"));
-                    dto.setGoal(rs.getLong("goal"));
-                    dto.setUserId(rs.getLong("writerId"));
-                    dto.setApprovalStatus(ProjectDTO.ApprovalStatus.valueOf(rs.getString("approvalStatus")));
-                    return dto;
-
+                    return toDTO(rs);
                 }
+                return null;
             }
         }
-        return dto;
     }
+
+    //전체 조회 기능
     public List<ProjectDTO> getAllProjects(Connection conn) throws SQLException {
         final String sql = "select * from projects";
         List<ProjectDTO> result = new ArrayList<>();
@@ -98,28 +104,84 @@ public class ProjectsDAO extends DAO {
                 dto.setUserId(rs.getLong(Columns.USER_ID.name));
                 dto.setTitle(rs.getString(Columns.TITLE.name));
                 dto.setDuration(rs.getInt(Columns.DURATION.name));
-                dto.setStartDate(rs.getDate(Columns.START_DATE.name));
+                dto.setStartDate(rs.getObject("start_date", LocalDateTime.class));
                 dto.setGoal(rs.getLong(Columns.GOAL.name));
                 dto.setApprovalStatus(ProjectDTO.ApprovalStatus.valueOf(rs.getString(Columns.APPROVAL_STATUS.name)));
 
                 result.add(dto);
+                //이거로 해도 될듯요
+                //result.add(toDTO(rs));
             }
         }
         return result;
     }
 
+    private ProjectDTO toDTO(ResultSet rs) throws SQLException {
+        ProjectDTO dto = new ProjectDTO();
+        dto.setProjectId(rs.getLong("project_id"));
+        dto.setUserId(rs.getLong("user_id"));
+        dto.setTitle(rs.getString("title"));
+        dto.setDescription(rs.getString("description"));
+        dto.setGoal(rs.getLong("goal"));
+        dto.setDuration(rs.getInt("duration"));
+        dto.setApprovalStatus(ProjectDTO.ApprovalStatus.valueOf(rs.getString("approvalStatus")));
 
-    //Update(수정) 기능
-    public void update(Connection conn, ProjectDTO projectDTO) throws SQLException {
-        final String UPDATE_SQL = "UPDATE projects SET title = ?, duration = ?, startDate = ?, goal = ?, writerId = ?, approvalStatus = ?  WHERE id = ?";
+        dto.setStartDate(rs.getObject("start_date", LocalDateTime.class));
+        dto.setEndDate(rs.getObject("end_date", LocalDateTime.class));
 
-        try (PreparedStatement psmt = conn.prepareStatement(UPDATE_SQL)) {
-            fillDataFromResultSet(projectDTO, psmt);
-            psmt.setLong(7,projectDTO.getProjectId());
+        return dto;
+    }
 
-            psmt.executeUpdate();
+    // =================================================================
+    // 3. UPDATE SECTION
+    // =================================================================
+
+    //거절된 프로젝트를 수정하고 다시 PENDING 상태로 변경
+    public int updateRejected(Connection conn, ProjectDTO projectDTO) throws SQLException {
+        String sql = """
+                UPDATE projects 
+                   SET title = ?, description = ?, goal = ?, duration = ?, approval_status = ?
+                 WHERE project_id = ? AND user_id = ? AND approval_status = 'REJECTED'
+                """;
+
+        try (PreparedStatement psmt = conn.prepareStatement(sql)) {
+            setUpdateParameters(psmt, projectDTO);
+
+            return psmt.executeUpdate();
         }
     }
+    //거절로 update 하는 메소드
+    public int updateStatusToRejected(Connection conn, long projectId) throws SQLException {
+        String sql = """
+                UPDATE projects 
+                   SET approval_status = 'REJECTED'
+                 WHERE project_id = ? AND approval_status = 'PENDING'
+                """;
+
+        try (PreparedStatement psmt = conn.prepareStatement(sql)) {
+            psmt.setLong(1, projectId);
+
+            return psmt.executeUpdate();
+        }
+    }
+
+    private void setUpdateParameters(PreparedStatement psmt, ProjectDTO projectDTO) throws SQLException {
+        psmt.setString(1, projectDTO.getTitle());
+        psmt.setString(2, projectDTO.getDescription());
+        psmt.setLong(3, projectDTO.getGoal());
+        psmt.setInt(4, projectDTO.getDuration());
+
+        // PENDING으로 업데이트
+        psmt.setString(5, ProjectDTO.ApprovalStatus.PENDING.name());
+
+        // WHERE 조건 바인딩
+        psmt.setLong(6, projectDTO.getProjectId());
+        psmt.setLong(7, projectDTO.getUserId()); // 본인 소유 검증
+    }
+
+    // =================================================================
+    // 4. DELETE SECTION
+    // =================================================================
 
     public void delete(Connection conn, ProjectDTO projectDTO) throws SQLException {
         final String DELETE_SQL = "DELETE FROM projects WHERE id = ?";
