@@ -119,16 +119,16 @@ public class ProjectsDAO extends DAO {
     //ResultSet 묶기
     private ProjectDTO toDTO(ResultSet rs) throws SQLException {
         ProjectDTO dto = new ProjectDTO();
-        dto.setProjectId(rs.getLong("project_id"));
-        dto.setUserId(rs.getLong("user_id"));
-        dto.setTitle(rs.getString("title"));
-        dto.setDescription(rs.getString("description"));
-        dto.setGoal(rs.getLong("goal"));
-        dto.setDuration(rs.getInt("duration"));
-        dto.setApprovalStatus(ProjectDTO.ApprovalStatus.valueOf(rs.getString("approvalStatus")));
+        dto.setProjectId(rs.getLong(Columns.PROJECT_ID));
+        dto.setUserId(rs.getLong(Columns.USER_ID));
+        dto.setTitle(rs.getString(Columns.TITLE));
+        dto.setDescription(rs.getString(Columns.DESCRIPTION));
+        dto.setGoal(rs.getLong(Columns.GOAL));
+        dto.setDuration(rs.getInt(Columns.DURATION));
+        dto.setApprovalStatus(ProjectDTO.ApprovalStatus.valueOf(rs.getString(Columns.APPROVAL_STATUS)));
 
-        dto.setStartDate(rs.getObject("start_date", LocalDateTime.class));
-        dto.setEndDate(rs.getObject("end_date", LocalDateTime.class));
+        dto.setStartDate(rs.getObject(Columns.START_DATE, LocalDateTime.class));
+        dto.setEndDate(rs.getObject(Columns.END_DATE, LocalDateTime.class));
 
         return dto;
     }
