@@ -14,5 +14,5 @@ public class ImageDTO {
     private Long rewardId;
     private String name;
     private String type;
-    private Blob imageData;
+    private Byte[] imageData;
 }
