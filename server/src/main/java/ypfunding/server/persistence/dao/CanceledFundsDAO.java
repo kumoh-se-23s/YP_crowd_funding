@@ -25,7 +25,7 @@ public class CanceledFundsDAO extends DAO{
         }
     }
 
-    public void fillDataFromResultSet(CanceledFundDTO dto, ResultSet rs){
+    private void fillDataFromResultSet(CanceledFundDTO dto, ResultSet rs){
         //TODO
     }
     // =================================================================

@@ -25,7 +25,7 @@ public class ReviewsDAO extends DAO{
         }
     }
 
-    public void fillDataFromResultSet(ReviewDTO dto, ResultSet rs){
+    private void fillDataFromResultSet(ReviewDTO dto, ResultSet rs){
         //TODO
     }
 

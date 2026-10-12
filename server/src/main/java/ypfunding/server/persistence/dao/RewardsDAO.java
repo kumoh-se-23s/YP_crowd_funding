@@ -29,7 +29,7 @@ public class RewardsDAO extends DAO {
     }
 
 
-    public void fillDataFromResultSet(RewardDTO dto, PreparedStatement psmt) throws SQLException {
+    private void fillDataFromResultSet(RewardDTO dto, PreparedStatement psmt) throws SQLException {
 
     }
 

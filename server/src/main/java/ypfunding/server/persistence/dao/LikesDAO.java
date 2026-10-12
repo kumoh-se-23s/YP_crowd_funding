@@ -24,7 +24,7 @@ public class LikesDAO extends DAO {
         }
     }
 
-    public void fillDataFromResultSet(LikeDTO dto, ResultSet rs){
+    private void fillDataFromResultSet(LikeDTO dto, ResultSet rs){
         //TODO
     }
 

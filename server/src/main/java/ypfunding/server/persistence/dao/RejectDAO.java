@@ -28,7 +28,7 @@ public class RejectDAO extends DAO{
         }
     }
 
-    public void fillDataFromResultSet(RejectDTO dto, ResultSet rs){
+    private void fillDataFromResultSet(RejectDTO dto, ResultSet rs){
         //TODO
     }
 

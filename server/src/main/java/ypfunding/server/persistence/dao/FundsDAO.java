@@ -24,7 +24,7 @@ public class FundsDAO extends DAO{
         }
     }
 
-    public void fillDataFromResultSet(FundDTO dto, ResultSet rs){
+    private void fillDataFromResultSet(FundDTO dto, ResultSet rs){
         //TODO
     }
 

@@ -25,7 +25,7 @@ public class ImageDAO extends DAO{
         }
     }
 
-    public void fillDataFromResultSet(ImageDTO dto, ResultSet rs){
+    private void fillDataFromResultSet(ImageDTO dto, ResultSet rs){
         //TODO
     }
     // =================================================================
