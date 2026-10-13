@@ -5,6 +5,7 @@ import ypfunding.server.persistence.dao.Tables;
 import ypfunding.server.persistence.dao.dynamicsql.AccumulativePreparedStatement;
 import ypfunding.server.persistence.dao.dynamicsql.col.ColumnSelector;
 import ypfunding.server.persistence.dao.dynamicsql.log.SQLLogger;
+import ypfunding.server.persistence.dao.dynamicsql.table.PredefinedReferenceTable;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -16,7 +17,8 @@ public final class SQLInsert extends SQLBuilder<Integer> {
     private final Tables table;
     private final List<ColumnsEnum> columns = new ArrayList<>();
 
-    public SQLInsert(Tables table) {
+    public SQLInsert(Tables table, PredefinedReferenceTable... predefined) {
+        super(predefined);
         this.table = table;
     }
 
@@ -29,14 +31,14 @@ public final class SQLInsert extends SQLBuilder<Integer> {
 
     @Override
     public String toString() {
-        return "insert into " + table +
+        return PredefinedReferenceTable.makeQuery(predefined) + " insert into " + table +
                ColumnSelector.buildColumnParenthesesWithValues(columns);
     }
 
     @Override
     public Integer execute(Connection conn) throws SQLException {
         SQLLogger.logQuery(this);
-        AccumulativePreparedStatement preparedStatement = new AccumulativePreparedStatement(conn, toString());
+        AccumulativePreparedStatement preparedStatement = new AccumulativePreparedStatement(conn, PredefinedReferenceTable.makeQuery(predefined) + " " + this);
         preparedStatement.addParams(userParameters);
         return preparedStatement.applyParam().executeUpdate();
     }

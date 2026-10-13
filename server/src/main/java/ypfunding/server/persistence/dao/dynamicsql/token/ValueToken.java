@@ -3,7 +3,7 @@ package ypfunding.server.persistence.dao.dynamicsql.token;
 import java.util.Arrays;
 import java.util.List;
 
-public abstract sealed class ValueToken permits BuiltinFunctionToken, ColumnValueToken, CombinedValueToken, CorrelatedTableValueToken, ScalarSubqueryReferenceToken, SetValueToken, SubqueryToken, CorrelativeTableColumnToken, UncorrelatedTableValueToken, UserValueToken, ValueExpressionToken, WildcardValueToken {
+public abstract sealed class ValueToken permits BuiltinFunctionToken, ColumnValueToken, CombinedValueToken, ScalarSubqueryReferenceToken, SetValueToken, SubqueryToken, TableRefColumnToken, UserValueToken, ValueExpressionToken, WildcardValueToken {
 
     protected ValueToken() {
     }

@@ -1,15 +1,15 @@
 package ypfunding.server.persistence.dao.dynamicsql.token;
 
 import ypfunding.server.persistence.dao.ColumnsEnum;
-import ypfunding.server.persistence.dao.dynamicsql.table.DirectReferenceTable;
+import ypfunding.server.persistence.dao.dynamicsql.table.ReferenceTable;
 
 import java.util.List;
 
-public final class CorrelativeTableColumnToken extends ValueToken{
+public final class TableRefColumnToken extends ValueToken{
 
-    private final DirectReferenceTable table;
+    private final ReferenceTable table;
     private final ColumnsEnum column;
-    public CorrelativeTableColumnToken(DirectReferenceTable table, ColumnsEnum column){
+    public TableRefColumnToken(ReferenceTable table, ColumnsEnum column){
         this.table = table;
         this.column = column;
     }

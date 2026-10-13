@@ -10,7 +10,7 @@ import ypfunding.server.persistence.dao.dynamicsql.table.DirectReferenceTable;
 import ypfunding.server.persistence.dao.dynamicsql.table.JoinType;
 import ypfunding.server.persistence.dao.dynamicsql.table.JoinedTable;
 import ypfunding.server.persistence.dao.dynamicsql.token.ColumnValueToken;
-import ypfunding.server.persistence.dao.dynamicsql.token.CorrelativeTableColumnToken;
+import ypfunding.server.persistence.dao.dynamicsql.token.TableRefColumnToken;
 import ypfunding.server.persistence.dao.dynamicsql.token.UserValueToken;
 
 import java.sql.Connection;
@@ -70,7 +70,7 @@ public class ReviewsDAO extends DAO {
         try (ResultSet rs = SQLSelect.allColumns(
                         new JoinedTable(reviewsTableReference, JoinType.LEFT, fundsTableReference,
                                 new BasicCondition(
-                                        new CorrelativeTableColumnToken(fundsTableReference, FundsDAO.Columns.PROJECT_ID),
+                                        new TableRefColumnToken(fundsTableReference, FundsDAO.Columns.PROJECT_ID),
                                         ArithmeticConditionOperator.EQ,
                                         new UserValueToken(projectId)
                                 )

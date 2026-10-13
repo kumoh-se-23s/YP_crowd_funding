@@ -85,7 +85,9 @@ public class CategoryDAO extends DAO {
     //카테고리 수정 기능(카테고리 잘못 기입)
     public void update(Connection conn, CategoryDTO categoryDTO) throws SQLException {
         new SQLUpdate(Tables.CATEGORY,
-                new UpdateSelector(Columns.CATEGORY_NAME, new UserValueToken(categoryDTO.getCategoryName()))         )
+                new UpdateSelector[]{
+                        new UpdateSelector(Columns.CATEGORY_NAME, new UserValueToken(categoryDTO.getCategoryName()))
+        })
                 .addCondition(new BasicCondition(
                         new UserValueToken(categoryDTO.getProjectId()),
                         ArithmeticConditionOperator.EQ,

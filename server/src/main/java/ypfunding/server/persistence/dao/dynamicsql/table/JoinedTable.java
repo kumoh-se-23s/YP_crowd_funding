@@ -1,6 +1,7 @@
 package ypfunding.server.persistence.dao.dynamicsql.table;
 
 import ypfunding.server.persistence.dao.dynamicsql.condition.Condition;
+import ypfunding.server.persistence.dao.dynamicsql.token.*;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -12,28 +13,32 @@ public final class JoinedTable extends ReferenceTable{
     private final JoinType type;
     private final ReferenceTable rhs;
     private final Condition joinCondition;
-    private static final String VAR_PREFIX = "__jt";
-    private static int cnt = 0;
-    private final int num;
 
     public JoinedTable(ReferenceTable lhs, JoinType type, ReferenceTable rhs, Condition joinCondition) {
         this.lhs = lhs;
         this.type = type;
         this.rhs = rhs;
-        cnt = (cnt + 1) % 1_000_000_007; //arithmetic overflow protection
-        this.num = cnt;
         this.joinCondition = joinCondition;
 
     }
 
+    @Override
+    public String getVarPrefix() {
+        return "__jt";
+    }
 
-    public String getVarName() {
-        return VAR_PREFIX + num;
+
+    private boolean noParenthesesRequired(ReferenceTable table){
+        return table instanceof DirectReferenceTable || table instanceof PredefinedReferenceTable;
     }
 
     @Override
     public String toString() {
-        return "(" + lhs + ") " + type + " (" + rhs + ") as " + getVarName() + " on " + joinCondition;
+
+        String lhsStr = noParenthesesRequired(lhs) ? lhs.toString() : ("(" + lhs + ")");
+        String rhsStr = noParenthesesRequired(rhs) ? rhs.toString() : ("(" + rhs + ")");
+
+        return "(" + lhsStr + " " + type + " " + rhsStr + " on " + joinCondition + ") as " + getVarName();
     }
 
     @Override

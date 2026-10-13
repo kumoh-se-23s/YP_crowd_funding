@@ -4,6 +4,7 @@ import ypfunding.server.persistence.dao.dynamicsql.AccumulativePreparedStatement
 import ypfunding.server.persistence.dao.dynamicsql.condition.Condition;
 import ypfunding.server.persistence.dao.dynamicsql.log.SQLLogger;
 import ypfunding.server.persistence.dao.dynamicsql.table.DirectReferenceTable;
+import ypfunding.server.persistence.dao.dynamicsql.table.PredefinedReferenceTable;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -12,7 +13,8 @@ public final class SQLDelete extends SQLBuilder<Integer> {
 
     private final DirectReferenceTable referenceTable;
 
-    public SQLDelete(DirectReferenceTable referenceTable) {
+    public SQLDelete(DirectReferenceTable referenceTable, PredefinedReferenceTable... predefined) {
+        super(predefined);
         this.referenceTable = referenceTable;
         this.userParameters.addAll(referenceTable.getUserParameters());
     }
@@ -24,13 +26,13 @@ public final class SQLDelete extends SQLBuilder<Integer> {
 
     @Override
     public String toString() {
-        return "delete from " + referenceTable + Condition.whereChain(conditions);
+        return PredefinedReferenceTable.makeQuery(predefined) + " delete from " + referenceTable + Condition.whereChain(conditions);
     }
 
     @Override
     public Integer execute(Connection conn) throws SQLException {
         SQLLogger.logQuery(this);
-        AccumulativePreparedStatement preparedStatement = new AccumulativePreparedStatement(conn, toString());
+        AccumulativePreparedStatement preparedStatement = new AccumulativePreparedStatement(conn, PredefinedReferenceTable.makeQuery(predefined) + " " + this);
         preparedStatement.addParams(userParameters);
         return preparedStatement.applyParam().executeUpdate();
     }

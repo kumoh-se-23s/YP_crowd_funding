@@ -1,7 +1,7 @@
 package ypfunding.server.persistence.dao.dynamicsql.condition;
 
 import ypfunding.server.persistence.dao.dynamicsql.op.ConditionOperator;
-import ypfunding.server.persistence.dao.dynamicsql.token.ValueToken;
+import ypfunding.server.persistence.dao.dynamicsql.token.*;
 
 import java.util.List;
 import java.util.stream.Stream;
@@ -18,8 +18,15 @@ public final class BasicCondition extends Condition {
         this.rhs = rhs;
     }
 
+    private boolean noParenthesesRequired(ValueToken token){
+        return token instanceof UserValueToken || token instanceof ColumnValueToken || token instanceof BuiltinFunctionToken
+               || token instanceof WildcardValueToken || token instanceof TableRefColumnToken;
+    }
+
     @Override
     public String toString() {
-        return "(" + lhs + ")" + operator + "(" + rhs + ")";
+        String lhsStr = noParenthesesRequired(lhs) ? lhs.toString() : ("(" + lhs + ")");
+        String rhsStr = noParenthesesRequired(rhs) ? rhs.toString() : ("(" + rhs + ")");
+        return lhsStr + operator + rhsStr;
     }
 }

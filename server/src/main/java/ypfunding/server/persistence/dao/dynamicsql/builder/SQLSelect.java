@@ -6,6 +6,7 @@ import ypfunding.server.persistence.dao.dynamicsql.col.ColumnSelector;
 import ypfunding.server.persistence.dao.dynamicsql.condition.Condition;
 import ypfunding.server.persistence.dao.dynamicsql.log.SQLLogger;
 import ypfunding.server.persistence.dao.dynamicsql.table.DirectReferenceTable;
+import ypfunding.server.persistence.dao.dynamicsql.table.PredefinedReferenceTable;
 import ypfunding.server.persistence.dao.dynamicsql.table.ReferenceTable;
 
 import java.sql.Connection;
@@ -17,7 +18,8 @@ public final class SQLSelect extends SQLBuilder<ResultSet> {
     private final List<ColumnSelector> columnSelectors;
     private final ReferenceTable referenceTable;
 
-    public SQLSelect(List<ColumnSelector> columnSelectors, ReferenceTable referenceTable) {
+    public SQLSelect(List<ColumnSelector> columnSelectors, ReferenceTable referenceTable, PredefinedReferenceTable... predefined) {
+        super(predefined);
         this.columnSelectors = columnSelectors;
         this.userParameters.addAll(columnSelectors.stream().map(ColumnSelector::getUserParameters).flatMap(List::stream).toList());
 
@@ -51,7 +53,8 @@ public final class SQLSelect extends SQLBuilder<ResultSet> {
     @Override
     public ResultSet execute(Connection conn) throws SQLException {
         SQLLogger.logQuery(this);
-        AccumulativePreparedStatement preparedStatement = new AccumulativePreparedStatement(conn, toString());
+        AccumulativePreparedStatement preparedStatement = new AccumulativePreparedStatement(conn,
+                PredefinedReferenceTable.makeQuery(predefined) + " " + this);
         preparedStatement.addParams(userParameters);
         return preparedStatement.applyParam().executeQuery();
     }

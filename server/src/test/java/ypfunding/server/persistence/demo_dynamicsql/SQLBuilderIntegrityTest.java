@@ -12,10 +12,7 @@ import ypfunding.server.persistence.dao.dynamicsql.col.ScalarSubqueryColumnSelec
 import ypfunding.server.persistence.dao.dynamicsql.condition.BasicCondition;
 import ypfunding.server.persistence.dao.dynamicsql.log.SQLLogger;
 import ypfunding.server.persistence.dao.dynamicsql.op.ArithmeticConditionOperator;
-import ypfunding.server.persistence.dao.dynamicsql.table.DirectReferenceTable;
-import ypfunding.server.persistence.dao.dynamicsql.table.InlineViewReferenceTable;
-import ypfunding.server.persistence.dao.dynamicsql.table.JoinType;
-import ypfunding.server.persistence.dao.dynamicsql.table.JoinedTable;
+import ypfunding.server.persistence.dao.dynamicsql.table.*;
 import ypfunding.server.persistence.dao.dynamicsql.token.*;
 import ypfunding.server.support.DbTestBase;
 
@@ -27,8 +24,6 @@ public class SQLBuilderIntegrityTest extends DbTestBase {
     @DisplayName("SQL Builder 무결성 검사")
     public void test() {
         // 메인 쿼리의 테이블 참조
-        var project = new DirectReferenceTable(Tables.PROJECTS);
-        var user = new DirectReferenceTable(Tables.USERS);
 
 // 프로젝트 조회용 Inline View
         var projectView = new InlineViewReferenceTable(
@@ -63,9 +58,9 @@ public class SQLBuilderIntegrityTest extends DbTestBase {
         var joined = new JoinedTable(
                 projectView,
                 JoinType.INNER,
-                user,
+                new DirectReferenceTable(Tables.USERS),
                 new BasicCondition(
-                        new ColumnValueToken(ProjectsDAO.Columns.USER_ID),
+                        new TableRefColumnToken(projectView, ProjectsDAO.Columns.USER_ID),
                         ArithmeticConditionOperator.EQ,
                         new ColumnValueToken(UsersDAO.Columns.USER_ID)
                 )
@@ -81,14 +76,6 @@ public class SQLBuilderIntegrityTest extends DbTestBase {
                 correlatedProject
         ).addCondition(
                 BasicCondition.and(
-                        new BasicCondition(
-                                new CorrelativeTableColumnToken(
-                                        project,
-                                        ProjectsDAO.Columns.PROJECT_ID
-                                ),
-                                ArithmeticConditionOperator.EQ,
-                                new ColumnValueToken(ProjectsDAO.Columns.PROJECT_ID)
-                        ),
                         new BasicCondition(
                                 new ColumnValueToken(ProjectsDAO.Columns.APPROVAL_STATUS),
                                 ArithmeticConditionOperator.EQ,
@@ -134,25 +121,22 @@ public class SQLBuilderIntegrityTest extends DbTestBase {
         ).addCondition(
                 BasicCondition.and(
                         new BasicCondition(
-                                new CorrelativeTableColumnToken(
-                                        user,
-                                        UsersDAO.Columns.USER_ID
-                                ),
+                                new UserValueToken(123),
                                 ArithmeticConditionOperator.EQ,
                                 new ColumnValueToken(ProjectsDAO.Columns.USER_ID)
                         ),
                         new BasicCondition(
                                 new ColumnValueToken(ProjectsDAO.Columns.PROJECT_ID),
                                 ArithmeticConditionOperator.EQ,
-                                new CorrelativeTableColumnToken(
-                                        project,
-                                        ProjectsDAO.Columns.PROJECT_ID
-                                )
+                                new UserValueToken(999)
                         )
                 )
         );
 
 // 최종 조회
+        var users = new DirectReferenceTable(Tables.USERS);
+        var projects = new DirectReferenceTable(Tables.PROJECTS);
+
         SQLBuilder<?> builder = new SQLSelect(
                 List.of(
                         new DirectColumnSelector(ProjectsDAO.Columns.PROJECT_ID),
@@ -169,14 +153,11 @@ public class SQLBuilderIntegrityTest extends DbTestBase {
                                         List.of(
                                                 new DirectColumnSelector(UsersDAO.Columns.LOGIN_ID)
                                         ),
-                                        new DirectReferenceTable(Tables.USERS)
-                                ).addCondition(
-                                        new BasicCondition(
-                                                new ColumnValueToken(UsersDAO.Columns.USER_ID),
-                                                ArithmeticConditionOperator.EQ,
-                                                new CorrelativeTableColumnToken(
-                                                        project,
-                                                        ProjectsDAO.Columns.USER_ID
+                                        new JoinedTable(users, JoinType.LEFT, projects,
+                                                new BasicCondition(
+                                                        new TableRefColumnToken(users, UsersDAO.Columns.USER_ID),
+                                                        ArithmeticConditionOperator.EQ,
+                                                        new TableRefColumnToken(projects, ProjectsDAO.Columns.USER_ID)
                                                 )
                                         )
                                 ),

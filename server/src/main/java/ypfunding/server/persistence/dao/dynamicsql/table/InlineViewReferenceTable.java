@@ -10,10 +10,14 @@ public final class InlineViewReferenceTable extends ReferenceTable {
     public InlineViewReferenceTable(SQLSelect query) {
         this.query = query;
     }
+    @Override
+    public String getVarPrefix() {
+        return "__ivt";
+    }
 
     @Override
     public String toString() {
-        return query.toString();
+        return "(" + query.toString() + ") as " + getVarName();
     }
 
     @Override
