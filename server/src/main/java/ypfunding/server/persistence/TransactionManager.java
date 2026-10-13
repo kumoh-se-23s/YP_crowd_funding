@@ -39,7 +39,7 @@ public class TransactionManager {
             } catch (SQLException e) { //db오류
                 rollback(conn, e);
                 throw new DataAccessException("트랜잭션 처리 중 db오류 발생", e);
-            } catch (RuntimeException | Error e) { //businessException 등
+            } catch (Exception e) { //businessException 등
                 rollback(conn, e);
                 throw e;
             } finally {
@@ -50,15 +50,6 @@ public class TransactionManager {
         } finally {
             inTransaction.remove();
         }
-    }
-
-    //리턴 없는 작업
-    public void executeWithoutResult(SqlVoidWork work) {
-        Objects.requireNonNull(work, "work");
-        execute(conn ->  {
-            work.run(conn);
-            return null;
-        });
     }
 
     //롤백 (실패 시 원래 예외에 붙임)
