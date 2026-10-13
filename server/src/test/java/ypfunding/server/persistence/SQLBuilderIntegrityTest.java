@@ -1,4 +1,4 @@
-package ypfunding.server.persistence.demo_dynamicsql;
+package ypfunding.server.persistence;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -12,8 +12,14 @@ import ypfunding.server.persistence.dao.dynamicsql.col.ScalarSubqueryColumnSelec
 import ypfunding.server.persistence.dao.dynamicsql.condition.BasicCondition;
 import ypfunding.server.persistence.dao.dynamicsql.log.SQLLogger;
 import ypfunding.server.persistence.dao.dynamicsql.op.ArithmeticConditionOperator;
-import ypfunding.server.persistence.dao.dynamicsql.table.*;
-import ypfunding.server.persistence.dao.dynamicsql.token.*;
+import ypfunding.server.persistence.dao.dynamicsql.table.DirectReferenceTable;
+import ypfunding.server.persistence.dao.dynamicsql.table.InlineViewReferenceTable;
+import ypfunding.server.persistence.dao.dynamicsql.table.JoinType;
+import ypfunding.server.persistence.dao.dynamicsql.table.JoinedTable;
+import ypfunding.server.persistence.dao.dynamicsql.token.ColumnValueToken;
+import ypfunding.server.persistence.dao.dynamicsql.token.SubqueryToken;
+import ypfunding.server.persistence.dao.dynamicsql.token.TableRefColumnToken;
+import ypfunding.server.persistence.dao.dynamicsql.token.UserValueToken;
 import ypfunding.server.support.DbTestBase;
 
 import java.util.List;
@@ -197,5 +203,6 @@ public class SQLBuilderIntegrityTest extends DbTestBase {
                 );
 
         SQLLogger.logQuery(builder);
+//        assertEquals("", "");
     }
 }
