@@ -3,7 +3,9 @@ package ypfunding.server.persistence.dao.dynamicsql.col;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public abstract sealed class ColumnSelector permits DirectColumnSelector, ScalarSubqueryColumnSelector {
+public abstract sealed class ColumnSelector permits
+        DirectColumnSelector,
+        ScalarSubqueryColumnSelector {
 
     public abstract List<Object> getUserParameters();
 

@@ -4,7 +4,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public abstract sealed class Condition permits BasicCondition, CombinedCondition {
+public abstract sealed class Condition permits
+        BasicCondition,
+        CombinedCondition {
 
     List<Object> userParameters;
 

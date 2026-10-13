@@ -3,12 +3,21 @@ package ypfunding.server.persistence.dao.dynamicsql.token;
 import java.util.Arrays;
 import java.util.List;
 
-public abstract sealed class ValueToken permits BuiltinFunctionToken, CombinedValueToken, CorrelatedTableValueToken, RawValueToken, SetValueToken, SubqueryToken, UncorrelatedTableValueToken, ValueExpressionToken, WildcardValueToken {
+public abstract sealed class ValueToken permits
+        BuiltinFunctionToken,
+        CombinedValueToken,
+        CorrelatedTableValueToken,
+        UserValueToken,
+        SetValueToken,
+        SubqueryToken,
+        UncorrelatedTableValueToken,
+        ValueExpressionToken,
+        WildcardValueToken {
 
     protected ValueToken() {
     }
 
-    public static List<Object> combineUserParameters(ValueToken... tokens){
+    public static List<Object> combineUserParameters(ValueToken... tokens) {
         return Arrays.stream(tokens).flatMap(e -> e.getUserParameters().stream()).toList();
     }
 

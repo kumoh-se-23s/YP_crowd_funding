@@ -6,7 +6,7 @@ import ypfunding.server.persistence.dao.dynamicsql.builder.SQLSelect;
 import ypfunding.server.persistence.dao.dynamicsql.condition.BasicCondition;
 import ypfunding.server.persistence.dao.dynamicsql.op.ArithmeticConditionOperator;
 import ypfunding.server.persistence.dao.dynamicsql.table.DirectReferenceTable;
-import ypfunding.server.persistence.dao.dynamicsql.token.RawValueToken;
+import ypfunding.server.persistence.dao.dynamicsql.token.UserValueToken;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -26,7 +26,7 @@ public class DemoSelectFindUsersByName implements DemoSQL {
                         new BasicCondition(
                                 UsersDAO.Columns.NAME,
                                 ArithmeticConditionOperator.EQ,
-                                new RawValueToken(username)
+                                new UserValueToken(username)
                         )
                 )
                 .execute();

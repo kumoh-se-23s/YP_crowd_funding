@@ -7,7 +7,11 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract sealed class SQLBuilder<T> permits SQLDelete, SQLInsert, SQLSelect, SQLUpdate {
+public abstract sealed class SQLBuilder<T> permits
+        SQLDelete,
+        SQLInsert,
+        SQLSelect,
+        SQLUpdate {
 
     protected final Connection conn;
     protected final List<Condition> conditions = new ArrayList<>();
