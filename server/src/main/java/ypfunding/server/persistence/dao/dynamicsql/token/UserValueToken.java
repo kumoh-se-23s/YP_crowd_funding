@@ -19,7 +19,15 @@ public final class UserValueToken extends ValueToken {
     public List<Object> getUserParameters() {
         // may contain user parameters
         List<Object> r = new ArrayList<>();
-        r.add(value);
+
+        if (value == null) {
+            r.add("null");
+        } else if (value instanceof Number) {
+            r.add(value.toString());
+        } else {
+            r.add("'" + value.toString().replace("'", "''") + "'");
+        }
+
         return r;
     }
 }
