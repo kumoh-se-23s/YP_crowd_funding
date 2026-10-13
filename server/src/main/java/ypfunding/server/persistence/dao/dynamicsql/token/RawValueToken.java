@@ -4,9 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public final class RawValueToken extends ValueToken {
-    private final Number value;
+    private final Object value;
 
-    public RawValueToken(Number value) {
+    public RawValueToken(Object value) {
         this.value = value;
     }
 

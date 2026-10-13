@@ -3,6 +3,8 @@ package ypfunding.server.persistence.dao.dynamicsql.builder;
 import ypfunding.server.persistence.dao.ColumnsEnum;
 import ypfunding.server.persistence.dao.dynamicsql.AccumulativePreparedStatement;
 import ypfunding.server.persistence.dao.dynamicsql.condition.Condition;
+import ypfunding.server.persistence.dao.dynamicsql.log.SQLLogger;
+import ypfunding.server.persistence.dao.dynamicsql.log.Severity;
 import ypfunding.server.persistence.dao.dynamicsql.table.ReferenceTable;
 import ypfunding.server.persistence.dao.dynamicsql.col.UpdateSelector;
 
@@ -47,6 +49,7 @@ public final class SQLUpdate extends SQLBuilder<Integer> {
 
     @Override
     public Integer execute() throws SQLException {
+        SQLLogger.log(Severity.INFO, toString());
         AccumulativePreparedStatement preparedStatement = new AccumulativePreparedStatement(conn, toString());
         preparedStatement.addParams(userParameters);
         return preparedStatement.applyParam().executeUpdate();

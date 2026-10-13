@@ -11,7 +11,7 @@ public final class BasicCondition extends Condition {
     private final ConditionOperator operator;
     private final ValueToken targetValue;
 
-    BasicCondition(ColumnsEnum column, ConditionOperator operator, ValueToken targetValue) {
+    public BasicCondition(ColumnsEnum column, ConditionOperator operator, ValueToken targetValue) {
         super(new ArrayList<>());
         this.column = column;
         this.operator = operator;
