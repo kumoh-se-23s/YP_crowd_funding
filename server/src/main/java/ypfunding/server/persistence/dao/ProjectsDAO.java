@@ -1,7 +1,9 @@
 package ypfunding.server.persistence.dao;
 
 import ypfunding.common.dto.ProjectDTO;
-import ypfunding.server.util.DynamicSQLUtil;
+import ypfunding.server.persistence.dao.dynamicsql.builder.SQLInsert;
+import ypfunding.server.persistence.dao.dynamicsql.builder.SQLSelect;
+import ypfunding.server.persistence.dao.dynamicsql.table.DirectReferenceTable;
 
 import java.sql.*;
 import java.time.LocalDateTime;
@@ -10,7 +12,7 @@ import java.util.List;
 
 public class ProjectsDAO extends DAO {
 
-    public enum Columns implements ColumnsEnum{
+    public enum Columns implements ColumnsEnum {
         PROJECT_ID("project_id"),
         USER_ID("user_id"),
         TITLE("title"),
@@ -22,7 +24,8 @@ public class ProjectsDAO extends DAO {
         APPROVAL_STATUS("approval_status");
 
         private final String name;
-        Columns(String name){
+
+        Columns(String name) {
             this.name = name;
         }
 
@@ -37,8 +40,8 @@ public class ProjectsDAO extends DAO {
         psmt.setInt(2, projectDTO.getDuration());
         psmt.setObject(3, projectDTO.getStartDate());
         psmt.setLong(4, projectDTO.getGoal());
-        psmt.setLong(5,projectDTO.getUserId());
-        psmt.setString(6,projectDTO.getApprovalStatus().name());
+        psmt.setLong(5, projectDTO.getUserId());
+        psmt.setString(6, projectDTO.getApprovalStatus().name());
     }
 
     // =================================================================
@@ -47,25 +50,15 @@ public class ProjectsDAO extends DAO {
 
     //endDate는 유도속성으로 insert에서는 제외
     public void insert(Connection conn, ProjectDTO projectDTO) throws SQLException {
-        final String INSERT_SQL = DynamicSQLUtil.generate("INSERT INTO projects ({}) VALUES ({})",
-                Columns.USER_ID, Columns.TITLE, Columns.DESCRIPTION, Columns.GOAL,
-                Columns.START_DATE, Columns.DURATION, Columns.APPROVAL_STATUS);
-
-        try (PreparedStatement ps = conn.prepareStatement(INSERT_SQL)) {
-            setInsertParameters(ps, projectDTO);
-            ps.executeUpdate();
-        }
-    }
-    //insert 내부 파라미터 설정
-    private void setInsertParameters(PreparedStatement ps, ProjectDTO projectDTO) throws SQLException {
-        ps.setLong(1, projectDTO.getUserId());
-        ps.setString(2, projectDTO.getTitle());
-        ps.setString(3, projectDTO.getDescription());
-        ps.setLong(4, projectDTO.getGoal());
-        ps.setObject(5, projectDTO.getStartDate());
-        ps.setInt(6, projectDTO.getDuration());
-        //기본 insert때 pending으로 지정
-        ps.setString(7, ProjectDTO.ApprovalStatus.PENDING.name());
+        new SQLInsert(Tables.PROJECTS)
+                .addTarget(Columns.USER_ID, projectDTO.getUserId())
+                .addTarget(Columns.TITLE, projectDTO.getTitle())
+                .addTarget(Columns.DESCRIPTION, projectDTO.getDescription())
+                .addTarget(Columns.GOAL, projectDTO.getGoal())
+                .addTarget(Columns.START_DATE, projectDTO.getStartDate())
+                .addTarget(Columns.DURATION, projectDTO.getDuration())
+                .addTarget(Columns.APPROVAL_STATUS, projectDTO.getApprovalStatus())
+                .execute(conn);
     }
 
     // =================================================================
@@ -92,12 +85,13 @@ public class ProjectsDAO extends DAO {
 
     //전체 조회 기능
     public List<ProjectDTO> getAllProjects(Connection conn) throws SQLException {
-        final String sql = "select * from projects";
+
         List<ProjectDTO> result = new ArrayList<>();
 
-        try(Statement statement = conn.createStatement()){
-            ResultSet rs = statement.executeQuery(sql);
-            while(rs.next()){
+        try (ResultSet rs = SQLSelect.allColumns(new DirectReferenceTable(Tables.PROJECTS))
+                .execute(conn)) {
+
+            while (rs.next()) {
                 ProjectDTO dto = new ProjectDTO();
 
                 dto.setProjectId(rs.getLong(Columns.PROJECT_ID.name));
@@ -151,6 +145,7 @@ public class ProjectsDAO extends DAO {
             return psmt.executeUpdate();
         }
     }
+
     //거절로 update 하는 메소드
     public int updateStatusToRejected(Connection conn, long projectId) throws SQLException {
         String sql = """

@@ -1,25 +1,25 @@
 package ypfunding.server.persistence.dao.dynamicsql.condition;
 
-import ypfunding.server.persistence.dao.ColumnsEnum;
 import ypfunding.server.persistence.dao.dynamicsql.op.ConditionOperator;
 import ypfunding.server.persistence.dao.dynamicsql.token.ValueToken;
 
-import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Stream;
 
 public final class BasicCondition extends Condition {
-    private final ColumnsEnum column;
+    private final ValueToken lhs;
     private final ConditionOperator operator;
-    private final ValueToken targetValue;
+    private final ValueToken rhs;
 
-    public BasicCondition(ColumnsEnum column, ConditionOperator operator, ValueToken targetValue) {
-        super(new ArrayList<>());
-        this.column = column;
+    public BasicCondition(ValueToken lhs, ConditionOperator operator, ValueToken rhs) {
+        super(Stream.of(lhs.getUserParameters(), rhs.getUserParameters()).flatMap(List::stream).toList());
+        this.lhs = lhs;
         this.operator = operator;
-        this.targetValue = targetValue;
+        this.rhs = rhs;
     }
 
     @Override
     public String toString() {
-        return column.toString() + operator + targetValue;
+        return "(" + lhs + ")" + operator + "(" + rhs + ")";
     }
 }

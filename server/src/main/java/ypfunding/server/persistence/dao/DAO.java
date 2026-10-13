@@ -1,7 +1,7 @@
 package ypfunding.server.persistence.dao;
 
 
-abstract class DAO {
+public abstract class DAO {
 
     protected DAO(){}
 }

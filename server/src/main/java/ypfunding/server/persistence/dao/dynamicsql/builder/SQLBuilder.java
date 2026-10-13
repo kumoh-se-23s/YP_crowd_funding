@@ -5,6 +5,7 @@ import ypfunding.server.persistence.dao.dynamicsql.condition.Condition;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public abstract sealed class SQLBuilder<T> permits
@@ -12,13 +13,10 @@ public abstract sealed class SQLBuilder<T> permits
         SQLInsert,
         SQLSelect,
         SQLUpdate {
-
-    protected final Connection conn;
     protected final List<Condition> conditions = new ArrayList<>();
     protected final List<Object> userParameters = new ArrayList<>();
 
-    protected SQLBuilder(Connection conn) {
-        this.conn = conn;
+    protected SQLBuilder() {
     }
 
     protected void addConditionImpl(Condition condition) {
@@ -27,8 +25,8 @@ public abstract sealed class SQLBuilder<T> permits
     }
 
     public List<Object> getUserParameters() {
-        return userParameters;
+        return Collections.unmodifiableList(userParameters);
     }
 
-    public abstract T execute() throws SQLException;
+    public abstract T execute(Connection conn) throws SQLException;
 }

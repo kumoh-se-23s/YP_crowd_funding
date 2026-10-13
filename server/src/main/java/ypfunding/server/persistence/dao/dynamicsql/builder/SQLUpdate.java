@@ -1,12 +1,12 @@
 package ypfunding.server.persistence.dao.dynamicsql.builder;
 
 import ypfunding.server.persistence.dao.ColumnsEnum;
+import ypfunding.server.persistence.dao.Tables;
 import ypfunding.server.persistence.dao.dynamicsql.AccumulativePreparedStatement;
+import ypfunding.server.persistence.dao.dynamicsql.col.UpdateSelector;
 import ypfunding.server.persistence.dao.dynamicsql.condition.Condition;
 import ypfunding.server.persistence.dao.dynamicsql.log.SQLLogger;
-import ypfunding.server.persistence.dao.dynamicsql.log.Severity;
-import ypfunding.server.persistence.dao.dynamicsql.table.ReferenceTable;
-import ypfunding.server.persistence.dao.dynamicsql.col.UpdateSelector;
+import ypfunding.server.persistence.dao.dynamicsql.table.DirectReferenceTable;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -17,11 +17,14 @@ import java.util.stream.Collectors;
 
 public final class SQLUpdate extends SQLBuilder<Integer> {
 
-    private final ReferenceTable referenceTable;
+    private final DirectReferenceTable referenceTable;
     private final List<ColumnsEnum> columns = new ArrayList<>();
 
-    public SQLUpdate(Connection conn, ReferenceTable referenceTable, UpdateSelector... setters) {
-        super(conn);
+    public SQLUpdate(Tables referenceTable, UpdateSelector... setters) {
+        this(new DirectReferenceTable(referenceTable), setters);
+    }
+
+    public SQLUpdate(DirectReferenceTable referenceTable, UpdateSelector... setters) {
 
         this.referenceTable = referenceTable;
         this.userParameters.addAll(referenceTable.getUserParameters());
@@ -48,8 +51,8 @@ public final class SQLUpdate extends SQLBuilder<Integer> {
     }
 
     @Override
-    public Integer execute() throws SQLException {
-        SQLLogger.log(Severity.INFO, toString());
+    public Integer execute(Connection conn) throws SQLException {
+        SQLLogger.logQuery(this);
         AccumulativePreparedStatement preparedStatement = new AccumulativePreparedStatement(conn, toString());
         preparedStatement.addParams(userParameters);
         return preparedStatement.applyParam().executeUpdate();
