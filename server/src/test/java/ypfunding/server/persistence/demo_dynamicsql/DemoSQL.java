@@ -1,4 +1,4 @@
-package ypfunding.server.persistence.dao.demo_dynamicsql;
+package ypfunding.server.persistence.demo_dynamicsql;
 
 import java.sql.Connection;
 import java.sql.SQLException;

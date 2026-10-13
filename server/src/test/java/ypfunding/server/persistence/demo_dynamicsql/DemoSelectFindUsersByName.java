@@ -1,4 +1,4 @@
-package ypfunding.server.persistence.dao.demo_dynamicsql;
+package ypfunding.server.persistence.demo_dynamicsql;
 
 import ypfunding.server.persistence.dao.Tables;
 import ypfunding.server.persistence.dao.UsersDAO;
@@ -9,7 +9,6 @@ import ypfunding.server.persistence.dao.dynamicsql.table.DirectReferenceTable;
 import ypfunding.server.persistence.dao.dynamicsql.token.RawValueToken;
 
 import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class DemoSelectFindUsersByName implements DemoSQL {
