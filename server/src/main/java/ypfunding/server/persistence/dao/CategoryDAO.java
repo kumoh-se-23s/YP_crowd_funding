@@ -27,7 +27,7 @@ public class CategoryDAO extends DAO{
         }
     }
 
-    private void fillDataFromResultSet(CategoryDTO dto, ResultSet rs){
+    public void fillDataFromResultSet(CategoryDTO dto, ResultSet rs){
         //TODO
     }
 

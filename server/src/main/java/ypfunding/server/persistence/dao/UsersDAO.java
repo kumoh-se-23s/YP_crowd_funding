@@ -1,8 +1,10 @@
 package ypfunding.server.persistence.dao;
 
 import ypfunding.common.dto.UserDTO;
+import ypfunding.server.persistence.dao.dynamicsql.builder.SQLInsert;
 
 import java.sql.*;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -41,24 +43,20 @@ public class UsersDAO extends DAO {
         dto.setName(rs.getString(Columns.NAME.name));
         dto.setAddress(rs.getString(Columns.ADDRESS.name));
         dto.setUserType(UserDTO.UserType.valueOf(rs.getString(Columns.USERTYPE.name)));
-        dto.setRegDate(rs.getDate(Columns.REGDATE.name));
+        dto.setRegDate(rs.getObject(Columns.REGDATE.name, LocalDateTime.class));
     }
 
-    public void insert(Connection conn, UserDTO userDTO) throws SQLException {
-        final String INSERT_SQL =
-                "INSERT INTO users (address, name, type, regdate, login_id, password) VALUES (?, ?, ?, ?, ?, ?)";
+    //TODO salt casdasjido nasichj oiauslhiaounsdyhaioudsjnsaoiludhjmoail
+    public void insert(Connection conn, UserDTO userDTO, String salt) throws SQLException {
+        new SQLInsert(Tables.USERS)
+                .addTarget(Columns.LOGIN_ID, userDTO.getLoginID())
+                .addTarget(Columns.PASSWORD, userDTO.getEncryptedPassword())
+                .addTarget(Columns.SALT, salt)
+                .addTarget(Columns.NAME, userDTO.getName())
+                .addTarget(Columns.ADDRESS, userDTO.getAddress())
+                .addTarget(Columns.USERTYPE, userDTO.getUserType())
+                .execute(conn);
 
-        try(PreparedStatement psmt = conn.prepareStatement(INSERT_SQL)){
-
-            psmt.setString(1, userDTO.getAddress());
-            psmt.setString(2, userDTO.getName());
-            psmt.setString(3, userDTO.getUserType().name());
-            psmt.setTimestamp(4, new java.sql.Timestamp(userDTO.getRegDate().getTime()));
-            psmt.setString(5, userDTO.getLoginID());
-            psmt.setString(6, userDTO.getEncryptedPassword());
-
-            psmt.executeUpdate();
-        }
     }
 
     // =================================================================

@@ -4,10 +4,11 @@ import ypfunding.server.persistence.dao.ColumnsEnum;
 
 import java.util.List;
 
-public final class UncorrelatedTableValueToken extends ValueToken {
+public final class ColumnValueToken extends ValueToken{
+
     private final ColumnsEnum column;
 
-    public UncorrelatedTableValueToken(ColumnsEnum column) {
+    public ColumnValueToken(ColumnsEnum column) {
         this.column = column;
     }
 
@@ -17,8 +18,7 @@ public final class UncorrelatedTableValueToken extends ValueToken {
     }
 
     @Override
-    public List<Object> getUserParameters() {
-        //direct reference of column name. no user parameters
+    public List<Object> getUserParameters(){
         return List.of();
     }
 }

@@ -3,10 +3,10 @@ package ypfunding.server.persistence.dao.dynamicsql.token;
 import java.util.ArrayList;
 import java.util.List;
 
-public final class RawValueToken extends ValueToken {
-    private final Number value;
+public final class UserValueToken extends ValueToken {
+    private final Object value;
 
-    public RawValueToken(Number value) {
+    public UserValueToken(Object value) {
         this.value = value;
     }
 

@@ -1,21 +1,35 @@
 package ypfunding.server.persistence.dao;
 
 import ypfunding.common.dto.ReviewDTO;
-import ypfunding.server.util.DynamicSQLUtil;
+import ypfunding.server.persistence.dao.dynamicsql.builder.SQLDelete;
+import ypfunding.server.persistence.dao.dynamicsql.builder.SQLInsert;
+import ypfunding.server.persistence.dao.dynamicsql.builder.SQLSelect;
+import ypfunding.server.persistence.dao.dynamicsql.condition.BasicCondition;
+import ypfunding.server.persistence.dao.dynamicsql.op.ArithmeticConditionOperator;
+import ypfunding.server.persistence.dao.dynamicsql.table.DirectReferenceTable;
+import ypfunding.server.persistence.dao.dynamicsql.table.JoinType;
+import ypfunding.server.persistence.dao.dynamicsql.table.JoinedTable;
+import ypfunding.server.persistence.dao.dynamicsql.token.ColumnValueToken;
+import ypfunding.server.persistence.dao.dynamicsql.token.TableRefColumnToken;
+import ypfunding.server.persistence.dao.dynamicsql.token.UserValueToken;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ReviewsDAO extends DAO{
-    public enum Columns implements ColumnsEnum{
+public class ReviewsDAO extends DAO {
+    public enum Columns implements ColumnsEnum {
         FUND_ID("fund_id"),
         STAR("star"),
         CONTENT("content"),
         DATE("date");
 
         private final String name;
-        Columns(String name){
+
+        Columns(String name) {
             this.name = name;
         }
 
@@ -25,7 +39,7 @@ public class ReviewsDAO extends DAO{
         }
     }
 
-    private void fillDataFromResultSet(ReviewDTO dto, ResultSet rs){
+    public void fillDataFromResultSet(ReviewDTO dto, ResultSet rs) {
         //TODO
     }
 
@@ -34,18 +48,12 @@ public class ReviewsDAO extends DAO{
     // =================================================================
 
     public void insert(Connection conn, ReviewDTO reviewDTO) throws SQLException {
-        String sql = DynamicSQLUtil.generate("INSERT INTO reviews ({}) VALUES ({})",
-                Columns.FUND_ID, Columns.STAR, Columns.CONTENT, Columns.DATE);
-
-        try(PreparedStatement psmt = conn.prepareStatement(sql)){
-
-            psmt.setLong(1, reviewDTO.getFundID());
-            psmt.setLong(2, reviewDTO.getStar());
-            psmt.setString(3, reviewDTO.getContent());
-            psmt.setTimestamp(4, new java.sql.Timestamp(reviewDTO.getDate().getTime()) );
-
-            psmt.executeUpdate();
-        }
+        new SQLInsert(Tables.REVIEWS)
+                .addTarget(Columns.FUND_ID, reviewDTO.getFundID())
+                .addTarget(Columns.STAR, reviewDTO.getStar())
+                .addTarget(Columns.CONTENT, reviewDTO.getContent())
+                .addTarget(Columns.DATE, reviewDTO.getDate())
+                .execute(conn);
     }
 
     // =================================================================
@@ -54,24 +62,32 @@ public class ReviewsDAO extends DAO{
 
     //Read(조회) 리뷰는 해당 상품에 대해 전체 조회가 기본이니 전체 조회로 만들겟음
     public List<ReviewDTO> findAll(Connection conn, long projectId) throws SQLException {
-        final String FIND_ALL_SQL = "SELECT * FROM review WHERE project_id = ?";
+
+        var reviewsTableReference = new DirectReferenceTable(Tables.REVIEWS);
+        var fundsTableReference = new DirectReferenceTable(Tables.FUNDS);
         List<ReviewDTO> result = new ArrayList<>();
 
-        try(PreparedStatement statement = conn.prepareStatement(FIND_ALL_SQL)){
-            statement.setLong(1, projectId);
-
-            try(ResultSet rs = statement.executeQuery()){
-                while (rs.next()){
-                    ReviewDTO reviewDTO = new ReviewDTO();
-                    reviewDTO.setFundID(rs.getLong(Columns.FUND_ID.toString()));
-                    reviewDTO.setStar(rs.getInt(Columns.STAR.toString()));
-                    reviewDTO.setContent(rs.getString(Columns.CONTENT.toString()));
-                    reviewDTO.setDate(rs.getTimestamp(Columns.DATE.toString()));
-                    result.add(reviewDTO);
-                }
+        try (ResultSet rs = SQLSelect.allColumns(
+                        new JoinedTable(reviewsTableReference, JoinType.LEFT, fundsTableReference,
+                                new BasicCondition(
+                                        new TableRefColumnToken(fundsTableReference, FundsDAO.Columns.PROJECT_ID),
+                                        ArithmeticConditionOperator.EQ,
+                                        new UserValueToken(projectId)
+                                )
+                        )
+                ).execute(conn)) {
+            while (rs.next()) {
+                ReviewDTO reviewDTO = new ReviewDTO();
+                reviewDTO.setFundID(rs.getLong(Columns.FUND_ID.toString()));
+                reviewDTO.setStar(rs.getInt(Columns.STAR.toString()));
+                reviewDTO.setContent(rs.getString(Columns.CONTENT.toString()));
+                reviewDTO.setDate(rs.getObject(Columns.DATE.toString(), LocalDateTime.class));
+                result.add(reviewDTO);
             }
 
         }
+
+
         return result;
     }
 
@@ -99,15 +115,15 @@ public class ReviewsDAO extends DAO{
     // 4. DELETE SECTION
     // =================================================================
 
-    public void delete(Connection conn, long userID, long projectID) throws SQLException {
-        final String DELETE_SQL = "DELETE FROM review WHERE user_id = ?  AND project_id = ?";
+    public void delete(Connection conn, long fundId) throws SQLException {
+        new SQLDelete(new DirectReferenceTable(Tables.REVIEWS))
+                .addCondition(
+                        new BasicCondition(
+                                new ColumnValueToken(Columns.FUND_ID),
+                                ArithmeticConditionOperator.EQ,
+                                new UserValueToken(fundId)
+                        )
+                ).execute(conn);
 
-        try(PreparedStatement psmt = conn.prepareStatement(DELETE_SQL)){
-
-            psmt.setLong(1, userID);
-            psmt.setLong(2, projectID);
-
-            psmt.executeUpdate();
-        }
     }
 }

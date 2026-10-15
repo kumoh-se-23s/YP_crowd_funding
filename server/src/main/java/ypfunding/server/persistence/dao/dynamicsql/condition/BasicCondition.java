@@ -1,25 +1,32 @@
 package ypfunding.server.persistence.dao.dynamicsql.condition;
 
-import ypfunding.server.persistence.dao.ColumnsEnum;
 import ypfunding.server.persistence.dao.dynamicsql.op.ConditionOperator;
-import ypfunding.server.persistence.dao.dynamicsql.token.ValueToken;
+import ypfunding.server.persistence.dao.dynamicsql.token.*;
 
-import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Stream;
 
 public final class BasicCondition extends Condition {
-    private final ColumnsEnum column;
+    private final ValueToken lhs;
     private final ConditionOperator operator;
-    private final ValueToken targetValue;
+    private final ValueToken rhs;
 
-    BasicCondition(ColumnsEnum column, ConditionOperator operator, ValueToken targetValue) {
-        super(new ArrayList<>());
-        this.column = column;
+    public BasicCondition(ValueToken lhs, ConditionOperator operator, ValueToken rhs) {
+        super(Stream.of(lhs.getUserParameters(), rhs.getUserParameters()).flatMap(List::stream).toList());
+        this.lhs = lhs;
         this.operator = operator;
-        this.targetValue = targetValue;
+        this.rhs = rhs;
+    }
+
+    private boolean noParenthesesRequired(ValueToken token){
+        return token instanceof UserValueToken || token instanceof ColumnValueToken || token instanceof BuiltinFunctionToken
+               || token instanceof WildcardValueToken || token instanceof TableRefColumnToken;
     }
 
     @Override
     public String toString() {
-        return column.toString() + operator + targetValue;
+        String lhsStr = noParenthesesRequired(lhs) ? lhs.toString() : ("(" + lhs + ")");
+        String rhsStr = noParenthesesRequired(rhs) ? rhs.toString() : ("(" + rhs + ")");
+        return lhsStr + operator + rhsStr;
     }
 }

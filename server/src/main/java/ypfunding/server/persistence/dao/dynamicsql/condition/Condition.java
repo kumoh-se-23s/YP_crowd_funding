@@ -1,10 +1,13 @@
 package ypfunding.server.persistence.dao.dynamicsql.condition;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
-public abstract sealed class Condition permits BasicCondition, CombinedCondition {
+public abstract sealed class Condition permits
+        BasicCondition,
+        CombinedCondition {
 
     List<Object> userParameters;
 
@@ -12,20 +15,14 @@ public abstract sealed class Condition permits BasicCondition, CombinedCondition
         this.userParameters = List.copyOf(userParameters);
     }
 
-    public static Condition and(Condition lhs, Condition rhs) {
-        List<Object> combined = new ArrayList<>();
-        combined.addAll(lhs.userParameters);
-        combined.addAll(rhs.userParameters);
-
-        return new CombinedCondition("(" + lhs + ") AND (" + rhs + ")", combined);
+    public static Condition and(Condition... conditions) {
+        List<Object> combined = Arrays.stream(conditions).flatMap(e -> e.getUserParameters().stream()).toList();
+        return new CombinedCondition(Arrays.stream(conditions).map(e -> "(" + e + ")").collect(Collectors.joining(" AND ")), combined);
     }
 
-    public static Condition or(Condition lhs, Condition rhs) {
-        List<Object> combined = new ArrayList<>();
-        combined.addAll(lhs.userParameters);
-        combined.addAll(rhs.userParameters);
-
-        return new CombinedCondition("(" + lhs + ") OR (" + rhs + ")", combined);
+    public static Condition or(Condition... conditions) {
+        List<Object> combined = Arrays.stream(conditions).flatMap(e -> e.getUserParameters().stream()).toList();
+        return new CombinedCondition(Arrays.stream(conditions).map(e -> "(" + e + ")").collect(Collectors.joining(" OR ")), combined);
     }
 
     public static Condition not(Condition v) {

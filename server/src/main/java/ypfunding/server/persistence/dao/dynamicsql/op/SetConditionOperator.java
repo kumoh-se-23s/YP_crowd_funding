@@ -2,7 +2,8 @@ package ypfunding.server.persistence.dao.dynamicsql.op;
 
 public enum SetConditionOperator implements ConditionOperator {
     NI("NOT IN"),
-    IN("IN");
+    IN("IN"),
+    LIKE("LIKE");
 
     private final String str;
 
