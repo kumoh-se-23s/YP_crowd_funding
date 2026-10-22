@@ -36,7 +36,8 @@ public class RequestManager implements AutoCloseable {
     private void start() {
         new Thread(this::selectorLoop).start();
     }
-    private void selectorLoop(){
+
+    private void selectorLoop() {
         while (true) {
             try {
                 selector.select();
@@ -55,9 +56,18 @@ public class RequestManager implements AutoCloseable {
                         RequestHandler handler = requestHandlers.get(srcSocket);
 
                         byte[] result;
-                        while ((result = handler.getPacketProcessor().read()) != null) {
+                        while ((result = handler.getPacketProcessor().read())[0] != 0) {
+
+                            if (result[0] == -1) {
+                                selectedKey.cancel();
+                                requestHandlers.remove(srcSocket);
+                                srcSocket.close();
+                                break;
+                            }
+
                             byte[] packet = result;
                             threadPool.queue(() -> receiveRequest(srcSocket, packet));
+
                         }
                     }
                     it.remove();

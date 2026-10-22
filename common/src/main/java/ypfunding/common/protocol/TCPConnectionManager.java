@@ -20,17 +20,20 @@ public class TCPConnectionManager {
     private final ThreadPool workerThread;
     private static final Map<Class<? extends Packet>, Packets> PKT_TO_REQUESTS_MAP = new HashMap<>();
 
+    //TODO : type the server address here
+    private static final InetSocketAddress SERVER_ADDRESS = new InetSocketAddress("127.0.0.1", 2222);
+    
     static{
         for (Packets value : Packets.values()) {
             PKT_TO_REQUESTS_MAP.put(value.getPacketClass(), value);
         }
     }
 
-    public TCPConnectionManager(InetSocketAddress address) {
+    public TCPConnectionManager() { // the server address is constant
         try{
             dstSocket = SocketChannel.open();
             dstSocket.configureBlocking(true);
-            dstSocket.connect(address);
+            dstSocket.connect(SERVER_ADDRESS);
             workerThread = new ThreadPool(1);
         }catch (IOException e){
             throw new IllegalStateException("Failed to create network connection", e);
