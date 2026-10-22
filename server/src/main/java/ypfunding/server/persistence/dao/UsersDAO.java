@@ -1,7 +1,13 @@
 package ypfunding.server.persistence.dao;
 
 import ypfunding.common.dto.UserDTO;
+import ypfunding.common.type.UserType;
 import ypfunding.server.persistence.dao.dynamicsql.builder.SQLInsert;
+import ypfunding.server.persistence.dao.dynamicsql.builder.SQLSelect;
+import ypfunding.server.persistence.dao.dynamicsql.condition.BasicCondition;
+import ypfunding.server.persistence.dao.dynamicsql.op.ArithmeticConditionOperator;
+import ypfunding.server.persistence.dao.dynamicsql.token.ColumnValueToken;
+import ypfunding.server.persistence.dao.dynamicsql.token.UserValueToken;
 
 import java.sql.*;
 import java.time.LocalDateTime;
@@ -10,7 +16,7 @@ import java.util.List;
 
 public class UsersDAO extends DAO {
 
-    public enum Columns implements ColumnsEnum{
+    public enum Columns implements ColumnsEnum {
         USER_ID("user_id"),
         LOGIN_ID("login_id"),
         PASSWORD("password"),
@@ -21,7 +27,8 @@ public class UsersDAO extends DAO {
         REGDATE("regdate");
 
         private final String name;
-        Columns(String name){
+
+        Columns(String name) {
             this.name = name;
         }
 
@@ -42,7 +49,7 @@ public class UsersDAO extends DAO {
         dto.setEncryptedPassword(rs.getString(Columns.PASSWORD.name));
         dto.setName(rs.getString(Columns.NAME.name));
         dto.setAddress(rs.getString(Columns.ADDRESS.name));
-        dto.setUserType(UserDTO.UserType.valueOf(rs.getString(Columns.USERTYPE.name)));
+        dto.setUserType(UserType.valueOf(rs.getString(Columns.USERTYPE.name)));
         dto.setRegDate(rs.getObject(Columns.REGDATE.name, LocalDateTime.class));
     }
 
@@ -56,28 +63,24 @@ public class UsersDAO extends DAO {
                 .addTarget(Columns.ADDRESS, userDTO.getAddress())
                 .addTarget(Columns.USERTYPE, userDTO.getUserType())
                 .execute(conn);
-
     }
 
     // =================================================================
     // 2. READ SECTION
     // =================================================================
 
+
     public UserDTO getUserById(Connection conn, long id) throws SQLException {
-        final String READ_SQL = "SELECT * FROM users WHERE id = ?";
         UserDTO dto = null;
-
-        try(PreparedStatement psmt = conn.prepareStatement(READ_SQL)){
-
-            psmt.setLong(1, id);
-
-            try (ResultSet rs = psmt.executeQuery()){
-                if(rs.next()){
-                    dto = new UserDTO();
-                    fillDataFromResultSet(dto, rs);
-                }
+        try (ResultSet rs = SQLSelect.allColumns(Tables.USERS)
+                .addCondition(new BasicCondition(new ColumnValueToken(Columns.USER_ID), ArithmeticConditionOperator.EQ, new UserValueToken(id)))
+                .execute(conn)) {
+            if (rs.next()) {
+                dto = new UserDTO();
+                fillDataFromResultSet(dto, rs);
             }
         }
+
         return dto;
     }
 
@@ -86,10 +89,10 @@ public class UsersDAO extends DAO {
         final String sql = "select * from users";
         List<UserDTO> result = new ArrayList<>();
 
-        try(Statement statement = conn.createStatement();
-            ResultSet rs = statement.executeQuery(sql)){
+        try (Statement statement = conn.createStatement();
+             ResultSet rs = statement.executeQuery(sql)) {
 
-            while(rs.next()){
+            while (rs.next()) {
                 UserDTO dto = new UserDTO();
 
                 fillDataFromResultSet(dto, rs);
@@ -108,7 +111,7 @@ public class UsersDAO extends DAO {
         //id(pk), regdate는 수정 불가 type은 수정 허용하긴 해야하려나?
         final String UPDATE_SQL = "UPDATE users SET address = ?, name = ?, type = ?, login_id = ?, password = ? WHERE id = ?";
 
-        try(PreparedStatement psmt = conn.prepareStatement(UPDATE_SQL)){
+        try (PreparedStatement psmt = conn.prepareStatement(UPDATE_SQL)) {
 
             psmt.setString(1, userDTO.getAddress());
             psmt.setString(2, userDTO.getName());
@@ -130,7 +133,7 @@ public class UsersDAO extends DAO {
     public void delete(Connection conn, long id) throws SQLException {
         final String DELETE_SQL = "DELETE FROM users WHERE id = ?";
 
-        try(PreparedStatement psmt = conn.prepareStatement(DELETE_SQL)){
+        try (PreparedStatement psmt = conn.prepareStatement(DELETE_SQL)) {
 
             psmt.setLong(1, id);
             psmt.executeUpdate();

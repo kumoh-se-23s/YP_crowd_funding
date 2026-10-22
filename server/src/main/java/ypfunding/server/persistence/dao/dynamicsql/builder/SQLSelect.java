@@ -12,16 +12,17 @@ import ypfunding.server.persistence.dao.dynamicsql.table.ReferenceTable;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.List;
 
 public final class SQLSelect extends SQLBuilder<ResultSet> {
-    private final List<ColumnSelector> columnSelectors;
+    private final ColumnSelector[] columnSelectors;
     private final ReferenceTable referenceTable;
 
-    public SQLSelect(List<ColumnSelector> columnSelectors, ReferenceTable referenceTable, PredefinedReferenceTable... predefined) {
+    public SQLSelect(ColumnSelector[] columnSelectors, ReferenceTable referenceTable, PredefinedReferenceTable... predefined) {
         super(predefined);
         this.columnSelectors = columnSelectors;
-        this.userParameters.addAll(columnSelectors.stream().map(ColumnSelector::getUserParameters).flatMap(List::stream).toList());
+        this.userParameters.addAll(Arrays.stream(columnSelectors).map(ColumnSelector::getUserParameters).flatMap(List::stream).toList());
 
         this.referenceTable = referenceTable;
         this.userParameters.addAll(referenceTable.getUserParameters());
@@ -29,7 +30,7 @@ public final class SQLSelect extends SQLBuilder<ResultSet> {
     }
 
     public static SQLSelect allColumns(ReferenceTable referenceTable){
-        return new SQLSelect(List.of(), referenceTable);
+        return new SQLSelect(new ColumnSelector[0], referenceTable);
     }
 
     public static SQLSelect allColumns(Tables table){
@@ -45,7 +46,7 @@ public final class SQLSelect extends SQLBuilder<ResultSet> {
 
     @Override
     public String toString() {
-        return "select " + (columnSelectors.isEmpty() ? "*" : ColumnSelector.buildSelectColumnParentheses(columnSelectors)) +
+        return "select " + (columnSelectors.length == 0 ? "*" : ColumnSelector.buildSelectColumnParentheses(columnSelectors)) +
                " from " +
                referenceTable + Condition.whereChain(conditions);
     }

@@ -1,6 +1,7 @@
 package ypfunding.server.persistence.dao.dynamicsql.log;
 
 import ypfunding.server.persistence.dao.dynamicsql.builder.SQLBuilder;
+import ypfunding.server.util.TimeUtils;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -16,7 +17,7 @@ public class SQLLogger {
     public static void log(Severity severity, String str) {
         //TODO set out to other
 
-        System.out.printf("%s | %s | %s \n", LocalDateTime.now(ZoneId.systemDefault()), severity, str);
+        System.out.printf("%s | %s | %s \n", TimeUtils.getCurrentTime(), severity, str);
     }
 
 

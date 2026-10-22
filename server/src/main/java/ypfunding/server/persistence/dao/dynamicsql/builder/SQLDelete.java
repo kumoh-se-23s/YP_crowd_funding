@@ -1,5 +1,6 @@
 package ypfunding.server.persistence.dao.dynamicsql.builder;
 
+import ypfunding.server.persistence.dao.Tables;
 import ypfunding.server.persistence.dao.dynamicsql.AccumulativePreparedStatement;
 import ypfunding.server.persistence.dao.dynamicsql.condition.Condition;
 import ypfunding.server.persistence.dao.dynamicsql.log.SQLLogger;
@@ -13,9 +14,9 @@ public final class SQLDelete extends SQLBuilder<Integer> {
 
     private final DirectReferenceTable referenceTable;
 
-    public SQLDelete(DirectReferenceTable referenceTable, PredefinedReferenceTable... predefined) {
+    public SQLDelete(Tables tableName, PredefinedReferenceTable... predefined) {
         super(predefined);
-        this.referenceTable = referenceTable;
+        this.referenceTable = new DirectReferenceTable(tableName);
         this.userParameters.addAll(referenceTable.getUserParameters());
     }
 

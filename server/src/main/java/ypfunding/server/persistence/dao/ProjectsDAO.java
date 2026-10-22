@@ -1,9 +1,18 @@
 package ypfunding.server.persistence.dao;
 
 import ypfunding.common.dto.ProjectDTO;
+import ypfunding.common.type.ApprovalStatus;
+import ypfunding.server.persistence.dao.dynamicsql.builder.SQLDelete;
 import ypfunding.server.persistence.dao.dynamicsql.builder.SQLInsert;
 import ypfunding.server.persistence.dao.dynamicsql.builder.SQLSelect;
+import ypfunding.server.persistence.dao.dynamicsql.builder.SQLUpdate;
+import ypfunding.server.persistence.dao.dynamicsql.col.UpdateSelector;
+import ypfunding.server.persistence.dao.dynamicsql.condition.BasicCondition;
+import ypfunding.server.persistence.dao.dynamicsql.op.ArithmeticConditionOperator;
 import ypfunding.server.persistence.dao.dynamicsql.table.DirectReferenceTable;
+import ypfunding.server.persistence.dao.dynamicsql.token.ColumnValueToken;
+import ypfunding.server.persistence.dao.dynamicsql.token.UserValueToken;
+import ypfunding.server.util.TimeUtils;
 
 import java.sql.*;
 import java.time.LocalDateTime;
@@ -100,7 +109,7 @@ public class ProjectsDAO extends DAO {
                 dto.setDuration(rs.getInt(Columns.DURATION.name));
                 dto.setStartDate(rs.getObject("start_date", LocalDateTime.class));
                 dto.setGoal(rs.getLong(Columns.GOAL.name));
-                dto.setApprovalStatus(ProjectDTO.ApprovalStatus.valueOf(rs.getString(Columns.APPROVAL_STATUS.name)));
+                dto.setApprovalStatus(ApprovalStatus.valueOf(rs.getString(Columns.APPROVAL_STATUS.name)));
 
                 result.add(dto);
                 //이거로 해도 될듯요
@@ -119,7 +128,7 @@ public class ProjectsDAO extends DAO {
         dto.setDescription(rs.getString("description"));
         dto.setGoal(rs.getLong("goal"));
         dto.setDuration(rs.getInt("duration"));
-        dto.setApprovalStatus(ProjectDTO.ApprovalStatus.valueOf(rs.getString("approvalStatus")));
+        dto.setApprovalStatus(ApprovalStatus.valueOf(rs.getString("approvalStatus")));
 
         dto.setStartDate(rs.getObject("start_date", LocalDateTime.class));
         dto.setEndDate(rs.getObject("end_date", LocalDateTime.class));
@@ -132,58 +141,49 @@ public class ProjectsDAO extends DAO {
     // =================================================================
 
     //거절된 프로젝트를 수정하고 다시 PENDING 상태로 변경
-    public int updateRejected(Connection conn, ProjectDTO projectDTO) throws SQLException {
-        String sql = """
-                UPDATE projects 
-                   SET title = ?, description = ?, goal = ?, duration = ?, approval_status = ?
-                 WHERE project_id = ? AND user_id = ? AND approval_status = 'REJECTED'
-                """;
+    public int resubmitRejectedProjectUpdate(Connection conn, ProjectDTO projectDTO) throws SQLException {
+        return new SQLUpdate(new DirectReferenceTable(Tables.PROJECTS), new UpdateSelector[]{
+                new UpdateSelector(Columns.TITLE, new UserValueToken(projectDTO.getTitle())),
+                new UpdateSelector(Columns.DESCRIPTION, new UserValueToken(projectDTO.getDescription())),
+                new UpdateSelector(Columns.GOAL, new UserValueToken(projectDTO.getGoal())),
+                new UpdateSelector(Columns.DURATION, new UserValueToken(projectDTO.getDuration())),
+                new UpdateSelector(Columns.APPROVAL_STATUS, new UserValueToken(ApprovalStatus.PENDING))
+        })
+                .addCondition(new BasicCondition(new ColumnValueToken(Columns.PROJECT_ID), ArithmeticConditionOperator.EQ, new UserValueToken(projectDTO.getProjectId())))
+                .addCondition(new BasicCondition(new ColumnValueToken(Columns.USER_ID), ArithmeticConditionOperator.EQ, new UserValueToken(projectDTO.getUserId())))
+                .addCondition(new BasicCondition(new ColumnValueToken(Columns.APPROVAL_STATUS), ArithmeticConditionOperator.EQ, new UserValueToken(ApprovalStatus.REJECTED)))
+                .execute(conn);
 
-        try (PreparedStatement psmt = conn.prepareStatement(sql)) {
-            setUpdateParameters(psmt, projectDTO);
+    }
 
-            return psmt.executeUpdate();
-        }
+    public int approveProjectUpdate(Connection conn, long projectID) throws SQLException {
+        return new SQLUpdate(new DirectReferenceTable(Tables.PROJECTS), new UpdateSelector[]{
+                new UpdateSelector(Columns.START_DATE, new UserValueToken(TimeUtils.getCurrentTime())),
+                new UpdateSelector(Columns.APPROVAL_STATUS, new UserValueToken(ApprovalStatus.APPROVED))
+        })
+                .addCondition(new BasicCondition(new ColumnValueToken(Columns.PROJECT_ID), ArithmeticConditionOperator.EQ, new UserValueToken(projectID)))
+                .addCondition(new BasicCondition(new ColumnValueToken(Columns.APPROVAL_STATUS), ArithmeticConditionOperator.EQ, new UserValueToken(ApprovalStatus.PENDING)))
+                .execute(conn);
     }
 
     //거절로 update 하는 메소드
-    public int updateStatusToRejected(Connection conn, long projectId) throws SQLException {
-        String sql = """
-                UPDATE projects 
-                   SET approval_status = 'REJECTED'
-                 WHERE project_id = ? AND approval_status = 'PENDING'
-                """;
+    public int rejectProjectUpdate(Connection conn, long projectId) throws SQLException {
+        return new SQLUpdate(new DirectReferenceTable(Tables.PROJECTS), new UpdateSelector[]{
+                new UpdateSelector(Columns.APPROVAL_STATUS, new UserValueToken(ApprovalStatus.REJECTED))
+        })
+                .addCondition(new BasicCondition(new ColumnValueToken(Columns.PROJECT_ID), ArithmeticConditionOperator.EQ, new UserValueToken(projectId)))
+                .addCondition(new BasicCondition(new ColumnValueToken(Columns.APPROVAL_STATUS), ArithmeticConditionOperator.EQ, new UserValueToken(ApprovalStatus.PENDING)))
+                .execute(conn);
 
-        try (PreparedStatement psmt = conn.prepareStatement(sql)) {
-            psmt.setLong(1, projectId);
-
-            return psmt.executeUpdate();
-        }
-    }
-
-    private void setUpdateParameters(PreparedStatement psmt, ProjectDTO projectDTO) throws SQLException {
-        psmt.setString(1, projectDTO.getTitle());
-        psmt.setString(2, projectDTO.getDescription());
-        psmt.setLong(3, projectDTO.getGoal());
-        psmt.setInt(4, projectDTO.getDuration());
-
-        // PENDING으로 업데이트
-        psmt.setString(5, ProjectDTO.ApprovalStatus.PENDING.name());
-
-        // WHERE 조건 바인딩
-        psmt.setLong(6, projectDTO.getProjectId());
-        psmt.setLong(7, projectDTO.getUserId()); // 본인 소유 검증
     }
 
     // =================================================================
     // 4. DELETE SECTION
     // =================================================================
 
-    public void delete(Connection conn, ProjectDTO projectDTO) throws SQLException {
-        final String DELETE_SQL = "DELETE FROM projects WHERE id = ?";
-        try (PreparedStatement psmt = conn.prepareStatement(DELETE_SQL)) {
-            psmt.setLong(1, projectDTO.getProjectId());
-            psmt.executeUpdate();
-        }
+    public void delete(Connection conn, long projectId) throws SQLException {
+        new SQLDelete(Tables.PROJECTS)
+                .addCondition(new BasicCondition(new UserValueToken(projectId), ArithmeticConditionOperator.EQ, new ColumnValueToken(Columns.PROJECT_ID)))
+                .execute(conn);
     }
 }

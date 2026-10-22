@@ -116,7 +116,7 @@ public class ReviewsDAO extends DAO {
     // =================================================================
 
     public void delete(Connection conn, long fundId) throws SQLException {
-        new SQLDelete(new DirectReferenceTable(Tables.REVIEWS))
+        new SQLDelete(Tables.REVIEWS)
                 .addCondition(
                         new BasicCondition(
                                 new ColumnValueToken(Columns.FUND_ID),
