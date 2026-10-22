@@ -16,6 +16,7 @@ import java.util.List;
 
 public class UsersDAO extends DAO {
 
+
     public enum Columns implements ColumnsEnum {
         USER_ID("user_id"),
         LOGIN_ID("login_id"),
@@ -82,6 +83,19 @@ public class UsersDAO extends DAO {
         }
 
         return dto;
+    }
+    public List<UserDTO> getAllAdmins(Connection conn) throws SQLException{
+        try (ResultSet rs = SQLSelect.allColumns(Tables.USERS)
+                .addCondition(new BasicCondition(new ColumnValueToken(Columns.USERTYPE), ArithmeticConditionOperator.EQ, new UserValueToken(UserType.ADMIN)))
+                .execute(conn)){
+            List<UserDTO> result = new ArrayList<>();
+            while (rs.next()) {
+                UserDTO dto = new UserDTO();
+                fillDataFromResultSet(dto, rs);
+                result.add(dto);
+            }
+            return result;
+        }
     }
 
 

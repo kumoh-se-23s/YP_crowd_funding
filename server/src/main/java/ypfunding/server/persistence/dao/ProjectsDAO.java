@@ -2,17 +2,17 @@ package ypfunding.server.persistence.dao;
 
 import ypfunding.common.dto.ProjectDTO;
 import ypfunding.common.type.ApprovalStatus;
+import ypfunding.common.util.DateTimeUtil;
 import ypfunding.server.persistence.dao.dynamicsql.builder.SQLDelete;
 import ypfunding.server.persistence.dao.dynamicsql.builder.SQLInsert;
 import ypfunding.server.persistence.dao.dynamicsql.builder.SQLSelect;
 import ypfunding.server.persistence.dao.dynamicsql.builder.SQLUpdate;
-import ypfunding.server.persistence.dao.dynamicsql.col.UpdateSelector;
+import ypfunding.server.persistence.dao.dynamicsql.col.*;
 import ypfunding.server.persistence.dao.dynamicsql.condition.BasicCondition;
 import ypfunding.server.persistence.dao.dynamicsql.op.ArithmeticConditionOperator;
 import ypfunding.server.persistence.dao.dynamicsql.table.DirectReferenceTable;
 import ypfunding.server.persistence.dao.dynamicsql.token.ColumnValueToken;
 import ypfunding.server.persistence.dao.dynamicsql.token.UserValueToken;
-import ypfunding.server.util.TimeUtils;
 
 import java.sql.*;
 import java.time.LocalDateTime;
@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ProjectsDAO extends DAO {
+
 
     public enum Columns implements ColumnsEnum {
         PROJECT_ID("project_id"),
@@ -42,15 +43,6 @@ public class ProjectsDAO extends DAO {
         public String toString() {
             return name;
         }
-    }
-
-    private void fillDataFromResultSet(ProjectDTO projectDTO, PreparedStatement psmt) throws SQLException {
-        psmt.setString(1, projectDTO.getTitle());
-        psmt.setInt(2, projectDTO.getDuration());
-        psmt.setObject(3, projectDTO.getStartDate());
-        psmt.setLong(4, projectDTO.getGoal());
-        psmt.setLong(5, projectDTO.getUserId());
-        psmt.setString(6, projectDTO.getApprovalStatus().name());
     }
 
     // =================================================================
@@ -101,19 +93,44 @@ public class ProjectsDAO extends DAO {
                 .execute(conn)) {
 
             while (rs.next()) {
-                ProjectDTO dto = new ProjectDTO();
+                result.add(toDTO(rs));
+            }
+        }
+        return result;
+    }
 
-                dto.setProjectId(rs.getLong(Columns.PROJECT_ID.name));
-                dto.setUserId(rs.getLong(Columns.USER_ID.name));
-                dto.setTitle(rs.getString(Columns.TITLE.name));
-                dto.setDuration(rs.getInt(Columns.DURATION.name));
-                dto.setStartDate(rs.getObject("start_date", LocalDateTime.class));
-                dto.setGoal(rs.getLong(Columns.GOAL.name));
-                dto.setApprovalStatus(ApprovalStatus.valueOf(rs.getString(Columns.APPROVAL_STATUS.name)));
+    public List<ProjectDTO> getPendingProjects(Connection conn, long userID) throws SQLException {
+        List<ProjectDTO> result = new ArrayList<>();
 
-                result.add(dto);
-                //이거로 해도 될듯요
-                //result.add(toDTO(rs));
+        try (ResultSet rs = SQLSelect.allColumns(new DirectReferenceTable(Tables.PROJECTS))
+                .addCondition(new BasicCondition(new ColumnValueToken(Columns.USER_ID), ArithmeticConditionOperator.EQ, new UserValueToken(userID)))
+                .addCondition(new BasicCondition(new ColumnValueToken(Columns.APPROVAL_STATUS), ArithmeticConditionOperator.EQ, new UserValueToken(ApprovalStatus.PENDING)))
+                .execute(conn)) {
+
+            while (rs.next()) {
+                result.add(toDTO(rs));
+            }
+        }
+        return result;
+    }
+
+
+    public List<ProjectDTO> getDisplayedProjects(Connection conn) throws SQLException{
+        return getDisplayedProjects(conn, new OrderBySelector(new ColumnValueToken(Columns.PROJECT_ID), true));
+    }
+
+    // Displayed projects (a.k.a. Approved Projects)
+    // User can view this
+    public List<ProjectDTO> getDisplayedProjects(Connection conn, OrderBySelector sort) throws SQLException{
+        List<ProjectDTO> result = new ArrayList<>();
+
+        try (ResultSet rs = SQLSelect.allColumns(new DirectReferenceTable(Tables.PROJECTS))
+                .addCondition(new BasicCondition(new ColumnValueToken(Columns.APPROVAL_STATUS), ArithmeticConditionOperator.EQ, new UserValueToken(ApprovalStatus.APPROVED)))
+                .orderBy(sort)
+                .execute(conn)) {
+
+            while (rs.next()) {
+                result.add(toDTO(rs));
             }
         }
         return result;
@@ -122,16 +139,15 @@ public class ProjectsDAO extends DAO {
     //ResultSet 묶기
     private ProjectDTO toDTO(ResultSet rs) throws SQLException {
         ProjectDTO dto = new ProjectDTO();
-        dto.setProjectId(rs.getLong("project_id"));
-        dto.setUserId(rs.getLong("user_id"));
-        dto.setTitle(rs.getString("title"));
-        dto.setDescription(rs.getString("description"));
-        dto.setGoal(rs.getLong("goal"));
-        dto.setDuration(rs.getInt("duration"));
-        dto.setApprovalStatus(ApprovalStatus.valueOf(rs.getString("approvalStatus")));
-
-        dto.setStartDate(rs.getObject("start_date", LocalDateTime.class));
-        dto.setEndDate(rs.getObject("end_date", LocalDateTime.class));
+        dto.setProjectId(rs.getLong(Columns.PROJECT_ID.name));
+        dto.setUserId(rs.getLong(Columns.USER_ID.name));
+        dto.setTitle(rs.getString(Columns.TITLE.name));
+        dto.setDescription(rs.getString(Columns.DESCRIPTION.name));
+        dto.setGoal(rs.getLong(Columns.GOAL.name));
+        dto.setDuration(rs.getInt(Columns.DURATION.name));
+        dto.setApprovalStatus(ApprovalStatus.valueOf(rs.getString(Columns.APPROVAL_STATUS.name)));
+        dto.setStartDate(rs.getObject(Columns.START_DATE.name, LocalDateTime.class));
+        dto.setEndDate(rs.getObject(Columns.END_DATE.name, LocalDateTime.class));
 
         return dto;
     }
@@ -158,7 +174,7 @@ public class ProjectsDAO extends DAO {
 
     public int approveProjectUpdate(Connection conn, long projectID) throws SQLException {
         return new SQLUpdate(new DirectReferenceTable(Tables.PROJECTS), new UpdateSelector[]{
-                new UpdateSelector(Columns.START_DATE, new UserValueToken(TimeUtils.getCurrentTime())),
+                new UpdateSelector(Columns.START_DATE, new UserValueToken(DateTimeUtil.now())),
                 new UpdateSelector(Columns.APPROVAL_STATUS, new UserValueToken(ApprovalStatus.APPROVED))
         })
                 .addCondition(new BasicCondition(new ColumnValueToken(Columns.PROJECT_ID), ArithmeticConditionOperator.EQ, new UserValueToken(projectID)))

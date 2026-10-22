@@ -3,6 +3,7 @@ package ypfunding.server.persistence.dao.dynamicsql.builder;
 import ypfunding.server.persistence.dao.Tables;
 import ypfunding.server.persistence.dao.dynamicsql.AccumulativePreparedStatement;
 import ypfunding.server.persistence.dao.dynamicsql.col.ColumnSelector;
+import ypfunding.server.persistence.dao.dynamicsql.col.OrderBySelector;
 import ypfunding.server.persistence.dao.dynamicsql.condition.Condition;
 import ypfunding.server.persistence.dao.dynamicsql.log.SQLLogger;
 import ypfunding.server.persistence.dao.dynamicsql.table.DirectReferenceTable;
@@ -12,12 +13,19 @@ import ypfunding.server.persistence.dao.dynamicsql.table.ReferenceTable;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public final class SQLSelect extends SQLBuilder<ResultSet> {
     private final ColumnSelector[] columnSelectors;
     private final ReferenceTable referenceTable;
+    private final List<OrderBySelector> orderBySelectors = new ArrayList<>();
+
+    public SQLSelect(ColumnSelector columnSelector, ReferenceTable referenceTable, PredefinedReferenceTable... predefined) {
+        this(new ColumnSelector[]{columnSelector}, referenceTable, predefined);
+    }
 
     public SQLSelect(ColumnSelector[] columnSelectors, ReferenceTable referenceTable, PredefinedReferenceTable... predefined) {
         super(predefined);
@@ -48,7 +56,14 @@ public final class SQLSelect extends SQLBuilder<ResultSet> {
     public String toString() {
         return "select " + (columnSelectors.length == 0 ? "*" : ColumnSelector.buildSelectColumnParentheses(columnSelectors)) +
                " from " +
-               referenceTable + Condition.whereChain(conditions);
+               referenceTable + Condition.whereChain(conditions) +
+               orderBySelectors.stream().map(OrderBySelector::toString).collect(Collectors.joining(" "));
+    }
+
+    public SQLSelect orderBy(OrderBySelector token){
+        this.orderBySelectors.add(token);
+        this.userParameters.addAll(token.getUserParameters());
+        return this;
     }
 
     @Override
