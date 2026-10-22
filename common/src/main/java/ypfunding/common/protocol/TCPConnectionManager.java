@@ -1,5 +1,9 @@
 package ypfunding.common.protocol;
 
+import ypfunding.common.parallel.ThreadPool;
+import ypfunding.common.protocol.packets.Packet;
+import ypfunding.common.protocol.packets.Packets;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -14,10 +18,10 @@ public class TCPConnectionManager {
     public static final int MESSAGE_TYPE_HEADER_SIZE = 2;
     private final SocketChannel dstSocket;
     private final ThreadPool workerThread;
-    private static final Map<Class<? extends Packet>, Requests> PKT_TO_REQUESTS_MAP = new HashMap<>();
+    private static final Map<Class<? extends Packet>, Packets> PKT_TO_REQUESTS_MAP = new HashMap<>();
 
     static{
-        for (Requests value : Requests.values()) {
+        for (Packets value : Packets.values()) {
             PKT_TO_REQUESTS_MAP.put(value.getPacketClass(), value);
         }
     }

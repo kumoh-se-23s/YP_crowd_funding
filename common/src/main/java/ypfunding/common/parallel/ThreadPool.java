@@ -1,4 +1,4 @@
-package ypfunding.common.protocol;
+package ypfunding.common.parallel;
 
 import ypfunding.common.util.LogUtil;
 

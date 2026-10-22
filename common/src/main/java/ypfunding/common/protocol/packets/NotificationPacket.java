@@ -1,10 +1,9 @@
-package ypfunding.common.protocol;
+package ypfunding.common.protocol.packets;
 
 import ypfunding.common.notifications.CompleteNotification;
 import ypfunding.common.notifications.Notification;
 import ypfunding.common.notifications.NotificationType;
 
-import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 

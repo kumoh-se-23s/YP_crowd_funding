@@ -1,6 +1,6 @@
 package ypfunding.server.network;
 
-import ypfunding.common.protocol.Requests;
+import ypfunding.common.protocol.packets.Packets;
 
 import java.io.DataInputStream;
 import java.util.function.BiConsumer;
@@ -9,16 +9,16 @@ public enum RequestLinkers {
 
     ;
 
-    private final Requests requests;
+    private final Packets packets;
     private final BiConsumer<RequestEvent, DataInputStream> managerConsumer;
 
-    RequestLinkers(Requests requests, BiConsumer<RequestEvent, DataInputStream> managerConsumer) {
-        this.requests = requests;
+    RequestLinkers(Packets packets, BiConsumer<RequestEvent, DataInputStream> managerConsumer) {
+        this.packets = packets;
         this.managerConsumer = managerConsumer;
     }
 
-    public Requests getRequests() {
-        return requests;
+    public Packets getRequests() {
+        return packets;
     }
 
     public void handle(RequestEvent event, DataInputStream payload) {

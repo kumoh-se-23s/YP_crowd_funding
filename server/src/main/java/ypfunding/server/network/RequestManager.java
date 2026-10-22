@@ -1,7 +1,7 @@
 package ypfunding.server.network;
 
 import ypfunding.common.protocol.TCPConnectionManager;
-import ypfunding.common.protocol.ThreadPool;
+import ypfunding.common.parallel.ThreadPool;
 import ypfunding.common.util.LogUtil;
 
 import java.io.ByteArrayInputStream;

@@ -1,11 +1,11 @@
-package ypfunding.common.protocol;
+package ypfunding.common.protocol.packets;
 
-public enum Requests {
+public enum Packets {
     NOTIFICATION(NotificationPacket.class)
     ;
     private final Class<? extends Packet> packetClass;
 
-    Requests(Class<? extends Packet> packetClass) {
+    Packets(Class<? extends Packet> packetClass) {
         this.packetClass = packetClass;
     }
 

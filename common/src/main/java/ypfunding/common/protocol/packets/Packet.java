@@ -1,4 +1,4 @@
-package ypfunding.common.protocol;
+package ypfunding.common.protocol.packets;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

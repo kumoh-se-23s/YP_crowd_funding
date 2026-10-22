@@ -1,6 +1,5 @@
 package ypfunding.server.network;
 
-import ypfunding.common.protocol.Packet;
 import ypfunding.common.protocol.TCPConnectionManager;
 
 import java.io.IOException;
