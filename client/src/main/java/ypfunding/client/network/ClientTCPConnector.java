@@ -16,7 +16,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class ClientTCPConnectionManager {
+public class ClientTCPConnector implements ClientNetworkConnector {
 
     private final Selector selector;
     private final SocketChannel dstSocket;
@@ -31,7 +31,7 @@ public class ClientTCPConnectionManager {
     private static final InetSocketAddress SERVER_ADDRESS = new InetSocketAddress("127.0.0.1", 2222);
 
 
-    public ClientTCPConnectionManager() { // the server address is constant
+    public ClientTCPConnector() { // the server address is constant
         try {
             selector = Selector.open();
             dstSocket = SocketChannel.open();
@@ -93,20 +93,17 @@ public class ClientTCPConnectionManager {
                         byte[] bytesRead = packetProcessor.read();
                         if (bytesRead.length == 1) {
                             if (bytesRead[0] == -1) {
-                                this.selectionKey.cancel();
-                                dstSocket.close();
-                                selector.close();
-                                receivedPacket.set(null);
-                                synchronized (ClientTCPConnectionManager.this){
-                                    ClientTCPConnectionManager.this.notifyAll();
+                                close();
+                                synchronized (ClientTCPConnector.this){
+                                    ClientTCPConnector.this.notifyAll();
                                 }
                                 return;
                             }
                         } else {
                             receivedPacket.set(PacketManager.decodePacket(bytesRead, receivedPacketQueue.poll()));
                             key.interestOps(key.interestOps() & ~SelectionKey.OP_READ);
-                            synchronized (ClientTCPConnectionManager.this){
-                                ClientTCPConnectionManager.this.notifyAll();
+                            synchronized (ClientTCPConnector.this){
+                                ClientTCPConnector.this.notifyAll();
                             }
                         }
 
@@ -162,4 +159,11 @@ public class ClientTCPConnectionManager {
     }
 
 
+    @Override
+    public void close() throws IOException {
+        this.selectionKey.cancel();
+        dstSocket.close();
+        selector.close();
+        receivedPacket.set(null);
+    }
 }
