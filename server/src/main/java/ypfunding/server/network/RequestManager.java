@@ -28,7 +28,6 @@ public class RequestManager implements AutoCloseable {
         serverSocket.configureBlocking(false);
         serverSocket.register(selector, SelectionKey.OP_ACCEPT);
         threadPool = new ThreadPool(Runtime.getRuntime().availableProcessors());
-        threadPool.start();
         start();
     }
 
@@ -53,7 +52,7 @@ public class RequestManager implements AutoCloseable {
         }
     }
 
-    private void processSelectedKey(SelectionKey selectedKey) throws IOException {
+    private void processSelectedKey(SelectionKey selectionKey) throws IOException {
         for (RequestHandler value : requestHandlers.values()) {
             Runnable task;
             while ((task = value.getRequestEvent().getSelectorTasks().poll()) != null) {
@@ -61,14 +60,14 @@ public class RequestManager implements AutoCloseable {
             }
         }
 
-        if (selectedKey.isAcceptable()) {
+        if (selectionKey.isAcceptable()) {
             SocketChannel srcSocket = serverSocket.accept();
             srcSocket.configureBlocking(false);
             srcSocket.register(selector, SelectionKey.OP_READ);
             requestHandlers.put(srcSocket, new RequestHandler(selector, srcSocket));
         }
-        if (selectedKey.isReadable()) {
-            SocketChannel srcSocket = (SocketChannel) selectedKey.channel();
+        if (selectionKey.isValid() && selectionKey.isReadable()) {
+            SocketChannel srcSocket = (SocketChannel) selectionKey.channel();
             RequestHandler handler = requestHandlers.get(srcSocket);
 
             byte[] result;
@@ -78,14 +77,14 @@ public class RequestManager implements AutoCloseable {
                 threadPool.queue(() -> receiveRequest(srcSocket, packet));
             }
             if (result[0] == -1) {
-                selectedKey.cancel();
+                selectionKey.cancel();
                 requestHandlers.remove(srcSocket);
                 srcSocket.close();
             }
         }
 
-        if (selectedKey.isWritable()) {
-            SocketChannel channel = (SocketChannel) selectedKey.channel();
+        if (selectionKey.isValid() && selectionKey.isWritable()) {
+            SocketChannel channel = (SocketChannel) selectionKey.channel();
             RequestHandler handler = requestHandlers.get(channel);
             Queue<ByteBuffer> queue = handler.getRequestEvent().getWriteQueue();
 
@@ -100,7 +99,7 @@ public class RequestManager implements AutoCloseable {
             }
 
             if (queue.isEmpty()) {
-                selectedKey.interestOps(selectedKey.interestOps() & ~SelectionKey.OP_WRITE);
+                selectionKey.interestOps(selectionKey.interestOps() & ~SelectionKey.OP_WRITE);
             }
         }
 

@@ -4,19 +4,22 @@ import ypfunding.common.util.LogUtil;
 
 import java.util.LinkedList;
 import java.util.Queue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ThreadPool {
-    private final Thread[] threadPool;
+    private final Thread[] pool;
     private final Queue<Runnable> tasks;
+    private final AtomicInteger runningTaskCount = new AtomicInteger(0);
 
     public ThreadPool(int size) {
-        this.threadPool = new Thread[size];
+        this.pool = new Thread[size];
         this.tasks = new LinkedList<>();
+        start();
     }
 
-    public void start() {
-        for (int i = 0; i < threadPool.length; i++) {
-            threadPool[i] = new Thread(() -> {
+    private void start() {
+        for (int i = 0; i < pool.length; i++) {
+            pool[i] = new Thread(() -> {
                 Runnable r;
                 while (true) {
                     try {
@@ -25,17 +28,36 @@ public class ThreadPool {
                                 wait();
                             }
                         }
-                        r.run();
-                    }  catch (RuntimeException e){
-                        LogUtil.logError(e);
                     } catch (InterruptedException _) {
                         Thread.currentThread().interrupt();
                         return;
                     }
-                }
 
+                    try {
+                        runningTaskCount.getAndIncrement();
+                        r.run();
+                    } catch (RuntimeException e) {
+                        LogUtil.logError(e);
+                    } finally {
+                        runningTaskCount.getAndDecrement();
+                        synchronized (ThreadPool.this) {
+                            ThreadPool.this.notifyAll();
+                        }
+                    }
+                }
             });
-            threadPool[i].start();
+            pool[i].start();
+        }
+    }
+
+    public synchronized void waitIdle() {
+        while (!tasks.isEmpty() || runningTaskCount.get() > 0) {
+            try {
+                wait();
+            } catch (InterruptedException _) {
+                Thread.currentThread().interrupt();
+                return;
+            }
         }
     }
 

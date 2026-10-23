@@ -17,6 +17,7 @@ public class PacketManager {
     public static final int MAX_BUFFER_SIZE = 1024;
     public static final int PACKET_LEN_HEADER_SIZE = 2;
     public static final int MESSAGE_TYPE_HEADER_SIZE = 2;
+    public static final int TIMEOUT_MS = 5000;
 
     private static final Packets[] ALL_PACKETS = Packets.values();
     private static final Map<Class<? extends Packet>, Constructor<? extends Packet>> PKT_CONSTRUCTORS = new HashMap<>();
