@@ -56,7 +56,7 @@ public class RequestManager implements AutoCloseable {
         for (RequestHandler value : requestHandlers.values()) {
             Runnable task;
             while ((task = value.getRequestEvent().getSelectorTasks().poll()) != null) {
-                task.run(); // not a request
+                task.run(); // not a request, it is request handling.
             }
         }
 

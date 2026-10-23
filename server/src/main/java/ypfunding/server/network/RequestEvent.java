@@ -1,9 +1,9 @@
 package ypfunding.server.network;
 
 import lombok.Getter;
-import ypfunding.common.protocol.ClientTCPConnectionManager;
 import ypfunding.common.protocol.PacketManager;
 import ypfunding.common.protocol.packets.MessagePacket;
+import ypfunding.common.protocol.packets.Packet;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -27,13 +27,9 @@ public class RequestEvent {
         this.srcSocket = srcSocket;
     }
 
-    public void reply(String message) {
-
-        MessagePacket msgPkt = new MessagePacket();
-        msgPkt.setMessage(message);
-
+    public void reply(Packet packet){
         try {
-            ByteBuffer buf = PacketManager.makePacketBuffer(msgPkt);
+            ByteBuffer buf = PacketManager.makePacketBuffer(packet);
             selectorTasks.offer(() -> {
                 SelectionKey key = srcSocket.keyFor(selector);
                 if (key == null || !key.isValid()) {
@@ -46,6 +42,14 @@ public class RequestEvent {
         } catch (IOException e) {
             throw new IllegalStateException("Failed to create packet buffer", e);
         }
+    }
+
+    public void reply(String message) {
+
+        MessagePacket msgPkt = new MessagePacket();
+        msgPkt.setMessage(message);
+
+        reply(msgPkt);
     }
 
 }
