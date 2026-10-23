@@ -19,7 +19,7 @@ public class RequestManager implements AutoCloseable {
     private final Selector selector;
     private final ServerSocketChannel serverSocket;
     private final ThreadPool threadPool;
-    private final Map<SocketChannel, RequestHandler> requestHandlers = new HashMap<>();
+    private final Map<SocketChannel, RequestResolver> requestHandlers = new HashMap<>();
 
     public RequestManager(int port) throws IOException {
         selector = Selector.open();
@@ -53,7 +53,7 @@ public class RequestManager implements AutoCloseable {
     }
 
     private void processSelectedKey(SelectionKey selectionKey) throws IOException {
-        for (RequestHandler value : requestHandlers.values()) {
+        for (RequestResolver value : requestHandlers.values()) {
             Runnable task;
             while ((task = value.getRequestEvent().getSelectorTasks().poll()) != null) {
                 task.run(); // not a request, it is request handling.
@@ -64,11 +64,11 @@ public class RequestManager implements AutoCloseable {
             SocketChannel srcSocket = serverSocket.accept();
             srcSocket.configureBlocking(false);
             srcSocket.register(selector, SelectionKey.OP_READ);
-            requestHandlers.put(srcSocket, new RequestHandler(selector, srcSocket));
+            requestHandlers.put(srcSocket, new RequestResolver(selector, srcSocket));
         }
         if (selectionKey.isValid() && selectionKey.isReadable()) {
             SocketChannel srcSocket = (SocketChannel) selectionKey.channel();
-            RequestHandler handler = requestHandlers.get(srcSocket);
+            RequestResolver handler = requestHandlers.get(srcSocket);
 
             byte[] result;
 
@@ -85,7 +85,7 @@ public class RequestManager implements AutoCloseable {
 
         if (selectionKey.isValid() && selectionKey.isWritable()) {
             SocketChannel channel = (SocketChannel) selectionKey.channel();
-            RequestHandler handler = requestHandlers.get(channel);
+            RequestResolver handler = requestHandlers.get(channel);
             Queue<ByteBuffer> queue = handler.getRequestEvent().getWriteQueue();
 
             while (!queue.isEmpty()) {
@@ -108,7 +108,7 @@ public class RequestManager implements AutoCloseable {
     private void receiveRequest(SocketChannel sender, byte[] buffer) {
         RequestEvent event = requestHandlers.get(sender).getRequestEvent();
         RawPacketTemp raw = PacketManager.demultiplex(buffer);
-        RequestLinkers.values()[raw.ordinal()].handle(event, raw.payload());
+        RequestHandlers.values()[raw.ordinal()].handle(event, raw.payload());
     }
 
     @Override
