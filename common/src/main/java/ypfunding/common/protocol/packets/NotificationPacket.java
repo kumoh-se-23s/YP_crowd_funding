@@ -1,18 +1,15 @@
 package ypfunding.common.protocol.packets;
 
+import lombok.Setter;
 import ypfunding.common.notifications.CompleteNotification;
-import ypfunding.common.notifications.Notification;
 import ypfunding.common.notifications.NotificationType;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
 public class NotificationPacket implements Packet {
-    private final CompleteNotification notification;
-
-    public NotificationPacket(Notification notification) {
-        this.notification = CompleteNotification.from(notification);
-    }
+    @Setter
+    private CompleteNotification notification;
 
     @Override
     public void decode(ByteBuffer in) {

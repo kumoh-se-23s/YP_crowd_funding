@@ -1,30 +1,51 @@
 package ypfunding.server.network;
 
-import ypfunding.common.protocol.TCPConnectionManager;
+import lombok.Getter;
+import ypfunding.common.protocol.ClientTCPConnectionManager;
+import ypfunding.common.protocol.PacketManager;
+import ypfunding.common.protocol.packets.MessagePacket;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
-import java.nio.charset.StandardCharsets;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class RequestEvent {
+    private final Selector selector;
+    private final SocketChannel srcSocket;
 
-    public SocketChannel srcSocket;
+    @Getter
+    private final Queue<ByteBuffer> writeQueue = new ConcurrentLinkedQueue<>();
+    @Getter
+    private final Queue<Runnable> selectorTasks = new ConcurrentLinkedQueue<>();
 
-    public RequestEvent(SocketChannel srcSocket){
+    public RequestEvent(Selector selector, SocketChannel srcSocket) {
+        this.selector = selector;
         this.srcSocket = srcSocket;
     }
 
-    public void reply(String message){
-        //TODO
-        ByteBuffer buf = ByteBuffer.allocate(TCPConnectionManager.MAX_BUFFER_SIZE);
-        byte[] arr = message.getBytes(StandardCharsets.UTF_8);
-        buf.putInt(arr.length);
-        buf.put(arr);
+    public void reply(String message) {
+
+        MessagePacket msgPkt = new MessagePacket();
+        msgPkt.setMessage(message);
+
         try {
-            srcSocket.write(buf);
+            ByteBuffer buf = PacketManager.makePacketBuffer(msgPkt);
+            selectorTasks.offer(() -> {
+                SelectionKey key = srcSocket.keyFor(selector);
+                if (key == null || !key.isValid()) {
+                    throw new IllegalStateException("Invalid reply target");
+                }
+                writeQueue.offer(buf);
+                key.interestOps(key.interestOps() | SelectionKey.OP_WRITE);
+            });
+            selector.wakeup();
         } catch (IOException e) {
-            throw new IllegalStateException("Failed to reply " + e);
+            throw new IllegalStateException("Failed to create packet buffer", e);
         }
     }
+
 }

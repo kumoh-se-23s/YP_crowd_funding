@@ -1,8 +1,7 @@
-package ypfunding.server.network;
+package ypfunding.common.protocol;
 
 import lombok.Getter;
 import lombok.Setter;
-import ypfunding.common.protocol.TCPConnectionManager;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -11,27 +10,26 @@ import java.nio.channels.SocketChannel;
 @Getter
 @Setter
 public class PacketProcessor {
-    private final SocketChannel channel;
+    private final SocketChannel socket;
     private ByteBuffer buffer;
     private int requiredSize;
 
-    public PacketProcessor(SocketChannel srcSocket) throws IOException {
-        srcSocket.configureBlocking(false);
-        this.channel = srcSocket;
-        this.buffer = ByteBuffer.allocate(TCPConnectionManager.MAX_BUFFER_SIZE);
+    public PacketProcessor(SocketChannel srcSocket)  {
+        this.socket = srcSocket;
+        this.buffer = ByteBuffer.allocate(PacketManager.MAX_BUFFER_SIZE);
         this.requiredSize = 0;
     }
-    byte[] read() throws IOException {
-        int size = channel.read(buffer);
+    public byte[] read() throws IOException {
+        int size = socket.read(buffer);
 
         if(size == -1){
             return new byte[]{-1};
         }
 
-        if(requiredSize == 0 && buffer.position() >= TCPConnectionManager.PACKET_LEN_HEADER_SIZE){
+        if(requiredSize == 0 && buffer.position() >= PacketManager.PACKET_LEN_HEADER_SIZE){
             requiredSize = Short.toUnsignedInt(buffer.getShort(0));
 
-            if(requiredSize < TCPConnectionManager.PACKET_LEN_HEADER_SIZE){
+            if(requiredSize < PacketManager.PACKET_LEN_HEADER_SIZE){
                 throw new IOException("Invalid packet size: " + requiredSize);
             }
             if (requiredSize > buffer.capacity()) {

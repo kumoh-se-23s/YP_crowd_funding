@@ -1,7 +1,8 @@
 package ypfunding.common.protocol.packets;
 
 public enum Packets {
-    NOTIFICATION(NotificationPacket.class)
+    NOTIFICATION(NotificationPacket.class),
+    MESSAGE(MessagePacket.class)
     ;
     private final Class<? extends Packet> packetClass;
 

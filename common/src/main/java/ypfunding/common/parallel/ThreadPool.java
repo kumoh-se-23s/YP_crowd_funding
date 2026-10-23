@@ -40,7 +40,7 @@ public class ThreadPool {
     }
 
     public synchronized void queue(Runnable task) {
-        tasks.add(task);
+        tasks.offer(task);
         notifyAll();
     }
 

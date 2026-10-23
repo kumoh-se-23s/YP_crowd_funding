@@ -1,24 +1,21 @@
 package ypfunding.server.network;
 
+import lombok.Getter;
+import ypfunding.common.protocol.PacketProcessor;
+
 import java.io.IOException;
-import java.net.SocketAddress;
+import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 
+@Getter
 public class RequestHandler {
     private final RequestEvent requestEvent;
     private final PacketProcessor packetProcessor;
 
-    public RequestHandler(SocketChannel channel) throws IOException {
-        this.requestEvent = new RequestEvent(channel);
+    public RequestHandler(Selector selector, SocketChannel channel) throws IOException {
+        this.requestEvent = new RequestEvent(selector, channel);
         this.packetProcessor = new PacketProcessor(channel);
     }
 
 
-    public PacketProcessor getPacketProcessor() {
-        return packetProcessor;
-    }
-
-    public RequestEvent getRequestEvent() {
-        return requestEvent;
-    }
 }
