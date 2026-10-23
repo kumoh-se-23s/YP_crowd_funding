@@ -1,0 +1,4 @@
+dependencies {
+    // common 모듈의 DTO, enum, 상수를 사용하므로 implement
+    implementation project(':common')
+}

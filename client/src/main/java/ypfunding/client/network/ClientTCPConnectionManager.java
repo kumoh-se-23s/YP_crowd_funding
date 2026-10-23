@@ -1,15 +1,13 @@
-package ypfunding.common.protocol;
+package ypfunding.client.network;
 
 import ypfunding.common.parallel.ThreadPool;
+import ypfunding.common.protocol.PacketManager;
+import ypfunding.common.protocol.PacketProcessor;
 import ypfunding.common.protocol.packets.Packet;
-import ypfunding.common.protocol.packets.Packets;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
-import java.util.HashMap;
-import java.util.Map;
 
 public class ClientTCPConnectionManager {
 
