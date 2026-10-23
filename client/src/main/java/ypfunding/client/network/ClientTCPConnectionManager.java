@@ -155,7 +155,7 @@ public class ClientTCPConnectionManager {
     }
 
 
-    public synchronized <P extends Packet> void receivePacket(Class<P> clazz) {
+    private synchronized <P extends Packet> void receivePacket(Class<P> clazz) {
         receivedPacketQueue.offer(clazz);
         if(selectionKey.isValid()) selectionKey.interestOps(selectionKey.interestOps() | SelectionKey.OP_READ);
         selector.wakeup();
