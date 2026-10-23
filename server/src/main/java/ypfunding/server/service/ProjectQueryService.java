@@ -1,6 +1,7 @@
 package ypfunding.server.service;
 
 import ypfunding.common.dto.ProjectDTO;
+import ypfunding.common.dto.ProjectQueryDTO;
 import ypfunding.common.notifications.NotificationType;
 import ypfunding.common.notifications.PermissionDeniedNotification;
 import ypfunding.server.persistence.TransactionManager;
@@ -20,12 +21,21 @@ public class ProjectQueryService extends Service{
         this.projectQueryDAO = new ProjectQueryDAO(rewardsDAO, fundsDAO);
     }
 
-    public List<ProjectDTO> getAllProjects(long userID){
+    public List<ProjectQueryDTO> getSelectedProjectWithStatus(long userID, long projectID){
         return transactionManager.execute(conn ->{
             if(userService.checkNotAdmin(conn, userID)){
                 NotificationUtils.sendNotification(new PermissionDeniedNotification());
             }
-            return projectsDAO.getDisplayedProjectsWithFundingStatus(conn);
+            return projectQueryDAO.getProjectWithFundingStatus(conn, projectID);
+        });
+    }
+
+    public List<ProjectQueryDTO> getAllProjectsWithStatus(long userID){
+        return transactionManager.execute(conn ->{
+            if(userService.checkNotAdmin(conn, userID)){
+                NotificationUtils.sendNotification(new PermissionDeniedNotification());
+            }
+            return projectQueryDAO.getDisplayedProjectsWithFundingStatus(conn);
         });
     }
 

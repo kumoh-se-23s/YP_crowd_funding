@@ -99,13 +99,29 @@ public class ProjectQueryDAO extends DAO {
 
     // Displayed projects with funding status ()
     // Admin only.
-    public List<ProjectQueryDTO> getDisplayedProjectsWithFundingStatus(Connection conn, long projectID) throws SQLException {
+    public List<ProjectQueryDTO> getProjectWithFundingStatus(Connection conn, long projectID) throws SQLException {
 
         DirectReferenceTable projectsTable = new DirectReferenceTable(Tables.PROJECTS);
         DirectReferenceTable rewardsTable = new DirectReferenceTable(Tables.REWARDS);
         List<ProjectQueryDTO> result = new ArrayList<>();
         try (ResultSet rs = createFundingStatusSQLBuilder(projectsTable, rewardsTable)
                 .addCondition(new BasicCondition(new ColumnValueToken(RewardsDAO.Columns.PROJECT_ID), ArithmeticConditionOperator.EQ, new UserValueToken(projectID)))
+                .execute(conn)) {
+            while (rs.next()) {
+                result.add(toDTO(rs, projectsTable, rewardsTable));
+            }
+        }
+        return result;
+    }
+
+    // Displayed projects with funding status ()
+    // Admin only.
+    public List<ProjectQueryDTO> getDisplayedProjectsWithFundingStatus(Connection conn) throws SQLException {
+
+        DirectReferenceTable projectsTable = new DirectReferenceTable(Tables.PROJECTS);
+        DirectReferenceTable rewardsTable = new DirectReferenceTable(Tables.REWARDS);
+        List<ProjectQueryDTO> result = new ArrayList<>();
+        try (ResultSet rs = createFundingStatusSQLBuilder(projectsTable, rewardsTable)
                 .execute(conn)) {
             while (rs.next()) {
                 result.add(toDTO(rs, projectsTable, rewardsTable));
