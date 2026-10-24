@@ -30,7 +30,7 @@ public class UserService extends Service{
     }
 
     /**
-     * returns true if the user is not an maker.
+     * returns true if the user is not a maker.
      */
     public boolean checkNotMaker(Connection conn, LoginUser user) throws SQLException {
         UserDTO dto = usersDAO.getUserById(conn, user.userId());

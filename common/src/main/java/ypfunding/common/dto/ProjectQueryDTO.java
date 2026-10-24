@@ -3,6 +3,7 @@ package ypfunding.common.dto;
 import lombok.Getter;
 import lombok.Setter;
 import ypfunding.common.type.ApprovalStatus;
+import ypfunding.common.type.ProjectFundingStatus;
 
 import java.time.LocalDateTime;
 
@@ -21,4 +22,5 @@ public class ProjectQueryDTO {
     private Long supporterCount;
     private Long soldPrice;
     private Long fundProgress;
+    private ProjectFundingStatus projectFundingStatus;
 }

@@ -12,7 +12,6 @@ import ypfunding.server.persistence.dao.dynamicsql.log.SQLLogger;
 import ypfunding.server.persistence.dao.dynamicsql.table.DirectReferenceTable;
 import ypfunding.server.persistence.dao.dynamicsql.table.PredefinedReferenceTable;
 import ypfunding.server.persistence.dao.dynamicsql.table.ReferenceTable;
-import ypfunding.server.persistence.dao.dynamicsql.token.ColumnValueToken;
 import ypfunding.server.persistence.dao.dynamicsql.token.TableRefColumnToken;
 
 import java.sql.Connection;
@@ -64,7 +63,7 @@ public final class SQLSelect extends SQLBuilder<ResultSet> {
         return "select " + (columnSelectors.length == 0 ? "*" : ColumnSelector.buildSelectColumnParentheses(columnSelectors)) +
                " from " +
                referenceTable + Condition.whereChain(conditions) +
-               orderBySelectors.stream().map(OrderBySelector::toString).collect(Collectors.joining(" ")) +
+               orderBySelectors.stream().map(OrderBySelector::toString).collect(Collectors.joining(", ")) +
                (groupByColumns != null ? " group by " + Arrays.stream(groupByColumns).map(ColumnSelector::toString).collect(Collectors.joining(", ")) : "");
     }
 

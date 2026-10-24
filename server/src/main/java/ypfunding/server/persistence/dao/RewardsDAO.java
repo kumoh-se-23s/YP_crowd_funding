@@ -1,8 +1,6 @@
 package ypfunding.server.persistence.dao;
 
-import ypfunding.common.dto.ProjectDTO;
 import ypfunding.common.dto.RewardDTO;
-import ypfunding.common.type.ApprovalStatus;
 import ypfunding.server.persistence.dao.dynamicsql.builder.SQLDelete;
 import ypfunding.server.persistence.dao.dynamicsql.builder.SQLInsert;
 import ypfunding.server.persistence.dao.dynamicsql.builder.SQLSelect;
@@ -10,11 +8,9 @@ import ypfunding.server.persistence.dao.dynamicsql.builder.SQLUpdate;
 import ypfunding.server.persistence.dao.dynamicsql.col.*;
 import ypfunding.server.persistence.dao.dynamicsql.condition.BasicCondition;
 import ypfunding.server.persistence.dao.dynamicsql.op.ArithmeticConditionOperator;
-import ypfunding.server.persistence.dao.dynamicsql.op.ArithmeticOperator;
 import ypfunding.server.persistence.dao.dynamicsql.table.DirectReferenceTable;
 import ypfunding.server.persistence.dao.dynamicsql.token.ColumnValueToken;
 import ypfunding.server.persistence.dao.dynamicsql.token.UserValueToken;
-import ypfunding.server.persistence.dao.dynamicsql.token.ValueExpressionToken;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -42,11 +38,6 @@ public class RewardsDAO extends DAO {
         public String toString() {
             return name;
         }
-    }
-
-
-    public void fillDataFromResultSet(RewardDTO dto, PreparedStatement psmt) throws SQLException {
-
     }
 
     // =================================================================
@@ -78,7 +69,6 @@ public class RewardsDAO extends DAO {
      * @param conn 커넥션
      * @param rewardId 리워드 id
      * @return 리워드 DTO
-     * @throws SQLException
      */
     public RewardDTO findById(Connection conn, long rewardId) throws SQLException {
         try (ResultSet rs = SQLSelect.allColumns(new DirectReferenceTable(Tables.REWARDS))
@@ -109,7 +99,7 @@ public class RewardsDAO extends DAO {
                         new ColumnValueToken(Columns.PROJECT_ID),
                         ArithmeticConditionOperator.EQ,
                         new UserValueToken(projectId)))
-                .orderBy(new OrderBySelector(new ColumnValueToken(Columns.REWARD_ID), true))
+                .orderBy(new SimpleOrderBySelector(Columns.REWARD_ID, true))
                 .execute(conn)) {
             while (rs.next()) {
                 rewards.add(toDTO(rs));

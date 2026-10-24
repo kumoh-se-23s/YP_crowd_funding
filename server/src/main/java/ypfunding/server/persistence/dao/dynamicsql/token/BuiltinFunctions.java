@@ -1,6 +1,5 @@
 package ypfunding.server.persistence.dao.dynamicsql.token;
 
-import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
@@ -12,7 +11,7 @@ public enum BuiltinFunctions {
     LOWER(1),
     SUM(1),
     IFNULL(2),
-    ;
+    IF(3);
 
     private final int parameterCounts;
 

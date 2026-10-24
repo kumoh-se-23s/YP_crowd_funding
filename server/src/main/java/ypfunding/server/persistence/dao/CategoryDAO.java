@@ -7,7 +7,7 @@ import ypfunding.server.persistence.dao.dynamicsql.builder.SQLDelete;
 import ypfunding.server.persistence.dao.dynamicsql.builder.SQLInsert;
 import ypfunding.server.persistence.dao.dynamicsql.builder.SQLSelect;
 import ypfunding.server.persistence.dao.dynamicsql.builder.SQLUpdate;
-import ypfunding.server.persistence.dao.dynamicsql.col.OrderBySelector;
+import ypfunding.server.persistence.dao.dynamicsql.col.SimpleOrderBySelector;
 import ypfunding.server.persistence.dao.dynamicsql.col.UpdateSelector;
 import ypfunding.server.persistence.dao.dynamicsql.condition.BasicCondition;
 import ypfunding.server.persistence.dao.dynamicsql.op.ArithmeticConditionOperator;
@@ -74,7 +74,7 @@ public class CategoryDAO extends DAO {
                         ArithmeticConditionOperator.EQ,
                         new UserValueToken(projectId)
                 ))
-                .orderBy(new OrderBySelector(new ColumnValueToken(Columns.CATEGORY_ID), true))
+                .orderBy(new SimpleOrderBySelector(Columns.CATEGORY_ID, true))
                 .execute(conn)) {
             while (rs.next()) {
                 resultList.add(toDTO(rs));

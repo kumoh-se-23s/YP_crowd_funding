@@ -2,12 +2,14 @@ package ypfunding.server.persistence.dao;
 
 import ypfunding.common.dto.ProjectQueryDTO;
 import ypfunding.common.type.ApprovalStatus;
+import ypfunding.common.type.ProjectFundingStatus;
 import ypfunding.common.util.DateTimeUtil;
 import ypfunding.server.persistence.dao.dynamicsql.builder.SQLSelect;
 import ypfunding.server.persistence.dao.dynamicsql.col.*;
 import ypfunding.server.persistence.dao.dynamicsql.condition.BasicCondition;
 import ypfunding.server.persistence.dao.dynamicsql.op.ArithmeticConditionOperator;
 import ypfunding.server.persistence.dao.dynamicsql.op.ArithmeticOperator;
+import ypfunding.server.persistence.dao.dynamicsql.op.SetConditionOperator;
 import ypfunding.server.persistence.dao.dynamicsql.table.DirectReferenceTable;
 import ypfunding.server.persistence.dao.dynamicsql.table.JoinType;
 import ypfunding.server.persistence.dao.dynamicsql.table.JoinedTable;
@@ -19,15 +21,14 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.function.Supplier;
 
 public class ProjectQueryDAO extends DAO {
 
     private enum Columns implements ColumnsEnum {
         PROJECT_SOLD_PRICE("project_sold_price"),
         PROJECT_FUND_PROGRESS("project_fund_progress"),
+        PROJECT_FUND_STATUS("project_fund_status"),
         SUPPORTER_COUNT("supporter_count"),
         REWARD_SOLD_STOCK("reward_sold_stock"),
         REWARD_SOLD_PRICE("reward_sold_price"),
@@ -48,11 +49,6 @@ public class ProjectQueryDAO extends DAO {
 
     // =================================================================
     // 1. CREATE SECTION
-    // =================================================================
-
-
-    // =================================================================
-    // 2. READ SECTION
     // =================================================================
 
     private SQLSelect createRewardStatusSQLBuilder() {
@@ -114,6 +110,20 @@ public class ProjectQueryDAO extends DAO {
         DirectReferenceTable cteProjects = new DirectReferenceTable(Tables.PROJECTS);
 
         PredefinedReferenceTable cteRewardStatus = new PredefinedReferenceTable(createRewardStatusSQLBuilder());
+
+
+        ValueExpressionToken progressExpression = new ValueExpressionToken(
+                new BuiltinFunctionToken(BuiltinFunctions.SUM,
+                        new BuiltinFunctionToken(
+                                BuiltinFunctions.IFNULL,
+                                new TableRefColumnToken(cteRewardStatus, Columns.REWARD_SOLD_PRICE),
+                                new UserValueToken(0)
+                        )
+                ),
+                ArithmeticOperator.DIV,
+                new TableRefColumnToken(cteProjects, ProjectsDAO.Columns.GOAL)
+        );
+
         PredefinedReferenceTable cteProjectsWithStatus = new PredefinedReferenceTable(
                 new SQLSelect(
                         new ColumnSelector[]{
@@ -142,16 +152,28 @@ public class ProjectQueryDAO extends DAO {
                                         new TableRefColumnToken(cteProjects, ProjectsDAO.Columns.GOAL)),
                                 new ColumnFromTokenSelector(
                                         Columns.PROJECT_FUND_PROGRESS,
-                                        new ValueExpressionToken(
-                                                new BuiltinFunctionToken(BuiltinFunctions.SUM,
-                                                        new BuiltinFunctionToken(
-                                                                BuiltinFunctions.IFNULL,
-                                                                new TableRefColumnToken(cteRewardStatus, Columns.REWARD_SOLD_PRICE),
-                                                                new UserValueToken(0)
-                                                        )
+                                        progressExpression
+                                ),
+                                new ColumnFromTokenSelector(
+                                        Columns.PROJECT_FUND_STATUS,
+                                        new BuiltinFunctionToken(
+                                                BuiltinFunctions.IF,
+                                                new ValueConditionToken(
+                                                        createEndedCondition(true)
                                                 ),
-                                                ArithmeticOperator.DIV,
-                                                new TableRefColumnToken(cteProjects, ProjectsDAO.Columns.GOAL)
+                                                new BuiltinFunctionToken(
+                                                        BuiltinFunctions.IF,
+                                                        new ValueConditionToken(
+                                                                new BasicCondition(
+                                                                        progressExpression,
+                                                                        ArithmeticConditionOperator.GE,
+                                                                        new UserValueToken(1)
+                                                                )
+                                                        ),
+                                                        new UserValueToken(ProjectFundingStatus.SUCCESS),
+                                                        new UserValueToken(ProjectFundingStatus.FAILED)
+                                                ),
+                                                new UserValueToken(ProjectFundingStatus.ONGOING)
                                         )
                                 )
                         },
@@ -180,6 +202,7 @@ public class ProjectQueryDAO extends DAO {
                 new ColumnFromTokenSelector(Columns.SUPPORTER_COUNT, new TableRefColumnToken(cteProjectsWithStatus, Columns.SUPPORTER_COUNT)),
                 new ColumnFromTokenSelector(Columns.PROJECT_SOLD_PRICE, new TableRefColumnToken(cteProjectsWithStatus, Columns.PROJECT_SOLD_PRICE)),
                 new ColumnFromTokenSelector(Columns.PROJECT_FUND_PROGRESS, new TableRefColumnToken(cteProjectsWithStatus, Columns.PROJECT_FUND_PROGRESS)),
+                new ColumnFromTokenSelector(Columns.PROJECT_FUND_STATUS, new TableRefColumnToken(cteProjectsWithStatus, Columns.PROJECT_FUND_STATUS)),
         }, new JoinedTable(
                 projectsTable,
                 JoinType.LEFT,
@@ -192,11 +215,16 @@ public class ProjectQueryDAO extends DAO {
         ), cteRewardStatus, cteProjectsWithStatus);
     }
 
+    // =================================================================
+    // 2. READ SECTION
+    // =================================================================
+
+
     public List<ProjectQueryDTO> getProject(Connection conn, long projectId) throws SQLException {
 
         List<ProjectQueryDTO> result = new ArrayList<>();
         try (ResultSet rs = createProjectStatusSQLBuilder()
-                .addCondition(new BasicCondition(new ColumnValueToken(RewardsDAO.Columns.PROJECT_ID), ArithmeticConditionOperator.EQ, new UserValueToken(projectId)))
+                .addCondition(new BasicCondition(new ColumnValueToken(ProjectsDAO.Columns.PROJECT_ID), ArithmeticConditionOperator.EQ, new UserValueToken(projectId)))
                 .execute(conn)) {
             while (rs.next()) {
                 result.add(toDTO(rs));
@@ -205,25 +233,77 @@ public class ProjectQueryDAO extends DAO {
         return result;
     }
 
-    public final List<ProjectQueryDTO> getActiveRecentProjects(Connection conn) throws SQLException {
-        return queryActiveProjects(conn, () ->
-                new OrderBySelector(new ColumnValueToken(ProjectsDAO.Columns.START_DATE), false));
+    public final List<ProjectQueryDTO> getActiveProjects(Connection conn, SimpleOrderBySelector... sorter) throws SQLException {
+        return getActiveProjectsForName(conn, "", sorter);
     }
 
-    public final List<ProjectQueryDTO> getActiveProjects(Connection conn) throws SQLException {
-        return queryActiveProjects(conn);
+    public List<ProjectQueryDTO> getActiveProjectsForName(Connection conn, String projectName, SimpleOrderBySelector... sorter) throws SQLException {
+        return queryActiveProjects(conn, projectName, sorter);
     }
 
+    public final List<ProjectQueryDTO> getFailedProjects(Connection conn, SimpleOrderBySelector... sorter) throws SQLException {
+        return getFailedProjectsForName(conn, "", sorter);
+    }
 
+    public List<ProjectQueryDTO> getFailedProjectsForName(Connection conn, String projectName, SimpleOrderBySelector... sorter) throws SQLException {
+        return queryFailedProjects(conn, projectName, sorter);
+    }
 
+    public final List<ProjectQueryDTO> getMyProjects(Connection conn, long userId, ApprovalStatus approvalStatus, ProjectFundingStatus fundingStatus, SimpleOrderBySelector... sorter) throws SQLException {
+        return getMyProjectsForName(conn, userId, "", approvalStatus, fundingStatus, sorter);
+    }
 
-    @SafeVarargs
-    private List<ProjectQueryDTO> queryActiveProjects(Connection conn, Supplier<OrderBySelector>... sorter) throws SQLException {
+    public final List<ProjectQueryDTO> getMyProjectsForName(Connection conn, long userId, String projectName, ApprovalStatus approvalStatus, ProjectFundingStatus fundingStatus, SimpleOrderBySelector... sorter) throws SQLException {
+        return queryMyProjects(conn, userId, projectName, approvalStatus, fundingStatus, sorter);
+    }
+
+    public final List<ProjectQueryDTO> getPendingProjects(Connection conn, SimpleOrderBySelector... sorter) throws SQLException {
+        return getPendingProjectsForName(conn, "", sorter);
+    }
+
+    public List<ProjectQueryDTO> getPendingProjectsForName(Connection conn, String projectName, SimpleOrderBySelector... sorter) throws SQLException {
+        return queryPendingProjects(conn, projectName, sorter);
+    }
+
+    public final List<ProjectQueryDTO> getAllProjects(Connection conn, SimpleOrderBySelector... sorter) throws SQLException {
+        return getAllProjectsForName(conn, "", sorter);
+    }
+
+    public List<ProjectQueryDTO> getAllProjectsForName(Connection conn, String projectName, SimpleOrderBySelector... sorter) throws SQLException {
+        return queryAllProjects(conn, projectName, sorter);
+    }
+
+    public final List<ProjectQueryDTO> getSuccessProjects(Connection conn, SimpleOrderBySelector... sorter) throws SQLException {
+        return getSuccessProjectsForName(conn, "", sorter);
+    }
+
+    public List<ProjectQueryDTO> getSuccessProjectsForName(Connection conn, String projectName, SimpleOrderBySelector... sorter) throws SQLException {
+        return querySuccessProjects(conn, projectName, sorter);
+    }
+
+    public final List<ProjectQueryDTO> getRejectedProjects(Connection conn, SimpleOrderBySelector... sorter) throws SQLException {
+        return getActiveProjectsForName(conn, "", sorter);
+    }
+
+    public List<ProjectQueryDTO> getRejectedProjectsForName(Connection conn, String projectName, SimpleOrderBySelector... sorter) throws SQLException {
+        return queryRejectedProjects(conn, projectName, sorter);
+    }
+
+    public final List<ProjectQueryDTO> getEndedProjects(Connection conn, SimpleOrderBySelector... sorter) throws SQLException {
+        return getActiveProjectsForName(conn, "", sorter);
+    }
+
+    public List<ProjectQueryDTO> getEndedProjectsForName(Connection conn, String projectName, SimpleOrderBySelector... sorter) throws SQLException {
+        return queryEndedProjects(conn, projectName, sorter);
+    }
+
+    private List<ProjectQueryDTO> queryActiveProjects(Connection conn, String projectName, OrderBySelector... sorter) throws SQLException {
         List<ProjectQueryDTO> result = new ArrayList<>();
         try (ResultSet rs = createProjectStatusSQLBuilder()
                 .addCondition(createProjectApprovalStatusCondition(ApprovalStatus.APPROVED))
                 .addCondition(createEndedCondition(false))
-                .orderBy(Arrays.stream(sorter).map(Supplier::get).toArray(OrderBySelector[]::new))
+                .addCondition(createTitlePatternCondition(projectName))
+                .orderBy(sorter)
                 .execute(conn)) {
             while (rs.next()) {
                 result.add(toDTO(rs));
@@ -232,14 +312,15 @@ public class ProjectQueryDAO extends DAO {
         return result;
     }
 
-    @SafeVarargs
-    private List<ProjectQueryDTO> queryFailedProjects(Connection conn, Supplier<OrderBySelector>... sorter) throws SQLException {
+
+    private List<ProjectQueryDTO> queryFailedProjects(Connection conn, String projectName, OrderBySelector... sorter) throws SQLException {
         List<ProjectQueryDTO> result = new ArrayList<>();
         try (ResultSet rs = createProjectStatusSQLBuilder()
                 .addCondition(createProjectApprovalStatusCondition(ApprovalStatus.APPROVED))
                 .addCondition(createEndedCondition(true))
                 .addCondition(createProjectProgressCondition(false))
-                .orderBy(Arrays.stream(sorter).map(Supplier::get).toArray(OrderBySelector[]::new))
+                .addCondition(createTitlePatternCondition(projectName))
+                .orderBy(sorter)
                 .execute(conn)) {
             while (rs.next()) {
                 result.add(toDTO(rs));
@@ -248,14 +329,15 @@ public class ProjectQueryDAO extends DAO {
         return result;
     }
 
-    @SafeVarargs
-    private List<ProjectQueryDTO> querySuccessProjects(Connection conn, Supplier<OrderBySelector>... sorter) throws SQLException {
+
+    private List<ProjectQueryDTO> querySuccessProjects(Connection conn, String projectName, OrderBySelector... sorter) throws SQLException {
         List<ProjectQueryDTO> result = new ArrayList<>();
         try (ResultSet rs = createProjectStatusSQLBuilder()
                 .addCondition(createProjectApprovalStatusCondition(ApprovalStatus.APPROVED))
                 .addCondition(createEndedCondition(true))
                 .addCondition(createProjectProgressCondition(true))
-                .orderBy(Arrays.stream(sorter).map(Supplier::get).toArray(OrderBySelector[]::new))
+                .addCondition(createTitlePatternCondition(projectName))
+                .orderBy(sorter)
                 .execute(conn)) {
             while (rs.next()) {
                 result.add(toDTO(rs));
@@ -264,7 +346,93 @@ public class ProjectQueryDAO extends DAO {
         return result;
     }
 
-    private BasicCondition createProjectApprovalStatusCondition(ApprovalStatus approvalStatus){
+
+    private List<ProjectQueryDTO> queryEndedProjects(Connection conn, String projectName, OrderBySelector... sorter) throws SQLException {
+        List<ProjectQueryDTO> result = new ArrayList<>();
+        try (ResultSet rs = createProjectStatusSQLBuilder()
+                .addCondition(createProjectApprovalStatusCondition(ApprovalStatus.APPROVED))
+                .addCondition(createEndedCondition(true))
+                .addCondition(createTitlePatternCondition(projectName))
+                .orderBy(sorter)
+                .execute(conn)) {
+            while (rs.next()) {
+                result.add(toDTO(rs));
+            }
+        }
+        return result;
+    }
+
+
+    private List<ProjectQueryDTO> queryPendingProjects(Connection conn, String projectName, OrderBySelector... sorter) throws SQLException {
+        List<ProjectQueryDTO> result = new ArrayList<>();
+        try (ResultSet rs = createProjectStatusSQLBuilder()
+                .addCondition(createProjectApprovalStatusCondition(ApprovalStatus.PENDING))
+                .addCondition(createTitlePatternCondition(projectName))
+                .orderBy(sorter)
+                .execute(conn)) {
+            while (rs.next()) {
+                result.add(toDTO(rs));
+            }
+        }
+        return result;
+    }
+
+
+    private List<ProjectQueryDTO> queryRejectedProjects(Connection conn, String projectName, OrderBySelector... sorter) throws SQLException {
+        List<ProjectQueryDTO> result = new ArrayList<>();
+        try (ResultSet rs = createProjectStatusSQLBuilder()
+                .addCondition(createProjectApprovalStatusCondition(ApprovalStatus.REJECTED))
+                .addCondition(createTitlePatternCondition(projectName))
+                .orderBy(sorter)
+                .execute(conn)) {
+            while (rs.next()) {
+                result.add(toDTO(rs));
+            }
+        }
+        return result;
+    }
+
+
+    private List<ProjectQueryDTO> queryMyProjects(Connection conn, long userId, String projectName, ApprovalStatus approvalStatus, ProjectFundingStatus fundingStatus, SimpleOrderBySelector... sorter) throws SQLException {
+        List<ProjectQueryDTO> result = new ArrayList<>();
+        SQLSelect select = createProjectStatusSQLBuilder().addCondition(createTitlePatternCondition(projectName));
+
+        if(approvalStatus != null)
+            select.addCondition(createProjectApprovalStatusCondition(approvalStatus));
+        if(fundingStatus != null)
+            select.addCondition(createProjectFundingStatusCondition(fundingStatus));
+
+        try (ResultSet rs = select
+                .addCondition(
+                        new BasicCondition(
+                                new ColumnValueToken(ProjectsDAO.Columns.USER_ID),
+                                ArithmeticConditionOperator.EQ,
+                                new UserValueToken(userId)
+                        )
+                )
+                .orderBy(sorter)
+                .execute(conn)) {
+            while (rs.next()) {
+                result.add(toDTO(rs));
+            }
+        }
+        return result;
+    }
+
+    private List<ProjectQueryDTO> queryAllProjects(Connection conn, String projectName, OrderBySelector... sorter) throws SQLException {
+        List<ProjectQueryDTO> result = new ArrayList<>();
+        try (ResultSet rs = createProjectStatusSQLBuilder()
+                .addCondition(createTitlePatternCondition(projectName))
+                .orderBy(sorter)
+                .execute(conn)) {
+            while (rs.next()) {
+                result.add(toDTO(rs));
+            }
+        }
+        return result;
+    }
+
+    private BasicCondition createProjectApprovalStatusCondition(ApprovalStatus approvalStatus) {
         return new BasicCondition(
                 new ColumnValueToken(ProjectsDAO.Columns.APPROVAL_STATUS),
                 ArithmeticConditionOperator.EQ,
@@ -272,7 +440,16 @@ public class ProjectQueryDAO extends DAO {
         );
     }
 
-    private BasicCondition createEndedCondition(boolean isEnd){
+
+    private BasicCondition createProjectFundingStatusCondition(ProjectFundingStatus fundingStatus) {
+        return new BasicCondition(
+                new ColumnValueToken(Columns.PROJECT_FUND_STATUS),
+                ArithmeticConditionOperator.EQ,
+                new UserValueToken(fundingStatus)
+        );
+    }
+
+    private BasicCondition createEndedCondition(boolean isEnd) {
         return new BasicCondition(
                 new ColumnValueToken(ProjectsDAO.Columns.END_DATE),
                 isEnd ? ArithmeticConditionOperator.LE : ArithmeticConditionOperator.GT,
@@ -282,72 +459,19 @@ public class ProjectQueryDAO extends DAO {
         );
     }
 
-    private BasicCondition createProjectProgressCondition(boolean isSuccess){
+    private BasicCondition createTitlePatternCondition(String projectName) {
+        return new BasicCondition(
+                new ColumnValueToken(ProjectsDAO.Columns.TITLE),
+                SetConditionOperator.LIKE,
+                new UserValueToken(projectName.isEmpty() ? "%" : "%" + projectName + "%"));
+    }
+
+    private BasicCondition createProjectProgressCondition(boolean isSuccess) {
         return new BasicCondition(
                 new ColumnValueToken(Columns.PROJECT_FUND_PROGRESS),
                 isSuccess ? ArithmeticConditionOperator.GE : ArithmeticConditionOperator.LT,
                 new UserValueToken(1)
         );
-    }
-
-    @SafeVarargs
-    private List<ProjectQueryDTO> queryEndedProjects(Connection conn, Supplier<OrderBySelector>... sorter) throws SQLException {
-        List<ProjectQueryDTO> result = new ArrayList<>();
-        try (ResultSet rs = createProjectStatusSQLBuilder()
-                .addCondition(createProjectApprovalStatusCondition(ApprovalStatus.APPROVED))
-                .addCondition(createEndedCondition(true))
-                .orderBy(Arrays.stream(sorter).map(Supplier::get).toArray(OrderBySelector[]::new))
-                .execute(conn)) {
-            while (rs.next()) {
-                result.add(toDTO(rs));
-            }
-        }
-        return result;
-    }
-
-
-    @SafeVarargs
-    private List<ProjectQueryDTO> queryPendingProjects(Connection conn, Supplier<OrderBySelector>... sorter) throws SQLException {
-        List<ProjectQueryDTO> result = new ArrayList<>();
-        try (ResultSet rs = createProjectStatusSQLBuilder()
-                .addCondition(createProjectApprovalStatusCondition(ApprovalStatus.PENDING))
-                .orderBy(Arrays.stream(sorter).map(Supplier::get).toArray(OrderBySelector[]::new))
-                .execute(conn)) {
-            while (rs.next()) {
-                result.add(toDTO(rs));
-            }
-        }
-        return result;
-    }
-
-
-    @SafeVarargs
-    private List<ProjectQueryDTO> queryRejectedProjects(Connection conn, Supplier<OrderBySelector>... sorter) throws SQLException {
-        List<ProjectQueryDTO> result = new ArrayList<>();
-        try (ResultSet rs = createProjectStatusSQLBuilder()
-                .addCondition(createProjectApprovalStatusCondition(ApprovalStatus.REJECTED))
-                .orderBy(Arrays.stream(sorter).map(Supplier::get).toArray(OrderBySelector[]::new))
-                .execute(conn)) {
-            while (rs.next()) {
-                result.add(toDTO(rs));
-            }
-        }
-        return result;
-    }
-
-    // Displayed projects with funding status
-    // Admin only.
-    @SafeVarargs
-    private List<ProjectQueryDTO> queryAllProjects(Connection conn, Supplier<OrderBySelector>... sorter) throws SQLException {
-        List<ProjectQueryDTO> result = new ArrayList<>();
-        try (ResultSet rs = createProjectStatusSQLBuilder()
-                .orderBy(Arrays.stream(sorter).map(Supplier::get).toArray(OrderBySelector[]::new))
-                .execute(conn)) {
-            while (rs.next()) {
-                result.add(toDTO(rs));
-            }
-        }
-        return result;
     }
 
     private ProjectQueryDTO toDTO(ResultSet rs) throws SQLException {
@@ -364,6 +488,7 @@ public class ProjectQueryDAO extends DAO {
         dto.setSupporterCount(rs.getLong(Columns.SUPPORTER_COUNT.toString()));
         dto.setSoldPrice(rs.getLong(Columns.PROJECT_SOLD_PRICE.toString()));
         dto.setFundProgress(rs.getLong(Columns.PROJECT_FUND_PROGRESS.toString()));
+        dto.setProjectFundingStatus(ProjectFundingStatus.valueOf(rs.getString(Columns.PROJECT_FUND_STATUS.toString())));
         return dto;
     }
 

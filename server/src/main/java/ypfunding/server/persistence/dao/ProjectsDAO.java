@@ -114,7 +114,7 @@ public class ProjectsDAO extends DAO {
 
 
     public List<ProjectDTO> getDisplayedProjects(Connection conn) throws SQLException{
-        return getDisplayedProjects(conn, new OrderBySelector(new ColumnValueToken(Columns.PROJECT_ID), true));
+        return getDisplayedProjects(conn, new SimpleOrderBySelector(Columns.PROJECT_ID, true));
     }
 
     // Displayed projects (a.k.a. Approved Projects)
