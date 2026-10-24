@@ -53,9 +53,9 @@ public class PacketManager {
     }
 
     @SuppressWarnings("unchecked")
-    public static <P extends Packet> P decodePacket(byte[] buffer, Class<P> clazz) {
+    public static <P extends Packet> P decodePacket(ByteBuffer buffer, Class<P> clazz) {
 
-        RawPacketTemp raw = demultiplex(buffer);
+        RawPacketTemp raw = demultiplex(buffer.array());
         if (raw.packetClass() != clazz) {
             throw new IllegalStateException("Packet type does not match");
         }

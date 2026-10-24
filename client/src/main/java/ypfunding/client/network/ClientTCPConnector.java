@@ -100,7 +100,7 @@ public class ClientTCPConnector implements ClientNetworkConnector {
                                 return;
                             }
                         } else {
-                            receivedPacket.set(PacketManager.decodePacket(bytesRead, receivedPacketQueue.poll()));
+                            receivedPacket.set(PacketManager.decodePacket(ByteBuffer.wrap(bytesRead), receivedPacketQueue.poll()));
                             key.interestOps(key.interestOps() & ~SelectionKey.OP_READ);
                             synchronized (ClientTCPConnector.this){
                                 ClientTCPConnector.this.notifyAll();
