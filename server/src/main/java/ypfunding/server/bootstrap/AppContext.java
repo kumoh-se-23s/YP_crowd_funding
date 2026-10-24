@@ -10,6 +10,9 @@ import java.sql.SQLException;
 import java.time.Clock;
 import java.util.Objects;
 import lombok.Getter;
+import ypfunding.server.persistence.dao.LikesDAO;
+import ypfunding.server.persistence.dao.ProjectsDAO;
+import ypfunding.server.service.LikeService;
 
 public class AppContext implements AutoCloseable {
     @Getter
@@ -20,9 +23,13 @@ public class AppContext implements AutoCloseable {
 
     //DAO
     //private final ~DAO;
+    private final LikesDAO likesDAO;
+    private final ProjectsDAO projectsDAO;
 
     //service
     //private final ~Service;
+    @Getter
+    private final LikeService likeService;
 
     public AppContext() {
         this(AppProperties.DEFAULT_PATH, Clock.system(DateTimeUtil.KST));
@@ -40,6 +47,9 @@ public class AppContext implements AutoCloseable {
             this.transactionManager = new TransactionManager(dataSource); //관리자
             //this.*DAO = new *DAO
             //this.*Service = new *Service
+            this.likesDAO = new LikesDAO();
+            this.projectsDAO = new ProjectsDAO();
+            this.likeService = new LikeService(transactionManager, likesDAO, projectsDAO, clock);
         } catch (RuntimeException | Error e) {
             closeQuietly(e);
             throw e;

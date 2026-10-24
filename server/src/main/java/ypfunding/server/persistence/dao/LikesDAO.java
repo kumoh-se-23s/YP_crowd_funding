@@ -24,8 +24,9 @@ public class LikesDAO extends DAO {
         }
     }
 
-    public void fillDataFromResultSet(LikeDTO dto, ResultSet rs){
-        //TODO
+    public void fillDataFromResultSet(LikeDTO dto, ResultSet rs) throws SQLException{
+        dto.setUserID(rs.getLong(Columns.USER_ID.toString()));
+        dto.setProjectID(rs.getLong(Columns.PROJECT_ID.toString()));
     }
 
     // =================================================================
@@ -74,7 +75,8 @@ public class LikesDAO extends DAO {
     // =================================================================
 
     //좋아요 취소
-    public void delete(Connection conn, long userId, long projectId) throws SQLException {
+    //취소할 줄을 찾아 취소했을시 1을 반환 아닌경우 0
+    public int delete(Connection conn, long userId, long projectId) throws SQLException {
         final String DELETE_SQL = "DELETE FROM likes WHERE user_id = ? AND project_id = ?";
 
         try ( PreparedStatement psmt = conn.prepareStatement(DELETE_SQL)) {
@@ -82,7 +84,7 @@ public class LikesDAO extends DAO {
             psmt.setLong(1, userId);
             psmt.setLong(2, projectId);
 
-            psmt.executeUpdate();
+            return psmt.executeUpdate();
         }
     }
 }

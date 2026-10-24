@@ -152,4 +152,26 @@ public final class TestData {
             return keys.getLong(1);
         }
     }
+
+    /** 좋아요를 넣는다. likes는 AUTO_INCREMENT id가 없어서 돌려주는 값이 없다. */
+    public static void insertLike(Connection conn, long userId, long projectId) throws SQLException {
+        String sql = "INSERT INTO likes (user_id, project_id) VALUES (?, ?)";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, userId);
+            ps.setLong(2, projectId);
+            ps.executeUpdate();
+        }
+    }
+
+    /** 프로젝트의 좋아요 수를 센다.*/
+    public static int countLikes(Connection conn, long projectId) throws SQLException {
+        String sql = "SELECT COUNT(*) FROM likes WHERE project_id = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, projectId);
+            try (ResultSet rs = ps.executeQuery()) {
+                rs.next();
+                return rs.getInt(1);
+            }
+        }
+    }
 }
