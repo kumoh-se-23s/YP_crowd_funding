@@ -69,18 +69,16 @@ public class ProjectsDAO extends DAO {
     //프로젝트ID를 통해 상세 조회
     //무거운 dto말고 projectId를 넘겨 받아서 optimize
     public ProjectDTO findById(Connection conn, long projectId) throws SQLException {
-        final String FIND_BY_ID_SQL = "SELECT * FROM projects WHERE project_id = ?";
-        ProjectDTO dto = null;
-
-        try (PreparedStatement ps = conn.prepareStatement(FIND_BY_ID_SQL)) {
-            ps.setLong(1, projectId);
-
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return toDTO(rs);
-                }
-                return null;
+        try (ResultSet rs = SQLSelect.allColumns(new DirectReferenceTable(Tables.PROJECTS))
+                .addCondition(new BasicCondition(
+                        new ColumnValueToken(Columns.PROJECT_ID),
+                        ArithmeticConditionOperator.EQ,
+                        new UserValueToken(projectId)))
+                .execute(conn)) {
+            if (rs.next()) {
+                return toDTO(rs);
             }
+            return null;
         }
     }
 

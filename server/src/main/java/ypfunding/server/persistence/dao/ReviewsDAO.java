@@ -14,6 +14,7 @@ import ypfunding.server.persistence.dao.dynamicsql.token.TableRefColumnToken;
 import ypfunding.server.persistence.dao.dynamicsql.token.UserValueToken;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
@@ -60,35 +61,64 @@ public class ReviewsDAO extends DAO {
     // 2. READ SECTION
     // =================================================================
 
-    //Read(조회) 리뷰는 해당 상품에 대해 전체 조회가 기본이니 전체 조회로 만들겟음
+    /**
+     * 특정 프로젝트에 작성된 모든 리뷰를 최신순(작성 시각 내림차순)으로 조회한다. (평가표 5번)
+     * REVIEWS와 FUNDS를 fund_id로 INNER JOIN하여 해당 project_id의 리뷰만 가져옴
+     *
+     * @param conn      커넥션
+     * @param projectId 조회할 프로젝트 ID
+     * @return 최신순으로 정렬된 리뷰 DTO 목록
+     * @throws SQLException DB 오류 발생 시
+     */
     public List<ReviewDTO> findAll(Connection conn, long projectId) throws SQLException {
-
-        var reviewsTableReference = new DirectReferenceTable(Tables.REVIEWS);
-        var fundsTableReference = new DirectReferenceTable(Tables.FUNDS);
+        final String FIND_BY_PROJECT_SQL = """
+                SELECT r.fund_id, r.star, r.content, r.date
+                  FROM reviews r
+                  INNER JOIN funds f ON r.fund_id = f.fund_id
+                 WHERE f.project_id = ?
+                 ORDER BY r.date DESC, r.fund_id DESC
+                """;
         List<ReviewDTO> result = new ArrayList<>();
 
-        try (ResultSet rs = SQLSelect.allColumns(
-                        new JoinedTable(reviewsTableReference, JoinType.LEFT, fundsTableReference,
-                                new BasicCondition(
-                                        new TableRefColumnToken(fundsTableReference, FundsDAO.Columns.PROJECT_ID),
-                                        ArithmeticConditionOperator.EQ,
-                                        new UserValueToken(projectId)
-                                )
-                        )
-                ).execute(conn)) {
-            while (rs.next()) {
-                ReviewDTO reviewDTO = new ReviewDTO();
-                reviewDTO.setFundID(rs.getLong(Columns.FUND_ID.toString()));
-                reviewDTO.setStar(rs.getInt(Columns.STAR.toString()));
-                reviewDTO.setContent(rs.getString(Columns.CONTENT.toString()));
-                reviewDTO.setDate(rs.getObject(Columns.DATE.toString(), LocalDateTime.class));
-                result.add(reviewDTO);
+        try (PreparedStatement ps = conn.prepareStatement(FIND_BY_PROJECT_SQL)) {
+            ps.setLong(1, projectId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    result.add(toDTO(rs));
+                }
             }
-
         }
-
-
         return result;
+    }
+    /**
+     * 특정 후원(fund_id)에 대한 리뷰가 존재하는지 단건 조회한다.
+     *
+     * @param conn   커넥션
+     * @param fundId 후원 ID
+     * @return 리뷰 DTO (없으면 null)
+     * @throws SQLException DB 오류 발생 시
+     */
+    public ReviewDTO findByFundId(Connection conn, long fundId) throws SQLException {
+        try (ResultSet rs = SQLSelect.allColumns(new DirectReferenceTable(Tables.REVIEWS))
+                .addCondition(new BasicCondition(
+                        new ColumnValueToken(Columns.FUND_ID),
+                        ArithmeticConditionOperator.EQ,
+                        new UserValueToken(fundId)))
+                .execute(conn)) {
+            if (rs.next()) {
+                return toDTO(rs);
+            }
+            return null;
+        }
+    }
+
+    private ReviewDTO toDTO(ResultSet rs) throws SQLException {
+        ReviewDTO reviewDTO = new ReviewDTO();
+        reviewDTO.setFundID(rs.getLong(Columns.FUND_ID.name));
+        reviewDTO.setStar(rs.getInt(Columns.STAR.name));
+        reviewDTO.setContent(rs.getString(Columns.CONTENT.name));
+        reviewDTO.setDate(rs.getObject(Columns.DATE.name, LocalDateTime.class));
+        return reviewDTO;
     }
 
     // =================================================================
