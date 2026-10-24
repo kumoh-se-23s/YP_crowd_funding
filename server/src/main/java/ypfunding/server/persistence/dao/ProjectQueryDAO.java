@@ -17,21 +17,20 @@ import ypfunding.server.persistence.dao.dynamicsql.token.*;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Supplier;
 
 public class ProjectQueryDAO extends DAO {
-    private final RewardsDAO rewardsDAO;
-    private final FundsDAO fundsDAO;
 
     private enum Columns implements ColumnsEnum {
         PROJECT_SOLD_PRICE("project_sold_price"),
-        PROJECT_PROGRESS("fund_progress"),
+        PROJECT_FUND_PROGRESS("project_fund_progress"),
+        SUPPORTER_COUNT("supporter_count"),
         REWARD_SOLD_STOCK("reward_sold_stock"),
         REWARD_SOLD_PRICE("reward_sold_price"),
-        SUPPORTER_COUNT("supporter_count"),
         REWARD_REMAINING_STOCK("remaining_stock");
 
         private final String name;
@@ -44,11 +43,6 @@ public class ProjectQueryDAO extends DAO {
         public String toString() {
             return name;
         }
-    }
-
-    public ProjectQueryDAO(RewardsDAO rewardsDAO, FundsDAO fundsDAO) {
-        this.rewardsDAO = rewardsDAO;
-        this.fundsDAO = fundsDAO;
     }
 
 
@@ -147,7 +141,7 @@ public class ProjectQueryDAO extends DAO {
                                         ProjectsDAO.Columns.GOAL,
                                         new TableRefColumnToken(cteProjects, ProjectsDAO.Columns.GOAL)),
                                 new ColumnFromTokenSelector(
-                                        Columns.PROJECT_PROGRESS,
+                                        Columns.PROJECT_FUND_PROGRESS,
                                         new ValueExpressionToken(
                                                 new BuiltinFunctionToken(BuiltinFunctions.SUM,
                                                         new BuiltinFunctionToken(
@@ -175,14 +169,17 @@ public class ProjectQueryDAO extends DAO {
         );
         return new SQLSelect(new ColumnSelector[]{
                 new ColumnFromTokenSelector(ProjectsDAO.Columns.PROJECT_ID, new TableRefColumnToken(projectsTable, ProjectsDAO.Columns.PROJECT_ID)),
-                new ColumnFromTokenSelector(RewardsDAO.Columns.REWARD_ID, new TableRefColumnToken(rewardsTable, RewardsDAO.Columns.REWARD_ID)),
+                new ColumnFromTokenSelector(ProjectsDAO.Columns.USER_ID, new TableRefColumnToken(projectsTable, ProjectsDAO.Columns.USER_ID)),
                 new ColumnFromTokenSelector(ProjectsDAO.Columns.TITLE, new TableRefColumnToken(projectsTable, ProjectsDAO.Columns.TITLE)),
-                new ColumnFromTokenSelector(RewardsDAO.Columns.NAME, new TableRefColumnToken(rewardsTable, RewardsDAO.Columns.NAME)),
-                new ColumnFromTokenSelector(RewardsDAO.Columns.DESCRIPTION, new TableRefColumnToken(rewardsTable, RewardsDAO.Columns.DESCRIPTION)),
-                new ColumnFromTokenSelector(RewardsDAO.Columns.PRICE, new TableRefColumnToken(rewardsTable, RewardsDAO.Columns.PRICE)),
-                new ColumnFromTokenSelector(RewardsDAO.Columns.STOCK, new TableRefColumnToken(rewardsTable, RewardsDAO.Columns.STOCK)),
+                new ColumnFromTokenSelector(ProjectsDAO.Columns.DESCRIPTION, new TableRefColumnToken(projectsTable, ProjectsDAO.Columns.DESCRIPTION)),
+                new ColumnFromTokenSelector(ProjectsDAO.Columns.GOAL, new TableRefColumnToken(projectsTable, ProjectsDAO.Columns.GOAL)),
+                new ColumnFromTokenSelector(ProjectsDAO.Columns.DURATION, new TableRefColumnToken(projectsTable, ProjectsDAO.Columns.DURATION)),
+                new ColumnFromTokenSelector(ProjectsDAO.Columns.START_DATE, new TableRefColumnToken(projectsTable, ProjectsDAO.Columns.START_DATE)),
+                new ColumnFromTokenSelector(ProjectsDAO.Columns.END_DATE, new TableRefColumnToken(projectsTable, ProjectsDAO.Columns.END_DATE)),
+                new ColumnFromTokenSelector(ProjectsDAO.Columns.APPROVAL_STATUS, new TableRefColumnToken(projectsTable, ProjectsDAO.Columns.APPROVAL_STATUS)),
+                new ColumnFromTokenSelector(Columns.SUPPORTER_COUNT, new TableRefColumnToken(cteProjectsWithStatus, Columns.SUPPORTER_COUNT)),
                 new ColumnFromTokenSelector(Columns.PROJECT_SOLD_PRICE, new TableRefColumnToken(cteProjectsWithStatus, Columns.PROJECT_SOLD_PRICE)),
-                new ColumnFromTokenSelector(Columns.PROJECT_PROGRESS, new TableRefColumnToken(cteProjectsWithStatus, Columns.PROJECT_PROGRESS)),
+                new ColumnFromTokenSelector(Columns.PROJECT_FUND_PROGRESS, new TableRefColumnToken(cteProjectsWithStatus, Columns.PROJECT_FUND_PROGRESS)),
         }, new JoinedTable(
                 projectsTable,
                 JoinType.LEFT,
@@ -209,17 +206,19 @@ public class ProjectQueryDAO extends DAO {
     }
 
     public final List<ProjectQueryDTO> getActiveRecentProjects(Connection conn) throws SQLException {
-        return getActiveProjects(conn, () ->
+        return queryActiveProjects(conn, () ->
                 new OrderBySelector(new ColumnValueToken(ProjectsDAO.Columns.START_DATE), false));
     }
 
-    public final List<ProjectQueryDTO> getDisplayedDefaultProjects(Connection conn) throws SQLException {
+    public final List<ProjectQueryDTO> getActiveProjects(Connection conn) throws SQLException {
         return getActiveProjects(conn);
     }
 
 
+
+
     @SafeVarargs
-    private List<ProjectQueryDTO> getActiveProjects(Connection conn, Supplier<OrderBySelector>... sorter) throws SQLException {
+    private List<ProjectQueryDTO> queryActiveProjects(Connection conn, Supplier<OrderBySelector>... sorter) throws SQLException {
         List<ProjectQueryDTO> result = new ArrayList<>();
         try (ResultSet rs = createProjectStatusSQLBuilder()
                 .addCondition(getProjectApprovalStatusCondition(ApprovalStatus.APPROVED))
@@ -234,7 +233,7 @@ public class ProjectQueryDAO extends DAO {
     }
 
     @SafeVarargs
-    private List<ProjectQueryDTO> getFailedProjects(Connection conn, Supplier<OrderBySelector>... sorter) throws SQLException {
+    private List<ProjectQueryDTO> queryFailedProjects(Connection conn, Supplier<OrderBySelector>... sorter) throws SQLException {
         List<ProjectQueryDTO> result = new ArrayList<>();
         try (ResultSet rs = createProjectStatusSQLBuilder()
                 .addCondition(getProjectApprovalStatusCondition(ApprovalStatus.APPROVED))
@@ -250,7 +249,7 @@ public class ProjectQueryDAO extends DAO {
     }
 
     @SafeVarargs
-    private List<ProjectQueryDTO> getSuccessProjects(Connection conn, Supplier<OrderBySelector>... sorter) throws SQLException {
+    private List<ProjectQueryDTO> querySuccessProjects(Connection conn, Supplier<OrderBySelector>... sorter) throws SQLException {
         List<ProjectQueryDTO> result = new ArrayList<>();
         try (ResultSet rs = createProjectStatusSQLBuilder()
                 .addCondition(getProjectApprovalStatusCondition(ApprovalStatus.APPROVED))
@@ -285,14 +284,14 @@ public class ProjectQueryDAO extends DAO {
 
     private BasicCondition getProjectProgressCondition(boolean isSuccess){
         return new BasicCondition(
-                new ColumnValueToken(Columns.PROJECT_PROGRESS),
+                new ColumnValueToken(Columns.PROJECT_FUND_PROGRESS),
                 isSuccess ? ArithmeticConditionOperator.GE : ArithmeticConditionOperator.LT,
                 new UserValueToken(1)
         );
     }
 
     @SafeVarargs
-    private List<ProjectQueryDTO> getEndedProjects(Connection conn, Supplier<OrderBySelector>... sorter) throws SQLException {
+    private List<ProjectQueryDTO> queryEndedProjects(Connection conn, Supplier<OrderBySelector>... sorter) throws SQLException {
         List<ProjectQueryDTO> result = new ArrayList<>();
         try (ResultSet rs = createProjectStatusSQLBuilder()
                 .addCondition(getProjectApprovalStatusCondition(ApprovalStatus.APPROVED))
@@ -308,7 +307,7 @@ public class ProjectQueryDAO extends DAO {
 
 
     @SafeVarargs
-    private List<ProjectQueryDTO> getPendingProjects(Connection conn, Supplier<OrderBySelector>... sorter) throws SQLException {
+    private List<ProjectQueryDTO> queryPendingProjects(Connection conn, Supplier<OrderBySelector>... sorter) throws SQLException {
         List<ProjectQueryDTO> result = new ArrayList<>();
         try (ResultSet rs = createProjectStatusSQLBuilder()
                 .addCondition(getProjectApprovalStatusCondition(ApprovalStatus.PENDING))
@@ -323,7 +322,7 @@ public class ProjectQueryDAO extends DAO {
 
 
     @SafeVarargs
-    private List<ProjectQueryDTO> getRejectedProjects(Connection conn, Supplier<OrderBySelector>... sorter) throws SQLException {
+    private List<ProjectQueryDTO> queryRejectedProjects(Connection conn, Supplier<OrderBySelector>... sorter) throws SQLException {
         List<ProjectQueryDTO> result = new ArrayList<>();
         try (ResultSet rs = createProjectStatusSQLBuilder()
                 .addCondition(getProjectApprovalStatusCondition(ApprovalStatus.REJECTED))
@@ -339,7 +338,7 @@ public class ProjectQueryDAO extends DAO {
     // Displayed projects with funding status
     // Admin only.
     @SafeVarargs
-    private List<ProjectQueryDTO> getAllProjects(Connection conn, Supplier<OrderBySelector>... sorter) throws SQLException {
+    private List<ProjectQueryDTO> queryAllProjects(Connection conn, Supplier<OrderBySelector>... sorter) throws SQLException {
         List<ProjectQueryDTO> result = new ArrayList<>();
         try (ResultSet rs = createProjectStatusSQLBuilder()
                 .orderBy(Arrays.stream(sorter).map(Supplier::get).toArray(OrderBySelector[]::new))
@@ -354,14 +353,17 @@ public class ProjectQueryDAO extends DAO {
     private ProjectQueryDTO toDTO(ResultSet rs) throws SQLException {
         ProjectQueryDTO dto = new ProjectQueryDTO();
         dto.setProjectId(rs.getLong(ProjectsDAO.Columns.PROJECT_ID.toString()));
-        dto.setRewardId(rs.getLong(RewardsDAO.Columns.REWARD_ID.toString()));
-        dto.setProjectTitle(rs.getString(ProjectsDAO.Columns.TITLE.toString()));
-        dto.setRewardName(rs.getString(RewardsDAO.Columns.NAME.toString()));
-        dto.setRewardDescription(rs.getString(RewardsDAO.Columns.DESCRIPTION.toString()));
-        dto.setPrice(rs.getLong(RewardsDAO.Columns.PRICE.toString()));
-        dto.setTotalStock(rs.getLong(RewardsDAO.Columns.STOCK.toString()));
-        dto.setTotalPrice(rs.getLong(Columns.PROJECT_SOLD_PRICE.toString()));
-        dto.setRemainingStock(rs.getLong(Columns.REWARD_REMAINING_STOCK.toString()));
+        dto.setUserId(rs.getLong(ProjectsDAO.Columns.USER_ID.toString()));
+        dto.setTitle(rs.getString(ProjectsDAO.Columns.TITLE.toString()));
+        dto.setDescription(rs.getString(ProjectsDAO.Columns.DESCRIPTION.toString()));
+        dto.setGoal(rs.getLong(ProjectsDAO.Columns.GOAL.toString()));
+        dto.setDuration(rs.getInt(ProjectsDAO.Columns.DURATION.toString()));
+        dto.setApprovalStatus(ApprovalStatus.valueOf(rs.getString(ProjectsDAO.Columns.APPROVAL_STATUS.toString())));
+        dto.setStartDate(rs.getObject(ProjectsDAO.Columns.START_DATE.toString(), LocalDateTime.class));
+        dto.setEndDate(rs.getObject(ProjectsDAO.Columns.END_DATE.toString(), LocalDateTime.class));
+        dto.setSupporterCount(rs.getLong(Columns.SUPPORTER_COUNT.toString()));
+        dto.setSoldPrice(rs.getLong(Columns.PROJECT_SOLD_PRICE.toString()));
+        dto.setFundProgress(rs.getLong(Columns.PROJECT_FUND_PROGRESS.toString()));
         return dto;
     }
 

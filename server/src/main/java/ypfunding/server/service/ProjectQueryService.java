@@ -16,10 +16,10 @@ public class ProjectQueryService extends Service{
     private final UserService userService;
     private final ProjectQueryDAO projectQueryDAO;
 
-    public ProjectQueryService(TransactionManager transactionManager, UserService userService, RewardsDAO rewardsDAO, FundsDAO fundsDAO) {
+    public ProjectQueryService(TransactionManager transactionManager, UserService userService) {
         super(transactionManager);
         this.userService = userService;
-        this.projectQueryDAO = new ProjectQueryDAO(rewardsDAO, fundsDAO);
+        this.projectQueryDAO = new ProjectQueryDAO();
     }
 
     public List<ProjectQueryDTO> getSelectedProjectWithStatus(LoginUser user, long projectId){
@@ -32,17 +32,13 @@ public class ProjectQueryService extends Service{
         });
     }
 
-    public List<ProjectQueryDTO> getAllProjectsRecent(LoginUser user){
+    public List<ProjectQueryDTO> getAllActiveProjectsRecent(LoginUser user){
         return getAllProjectsAdmin(user, projectQueryDAO::getActiveRecentProjects);
 
     }
 
-    public List<ProjectQueryDTO> getAllProjectsDefault(LoginUser user){
-       return getAllProjectsAdmin(user, projectQueryDAO::getDisplayedDefaultProjects);
-    }
-
-    public List<ProjectQueryDTO> getApprovedProjectsDefault(LoginUser user){
-        return getAllProjectsAdmin(user, projectQueryDAO::get);
+    public List<ProjectQueryDTO> getActiveProjectsDefault(LoginUser user){
+       return getAllProjectsAdmin(user, projectQueryDAO::getActiveProjects);
     }
 
     private List<ProjectQueryDTO> getAllProjectsAdmin(LoginUser user, ProjectQueryFunc func){
