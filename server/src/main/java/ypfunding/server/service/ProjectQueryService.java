@@ -37,15 +37,31 @@ public class ProjectQueryService extends Service {
             return projectQueryDAO.getProject(conn, projectId);
         });
     }
-
+    /**
+     * Everyone can call this function.
+     * @param user requested user
+     * @return result projects sorted by most recent
+     */
     public List<ProjectQueryDTO> getAllActiveProjectsRecent(LoginUser user) {
         return getAllActiveProjects(user, new SimpleOrderBySelector(ProjectsDAO.Columns.START_DATE, false));
     }
-
+    /**
+     * Everyone can call this function.
+     * @param user requested user
+     * @param sorter filters status. if empty, use default sorting (ID).
+     * @return result projects
+     */
     public List<ProjectQueryDTO> getAllActiveProjects(LoginUser user, SimpleOrderBySelector... sorter) {
         return getProjects(user, e -> projectQueryDAO.getActiveProjects(e, sorter), UserType.values());
     }
 
+    /**
+     * Everyone can call this function.
+     * @param user requested user
+     * @param projectName filters project name. if empty, return all projects.
+     * @param sorter filters status. if empty, use default sorting (ID).
+     * @return result projects
+     */
     public List<ProjectQueryDTO> searchActiveProjects(LoginUser user, String projectName, SimpleOrderBySelector... sorter) {
         return getProjects(user, e -> projectQueryDAO.getActiveProjectsForName(e, projectName, sorter), UserType.values());
     }
@@ -54,9 +70,9 @@ public class ProjectQueryService extends Service {
     /**
      * Maker-only function.
      * @param user requested user
-     * @param approvalStatus filtering status. can be null.
-     * @param fundingStatus filtering status. can be null.
-     * @param sorter filtering status. if empty, use default sorting (ID).
+     * @param approvalStatus filters status. can be null.
+     * @param fundingStatus filters status. can be null.
+     * @param sorter sorting order. if empty, use default sorting (ID).
      * @return result projects
      */
     public List<ProjectQueryDTO> getMyProjects(LoginUser user, ApprovalStatus approvalStatus, ProjectFundingStatus fundingStatus, SimpleOrderBySelector... sorter) {
@@ -66,20 +82,32 @@ public class ProjectQueryService extends Service {
     /**
      * Maker-only function.
      * @param user requested user
-     * @param projectName filtering status. if empty, return all projects.
-     * @param approvalStatus filtering status. can be null.
-     * @param fundingStatus filtering status. can be null.
-     * @param sorter filtering status. if empty, use default sorting (ID).
+     * @param projectName filters project name. if empty, return all projects.
+     * @param approvalStatus filters status. can be null.
+     * @param fundingStatus filters status. can be null.
+     * @param sorter sorting order. if empty, use default sorting (ID).
      * @return result projects
      */
     public List<ProjectQueryDTO> getMyProjectsForName(LoginUser user, String projectName, ApprovalStatus approvalStatus, ProjectFundingStatus fundingStatus, SimpleOrderBySelector... sorter) {
         return getProjects(user, e -> projectQueryDAO.getMyProjectsForName(e, user.userId(), projectName, approvalStatus, fundingStatus, sorter), UserType.MAKER);
     }
 
+    /**
+     * Admin-only function. get all pending projects
+     * @param user requested user
+     * @param sorter sorting order. if empty, use default sorting (ID).
+     * @return result projects sorted by most recent
+     */
     public List<ProjectQueryDTO> getAllPendingProjects(LoginUser user, SimpleOrderBySelector... sorter) {
         return getProjects(user, e -> projectQueryDAO.getPendingProjects(e, sorter), UserType.ADMIN);
     }
-
+    /**
+     * Admin-only function. get all pending projects
+     * @param user requested user
+     * @param projectName filters project name. if empty, return all projects.
+     * @param sorter sorting order. if empty, use default sorting (ID).
+     * @return result projects sorted by most recent
+     */
     public List<ProjectQueryDTO> searchPendingProjects(LoginUser user, String projectName, SimpleOrderBySelector... sorter) {
         return getProjects(user, e -> projectQueryDAO.getPendingProjectsForName(e, projectName, sorter), UserType.ADMIN);
     }
