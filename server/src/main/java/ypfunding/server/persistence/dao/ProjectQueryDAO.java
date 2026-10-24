@@ -31,9 +31,10 @@ public class ProjectQueryDAO extends DAO {
         PROJECT_PROGRESS("fund_progress"),
         REWARD_SOLD_STOCK("reward_sold_stock"),
         REWARD_SOLD_PRICE("reward_sold_price"),
+        SUPPORTER_COUNT("supporter_count"),
         REWARD_REMAINING_STOCK("remaining_stock");
 
-        private String name;
+        private final String name;
 
         Columns(String name) {
             this.name = name;
@@ -133,6 +134,13 @@ public class ProjectQueryDAO extends DAO {
                                                         new TableRefColumnToken(cteRewardStatus, Columns.REWARD_SOLD_PRICE),
                                                         new UserValueToken(0)
                                                 )
+                                        )
+                                ),
+                                new ColumnFromTokenSelector(
+                                        Columns.SUPPORTER_COUNT,
+                                        new BuiltinFunctionToken(
+                                                BuiltinFunctions.COUNT,
+                                                new WildcardValueToken()
                                         )
                                 ),
                                 new ColumnFromTokenSelector(
