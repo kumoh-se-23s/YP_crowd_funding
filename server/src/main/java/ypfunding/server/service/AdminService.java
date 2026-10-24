@@ -28,7 +28,11 @@ public class AdminService extends UserService {
         this.rejectDAO = rejectDAO;
     }
 
-
+    /**
+     * Admin-only function. Get all admins
+     * @param user requested user
+     * @return result admins
+     */
     public List<UserDTO> getAllAdmins(LoginUser user){
 
         return transactionManager.execute(conn -> {
@@ -41,19 +45,11 @@ public class AdminService extends UserService {
     }
 
 
-    public List<ProjectDTO> getPendingProjects(LoginUser user) {
-
-        return transactionManager.execute(conn -> {
-            if(checkNotAdmin(conn, user)){
-                NotificationUtils.sendNotification(new PermissionDeniedNotification());
-                return List.of();
-            }
-            return projectsDAO.getPendingProjects(conn, user.userId());
-        });
-    }
-
-
-
+    /**
+     * Admin-only function. Approve project funding
+     * @param user requested user
+     * @param projectId project ID
+     */
     public void approveFund(LoginUser user, long projectId){
 
         transactionManager.execute(conn -> {
@@ -71,6 +67,12 @@ public class AdminService extends UserService {
         });
     }
 
+    /**
+     * Admin-only function. Reject project funding
+     * @param user requested user
+     * @param projectId project ID
+     * @param reason reason for rejection
+     */
     public void rejectFund(LoginUser user, long projectId, String reason){
 
         transactionManager.execute(conn -> {
