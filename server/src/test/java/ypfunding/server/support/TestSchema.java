@@ -77,13 +77,14 @@ public final class TestSchema {
             }
         }
 
-        tx.executeWithoutResult(conn -> {
+        tx.execute(conn -> {
             requireTestDatabase(conn);
             try (Statement st = conn.createStatement()) {
                 for (String sql : statements) {
                     st.execute(sql);
                 }
             }
+            return null;
         });
 
         tablesChildFirst = Collections.unmodifiableList(tables);
@@ -99,13 +100,14 @@ public final class TestSchema {
         if (!created) {
             throw new IllegalStateException("createOnce()를 먼저 호출해야 합니다.");
         }
-        tx.executeWithoutResult(conn -> {
+        tx.execute(conn -> {
             requireTestDatabase(conn);
             try (Statement st = conn.createStatement()) {
                 for (String table : tablesChildFirst) {
                     st.executeUpdate("DELETE FROM " + table);   // 테이블명은 schema.sql에서 온 값이라 안전
                 }
             }
+            return null;
         });
     }
 

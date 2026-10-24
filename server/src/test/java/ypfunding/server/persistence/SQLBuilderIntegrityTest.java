@@ -1,0 +1,214 @@
+package ypfunding.server.persistence;
+
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import ypfunding.server.persistence.dao.ColumnsEnum;
+import ypfunding.server.persistence.dao.ProjectsDAO;
+import ypfunding.server.persistence.dao.Tables;
+import ypfunding.server.persistence.dao.UsersDAO;
+import ypfunding.server.persistence.dao.dynamicsql.builder.SQLBuilder;
+import ypfunding.server.persistence.dao.dynamicsql.builder.SQLSelect;
+import ypfunding.server.persistence.dao.dynamicsql.col.ColumnSelector;
+import ypfunding.server.persistence.dao.dynamicsql.col.DirectColumnSelector;
+import ypfunding.server.persistence.dao.dynamicsql.col.ScalarSubqueryColumnSelector;
+import ypfunding.server.persistence.dao.dynamicsql.condition.BasicCondition;
+import ypfunding.server.persistence.dao.dynamicsql.log.SQLLogger;
+import ypfunding.server.persistence.dao.dynamicsql.op.ArithmeticConditionOperator;
+import ypfunding.server.persistence.dao.dynamicsql.table.DirectReferenceTable;
+import ypfunding.server.persistence.dao.dynamicsql.table.InlineViewReferenceTable;
+import ypfunding.server.persistence.dao.dynamicsql.table.JoinType;
+import ypfunding.server.persistence.dao.dynamicsql.table.JoinedTable;
+import ypfunding.server.persistence.dao.dynamicsql.token.ColumnValueToken;
+import ypfunding.server.persistence.dao.dynamicsql.token.SubqueryToken;
+import ypfunding.server.persistence.dao.dynamicsql.token.TableRefColumnToken;
+import ypfunding.server.persistence.dao.dynamicsql.token.UserValueToken;
+import ypfunding.server.support.DbTestBase;
+
+import java.util.List;
+
+public class SQLBuilderIntegrityTest extends DbTestBase {
+
+    private enum Columns implements ColumnsEnum {
+        A, B
+    }
+
+    @Test
+    @DisplayName("SQL Builder 무결성 검사")
+    public void test() {
+        // 메인 쿼리의 테이블 참조
+
+// 프로젝트 조회용 Inline View
+        var projectView = new InlineViewReferenceTable(
+                new SQLSelect(
+                        new ColumnSelector[]{
+                                new DirectColumnSelector(ProjectsDAO.Columns.PROJECT_ID),
+                                new DirectColumnSelector(ProjectsDAO.Columns.USER_ID),
+                                new DirectColumnSelector(ProjectsDAO.Columns.TITLE),
+                                new DirectColumnSelector(ProjectsDAO.Columns.GOAL),
+                                new DirectColumnSelector(ProjectsDAO.Columns.DURATION),
+                                new DirectColumnSelector(ProjectsDAO.Columns.APPROVAL_STATUS)
+                        },
+                        new DirectReferenceTable(Tables.PROJECTS)
+                )
+                        .addCondition(
+                                BasicCondition.and(
+                                        new BasicCondition(
+                                                new ColumnValueToken(ProjectsDAO.Columns.APPROVAL_STATUS),
+                                                ArithmeticConditionOperator.EQ,
+                                                new UserValueToken("APPROVED")
+                                        ),
+                                        new BasicCondition(
+                                                new ColumnValueToken(ProjectsDAO.Columns.GOAL),
+                                                ArithmeticConditionOperator.GE,
+                                                new UserValueToken(100)
+                                        )
+                                )
+                        )
+        );
+
+// 프로젝트 소유자와 프로젝트를 연결
+        var joined = new JoinedTable(
+                projectView,
+                JoinType.INNER,
+                new DirectReferenceTable(Tables.USERS),
+                new BasicCondition(
+                        new TableRefColumnToken(projectView, ProjectsDAO.Columns.USER_ID),
+                        ArithmeticConditionOperator.EQ,
+                        new ColumnValueToken(UsersDAO.Columns.USER_ID)
+                )
+        );
+
+// 프로젝트 ID가 현재 프로젝트와 일치하는지 검증하는 상관 서브쿼리
+        var correlatedProject = new DirectReferenceTable(Tables.PROJECTS);
+
+        var correlatedProjectQuery = new SQLSelect(
+                new ColumnSelector[]{
+                        new DirectColumnSelector(ProjectsDAO.Columns.PROJECT_ID)
+                },
+                correlatedProject
+        ).addCondition(
+                BasicCondition.and(
+                        new BasicCondition(
+                                new ColumnValueToken(ProjectsDAO.Columns.APPROVAL_STATUS),
+                                ArithmeticConditionOperator.EQ,
+                                new UserValueToken("APPROVED")
+                        ),
+                        new BasicCondition(
+                                new ColumnValueToken(ProjectsDAO.Columns.END_DATE),
+                                ArithmeticConditionOperator.GE,
+                                new UserValueToken("2026-01-01")
+                        )
+                )
+        );
+
+// 사용자별 프로젝트 조건을 검증하는 중첩 서브쿼리
+        var userProjectQuery = new SQLSelect(
+                new ColumnSelector[]{
+                        new DirectColumnSelector(ProjectsDAO.Columns.PROJECT_ID)
+                },
+                new InlineViewReferenceTable(
+                        new SQLSelect(
+                                new ColumnSelector[]{
+                                        new DirectColumnSelector(ProjectsDAO.Columns.PROJECT_ID),
+                                        new DirectColumnSelector(ProjectsDAO.Columns.USER_ID),
+                                        new DirectColumnSelector(ProjectsDAO.Columns.GOAL),
+                                        new DirectColumnSelector(ProjectsDAO.Columns.APPROVAL_STATUS)
+                                },
+                                new DirectReferenceTable(Tables.PROJECTS)
+                        ).addCondition(
+                                BasicCondition.and(
+                                        new BasicCondition(
+                                                new ColumnValueToken(ProjectsDAO.Columns.GOAL),
+                                                ArithmeticConditionOperator.GE,
+                                                new UserValueToken(500)
+                                        ),
+                                        new BasicCondition(
+                                                new ColumnValueToken(ProjectsDAO.Columns.APPROVAL_STATUS),
+                                                ArithmeticConditionOperator.EQ,
+                                                new UserValueToken("APPROVED")
+                                        )
+                                )
+                        )
+                )
+        ).addCondition(
+                BasicCondition.and(
+                        new BasicCondition(
+                                new UserValueToken(123),
+                                ArithmeticConditionOperator.EQ,
+                                new ColumnValueToken(ProjectsDAO.Columns.USER_ID)
+                        ),
+                        new BasicCondition(
+                                new ColumnValueToken(ProjectsDAO.Columns.PROJECT_ID),
+                                ArithmeticConditionOperator.EQ,
+                                new UserValueToken(999)
+                        )
+                )
+        );
+
+// 최종 조회
+        var users = new DirectReferenceTable(Tables.USERS);
+        var projects = new DirectReferenceTable(Tables.PROJECTS);
+
+        SQLBuilder<?> builder = new SQLSelect(
+                new ColumnSelector[]{
+                        new DirectColumnSelector(ProjectsDAO.Columns.PROJECT_ID),
+                        new DirectColumnSelector(ProjectsDAO.Columns.TITLE),
+                        new DirectColumnSelector(ProjectsDAO.Columns.GOAL),
+                        new DirectColumnSelector(ProjectsDAO.Columns.DURATION),
+                        new DirectColumnSelector(ProjectsDAO.Columns.APPROVAL_STATUS),
+                        new DirectColumnSelector(UsersDAO.Columns.USER_ID),
+                        new DirectColumnSelector(UsersDAO.Columns.NAME),
+                        new DirectColumnSelector(UsersDAO.Columns.ADDRESS),
+
+                        new ScalarSubqueryColumnSelector(
+                                Columns.A,
+                                new SQLSelect(
+                                        new ColumnSelector[]{
+                                                new DirectColumnSelector(UsersDAO.Columns.LOGIN_ID)
+                                        },
+                                        new JoinedTable(users, JoinType.LEFT, projects,
+                                                new BasicCondition(
+                                                        new TableRefColumnToken(users, UsersDAO.Columns.USER_ID),
+                                                        ArithmeticConditionOperator.EQ,
+                                                        new TableRefColumnToken(projects, ProjectsDAO.Columns.USER_ID)
+                                                )
+                                        )
+                                )
+                        )
+                },
+                joined
+        )
+                .addCondition(
+                        BasicCondition.and(
+                                new BasicCondition(
+                                        new ColumnValueToken(ProjectsDAO.Columns.GOAL),
+                                        ArithmeticConditionOperator.GE,
+                                        new UserValueToken(100)
+                                ),
+                                new BasicCondition(
+                                        new ColumnValueToken(ProjectsDAO.Columns.DURATION),
+                                        ArithmeticConditionOperator.LE,
+                                        new UserValueToken(90)
+                                ),
+                                new BasicCondition(
+                                        new ColumnValueToken(UsersDAO.Columns.USERTYPE),
+                                        ArithmeticConditionOperator.EQ,
+                                        new UserValueToken("ADMIN")
+                                ),
+                                new BasicCondition(
+                                        new ColumnValueToken(ProjectsDAO.Columns.PROJECT_ID),
+                                        ArithmeticConditionOperator.EQ,
+                                        new SubqueryToken(correlatedProjectQuery)
+                                ),
+                                new BasicCondition(
+                                        new ColumnValueToken(ProjectsDAO.Columns.PROJECT_ID),
+                                        ArithmeticConditionOperator.EQ,
+                                        new SubqueryToken(userProjectQuery)
+                                )
+                        )
+                );
+
+        SQLLogger.logQuery(builder);
+//        assertEquals("", "");
+    }
+}

@@ -1,9 +1,23 @@
 package ypfunding.server.persistence.dao;
 
+import ypfunding.common.dto.ProjectDTO;
 import ypfunding.common.dto.RewardDTO;
-import ypfunding.server.util.DynamicSQLUtil;
+import ypfunding.common.type.ApprovalStatus;
+import ypfunding.server.persistence.dao.dynamicsql.builder.SQLInsert;
+import ypfunding.server.persistence.dao.dynamicsql.builder.SQLSelect;
+import ypfunding.server.persistence.dao.dynamicsql.col.*;
+import ypfunding.server.persistence.dao.dynamicsql.condition.BasicCondition;
+import ypfunding.server.persistence.dao.dynamicsql.op.ArithmeticConditionOperator;
+import ypfunding.server.persistence.dao.dynamicsql.op.ArithmeticOperator;
+import ypfunding.server.persistence.dao.dynamicsql.table.DirectReferenceTable;
+import ypfunding.server.persistence.dao.dynamicsql.token.ColumnValueToken;
+import ypfunding.server.persistence.dao.dynamicsql.token.UserValueToken;
+import ypfunding.server.persistence.dao.dynamicsql.token.ValueExpressionToken;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -38,26 +52,13 @@ public class RewardsDAO extends DAO {
     // =================================================================
 
     public void insert(Connection conn, RewardDTO rewardDTO) throws SQLException {
-        final String INSERT_SQL = DynamicSQLUtil.generate("INSERT INTO rewards ({}) VALUES ({})",
-                Columns.PROJECT_ID, Columns.NAME, Columns.PRICE, Columns.DESCRIPTION, Columns.STOCK);
-
-        try (PreparedStatement ps = conn.prepareStatement(INSERT_SQL)) {
-            setInsertParameters(ps, rewardDTO);
-            ps.executeUpdate();
-        }
-    }
-
-    private void setInsertParameters(PreparedStatement ps, RewardDTO rewardDTO) throws SQLException {
-        ps.setLong(1, rewardDTO.getProjectId());
-        ps.setString(2, rewardDTO.getName());
-        ps.setLong(3, rewardDTO.getPrice());
-        ps.setString(4, rewardDTO.getDescription());
-        // NULL 가능 컬럼(무제한 재고) 처리
-        if (rewardDTO.getStock() != null) {
-            ps.setLong(5, rewardDTO.getStock());
-        } else {
-            ps.setNull(5, Types.INTEGER); // NULL은 무제한을 의미
-        }
+        new SQLInsert(Tables.REWARDS)
+                .addTarget(Columns.PROJECT_ID, rewardDTO.getProjectId())
+                .addTarget(Columns.NAME, rewardDTO.getName())
+                .addTarget(Columns.PRICE, rewardDTO.getPrice())
+                .addTarget(Columns.DESCRIPTION, rewardDTO.getDescription())
+                .addTarget(Columns.STOCK, rewardDTO.getStock())
+                .execute(conn);
     }
 
     // =================================================================

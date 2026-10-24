@@ -6,6 +6,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -45,7 +46,7 @@ public class RejectDAO extends DAO{
 
             psmt.setLong(1, rejectDTO.getProjectID());
             psmt.setString(2, rejectDTO.getReason());
-            psmt.setTimestamp(3,  new java.sql.Timestamp(rejectDTO.getCreatedAt().getTime()));
+            psmt.setObject(3, rejectDTO.getCreatedAt());
 
             psmt.executeUpdate();
         }
@@ -71,7 +72,7 @@ public class RejectDAO extends DAO{
                     dto.setRejectReasonId(rs.getLong(Columns.REJECTREASON_ID.name));
                     dto.setProjectID(rs.getLong(Columns.PROJECT_ID.name));
                     dto.setReason(rs.getString(Columns.REASON.name));
-                    dto.setCreatedAt(rs.getTimestamp(Columns.CREATED_AT.name));
+                    dto.setCreatedAt(rs.getObject(Columns.CREATED_AT.name, LocalDateTime.class));
 
                     resultList.add(dto);
                 }

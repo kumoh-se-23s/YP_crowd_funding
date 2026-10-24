@@ -4,8 +4,10 @@ import ypfunding.server.persistence.TransactionManager;
 import ypfunding.server.persistence.dao.LikesDAO;
 
 
-public class LikeService extends Service<LikesDAO>{
-    public LikeService(TransactionManager transactionManager, LikesDAO dao) {
-        super(transactionManager, dao);
+public class LikeService extends Service{
+    private final LikesDAO likesDAO;
+    public LikeService(TransactionManager transactionManager, LikesDAO likesDAO) {
+        super(transactionManager);
+        this.likesDAO = likesDAO;
     }
 }

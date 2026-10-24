@@ -6,13 +6,15 @@ import ypfunding.server.persistence.dao.ProjectsDAO;
 
 import java.util.List;
 
-public class ProjectService extends Service<ProjectsDAO>{
-    public ProjectService(TransactionManager transactionManager, ProjectsDAO dao) {
-        super(transactionManager, dao);
+public class ProjectService extends Service{
+    private final ProjectsDAO projectsDAO;
+    public ProjectService(TransactionManager transactionManager, ProjectsDAO projectsDAO) {
+        super(transactionManager);
+        this.projectsDAO = projectsDAO;
     }
 
     public List<ProjectDTO> getAllProjects() {
-        return transactionManager.execute(dao::getAllProjects);
+        return transactionManager.execute(projectsDAO::getAllProjects);
     }
 
 }

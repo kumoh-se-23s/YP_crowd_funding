@@ -1,7 +1,6 @@
 package ypfunding.server.bootstrap;
 
 import org.apache.commons.dbcp2.BasicDataSource;
-import org.apache.ibatis.session.SqlSessionFactory;
 import ypfunding.common.util.DateTimeUtil;
 import ypfunding.server.config.AppProperties;
 import ypfunding.server.exception.DataAccessException;
@@ -18,8 +17,6 @@ public class AppContext implements AutoCloseable {
     private final BasicDataSource dataSource;
     @Getter
     private final TransactionManager transactionManager;
-    @Getter
-    private final SqlSessionFactory sqlSessionFactory;
 
     //DAO
     //private final ~DAO;
@@ -41,9 +38,8 @@ public class AppContext implements AutoCloseable {
 
         try {
             this.transactionManager = new TransactionManager(dataSource); //관리자
-            this.sqlSessionFactory = MyBatisConfig.create(dataSource); //MyBatis
-            //this.~DAO = new ~DAO
-            //this.~Service = new ~Service
+            //this.*DAO = new *DAO
+            //this.*Service = new *Service
         } catch (RuntimeException | Error e) {
             closeQuietly(e);
             throw e;
@@ -65,7 +61,7 @@ public class AppContext implements AutoCloseable {
     }
 
     //생성 도중 실패 시 닫기
-    public void closeQuietly(Throwable original) {
+    private void closeQuietly(Throwable original) {
         try {
             dataSource.close();
         } catch (SQLException closeFailure) {

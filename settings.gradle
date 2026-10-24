@@ -2,4 +2,4 @@
 rootProject.name = 'ypfunding'
 
 //모듈 정의
-include 'common', 'server'
+include 'common', 'server', 'client'

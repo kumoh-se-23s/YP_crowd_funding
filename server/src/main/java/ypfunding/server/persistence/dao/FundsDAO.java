@@ -9,7 +9,7 @@ public class FundsDAO extends DAO{
         FUND_ID("fund_id"),
         USER_ID("user_id"),
         PROJECT_ID("project_id"),
-        REWARD_NAME("reward_id"),
+        REWARD_ID("reward_id"),
         QUANTITY("quantity"),
         DATE("date");
 

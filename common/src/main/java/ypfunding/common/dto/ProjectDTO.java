@@ -3,6 +3,7 @@ package ypfunding.common.dto;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
+import ypfunding.common.type.ApprovalStatus;
 
 import java.time.LocalDateTime;
 import java.util.Date;
@@ -11,10 +12,6 @@ import java.util.Date;
 @Setter
 @ToString
 public class ProjectDTO {
-
-    public enum ApprovalStatus{
-        PENDING, APPROVED, REJECTED
-    }
 
     private Long projectId;
     private Long userId;

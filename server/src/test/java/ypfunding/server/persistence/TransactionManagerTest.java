@@ -35,19 +35,11 @@ class TransactionManagerTest extends DbTestBase {
     }
 
     @Test
-    @DisplayName("결과 없는 작업(executeWithoutResult)도 정상 종료하면 commit")
-    void executeWithoutResultCommits() {
-        tx.executeWithoutResult(conn -> TestData.insertUser(conn, "user1", UserType.SUPPORTER, clock.now()));
-
-        assertEquals(1, countUsers());
-    }
-
-    @Test
     @DisplayName("BusinessException이 나면 앞서 실행한 SQL이 모두 롤백되고, 같은 예외가 그대로 나온다")
     void rollsBackOnBusinessException() {
         BusinessException thrown = new BusinessException("재고가 부족합니다.");
 
-        BusinessException caught = assertThrows(BusinessException.class, () -> tx.executeWithoutResult(conn -> {
+        BusinessException caught = assertThrows(BusinessException.class, () -> tx.execute(conn -> {
             long makerId = TestData.insertUser(conn, "maker1", UserType.MAKER, clock.now());
             TestData.insertApprovedProject(conn, makerId, 100_000, 30, clock.now());
             throw thrown;
@@ -61,9 +53,10 @@ class TransactionManagerTest extends DbTestBase {
     @Test
     @DisplayName("SQL 오류(SQLException)가 나면 롤백하고 DataAccessException으로 감싼다. 원래 에러 코드는 cause에 남는다")
     void rollsBackAndWrapsSqlException() {
-        DataAccessException e = assertThrows(DataAccessException.class, () -> tx.executeWithoutResult(conn -> {
+        DataAccessException e = assertThrows(DataAccessException.class, () -> tx.execute(conn -> {
             TestData.insertUser(conn, "same-id", UserType.SUPPORTER, clock.now());
             TestData.insertUser(conn, "same-id", UserType.SUPPORTER, clock.now());   // login_id 중복 → 1062
+            return null;
         }));
 
         SQLException cause = assertInstanceOf(SQLException.class, e.getCause());
@@ -74,9 +67,10 @@ class TransactionManagerTest extends DbTestBase {
     @Test
     @DisplayName("트랜잭션 안에서 tx.execute를 다시 부르면 예외, 바깥 트랜잭션도 롤백된다")
     void rejectsNestedTransaction() {
-        assertThrows(IllegalStateException.class, () -> tx.executeWithoutResult(conn -> {
+        assertThrows(IllegalStateException.class, () -> tx.execute(conn -> {
             TestData.insertUser(conn, "outer", UserType.SUPPORTER, clock.now());
-            tx.execute(inner -> 1);                         // 중첩 호출
+            tx.execute(inner -> 1);
+            return null;
         }));
 
         assertEquals(0, countUsers());
@@ -94,9 +88,10 @@ class TransactionManagerTest extends DbTestBase {
     @Test
     @DisplayName("다른 스레드의 트랜잭션은 중첩이 아니다 (클라이언트마다 스레드가 다름)")
     void otherThreadIsNotNested() {
-        tx.executeWithoutResult(conn -> {
+        tx.execute(conn -> {
             List<Throwable> results = Concurrent.runAtOnce(1, i -> tx.execute(c -> 1));
             assertNull(results.get(0));
+            return null;
         });
     }
 
