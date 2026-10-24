@@ -10,7 +10,9 @@ public enum BuiltinFunctions {
     ABS(1),
     UPPER(1),
     LOWER(1),
-    SUM(1);
+    SUM(1),
+    IFNULL(2),
+    ;
 
     private final int parameterCounts;
 

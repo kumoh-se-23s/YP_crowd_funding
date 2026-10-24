@@ -32,9 +32,9 @@ public class AdminService extends UserService {
     public List<UserDTO> getAllAdmins(LoginUser user){
 
         return transactionManager.execute(conn -> {
-            if(checkNotAdmin(conn, user.userId())){
+            if(checkNotAdmin(conn, user)){
                 NotificationUtils.sendNotification(new PermissionDeniedNotification());
-                return Collections.emptyList();
+                return List.of();
             }
             return usersDAO.getAllAdmins(conn);
         });
@@ -44,9 +44,9 @@ public class AdminService extends UserService {
     public List<ProjectDTO> getPendingProjects(LoginUser user) {
 
         return transactionManager.execute(conn -> {
-            if(checkNotAdmin(conn, user.userId())){
+            if(checkNotAdmin(conn, user)){
                 NotificationUtils.sendNotification(new PermissionDeniedNotification());
-                return Collections.emptyList();
+                return List.of();
             }
             return projectsDAO.getPendingProjects(conn, user.userId());
         });
@@ -57,7 +57,7 @@ public class AdminService extends UserService {
     public void approveFund(LoginUser user, long projectId){
 
         transactionManager.execute(conn -> {
-            if(checkNotAdmin(conn, user.userId())){
+            if(checkNotAdmin(conn, user)){
                 NotificationUtils.sendNotification(new PermissionDeniedNotification());
                 return null;
             }
@@ -74,7 +74,7 @@ public class AdminService extends UserService {
     public void rejectFund(LoginUser user, long projectId, String reason){
 
         transactionManager.execute(conn -> {
-            if(checkNotAdmin(conn, user.userId())){
+            if(checkNotAdmin(conn, user)){
                 NotificationUtils.sendNotification(new PermissionDeniedNotification());
                 return null;
             }
