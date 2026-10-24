@@ -13,8 +13,8 @@ import java.util.Date;
 @ToString
 public class UserDTO {
 
-    private Long userID;
-    private String loginID;
+    private Long userId;
+    private String loginId;
     private String encryptedPassword;
     private String name;
     private String address;

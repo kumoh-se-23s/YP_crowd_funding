@@ -21,18 +21,18 @@ public class ProjectQueryService extends Service{
         this.projectQueryDAO = new ProjectQueryDAO(rewardsDAO, fundsDAO);
     }
 
-    public List<ProjectQueryDTO> getSelectedProjectWithStatus(long userID, long projectID){
+    public List<ProjectQueryDTO> getSelectedProjectWithStatus(long userId, long projectId){
         return transactionManager.execute(conn ->{
-            if(userService.checkNotAdmin(conn, userID)){
+            if(userService.checkNotAdmin(conn, userId)){
                 NotificationUtils.sendNotification(new PermissionDeniedNotification());
             }
-            return projectQueryDAO.getProjectWithFundingStatus(conn, projectID);
+            return projectQueryDAO.getProjectWithFundingStatus(conn, projectId);
         });
     }
 
-    public List<ProjectQueryDTO> getAllProjectsWithStatus(long userID){
+    public List<ProjectQueryDTO> getAllProjectsWithStatus(long userId){
         return transactionManager.execute(conn ->{
-            if(userService.checkNotAdmin(conn, userID)){
+            if(userService.checkNotAdmin(conn, userId)){
                 NotificationUtils.sendNotification(new PermissionDeniedNotification());
             }
             return projectQueryDAO.getDisplayedProjectsWithFundingStatus(conn);

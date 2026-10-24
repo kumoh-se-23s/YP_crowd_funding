@@ -2,14 +2,14 @@ package ypfunding.common.notifications;
 
 public class ProjectNotFoundNotification extends Notification {
 
-    private final long projectID;
-    public ProjectNotFoundNotification(long projectID) {
+    private final long projectId;
+    public ProjectNotFoundNotification(long projectId) {
         type = NotificationType.ERROR;
-        this.projectID = projectID;
+        this.projectId = projectId;
     }
 
     @Override
     public String getMessage() {
-        return "Project " + projectID + " not found.";
+        return "Project " + projectId + " not found.";
     }
 }

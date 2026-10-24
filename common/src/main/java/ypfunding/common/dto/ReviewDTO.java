@@ -12,7 +12,7 @@ import java.util.Date;
 @Setter
 @ToString
 public class ReviewDTO {
-    private Long fundID;
+    private Long fundId;
     private Integer star;
     private String content;
     private LocalDateTime date;

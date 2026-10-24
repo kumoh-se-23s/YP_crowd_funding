@@ -45,8 +45,8 @@ public class UsersDAO extends DAO {
 
 
     private void fillDataFromResultSet(UserDTO dto, ResultSet rs) throws SQLException {
-        dto.setUserID(rs.getLong(Columns.USER_ID.name));
-        dto.setLoginID(rs.getString(Columns.LOGIN_ID.name));
+        dto.setUserId(rs.getLong(Columns.USER_ID.name));
+        dto.setLoginId(rs.getString(Columns.LOGIN_ID.name));
         dto.setEncryptedPassword(rs.getString(Columns.PASSWORD.name));
         dto.setName(rs.getString(Columns.NAME.name));
         dto.setAddress(rs.getString(Columns.ADDRESS.name));
@@ -57,7 +57,7 @@ public class UsersDAO extends DAO {
     //TODO salt casdasjido nasichj oiauslhiaounsdyhaioudsjnsaoiludhjmoail
     public void insert(Connection conn, UserDTO userDTO, String salt) throws SQLException {
         new SQLInsert(Tables.USERS)
-                .addTarget(Columns.LOGIN_ID, userDTO.getLoginID())
+                .addTarget(Columns.LOGIN_ID, userDTO.getLoginId())
                 .addTarget(Columns.PASSWORD, userDTO.getEncryptedPassword())
                 .addTarget(Columns.SALT, salt)
                 .addTarget(Columns.NAME, userDTO.getName())
@@ -130,9 +130,9 @@ public class UsersDAO extends DAO {
             psmt.setString(1, userDTO.getAddress());
             psmt.setString(2, userDTO.getName());
             psmt.setString(3, userDTO.getUserType().name());
-            psmt.setString(4, userDTO.getLoginID());
+            psmt.setString(4, userDTO.getLoginId());
             psmt.setString(5, userDTO.getEncryptedPassword());
-            psmt.setLong(6, userDTO.getUserID());
+            psmt.setLong(6, userDTO.getUserId());
 
             psmt.executeUpdate();
         }

@@ -2,7 +2,7 @@ package ypfunding.server.persistence.dao.dynamicsql.table;
 
 import java.util.List;
 
-public final class DirectReferenceTable extends ReferenceTable {
+public final class DirectReferenceTable extends VarNameReferenceTable {
     private final DirectReferenceTables tableName;
 
     public DirectReferenceTable(DirectReferenceTables table) {

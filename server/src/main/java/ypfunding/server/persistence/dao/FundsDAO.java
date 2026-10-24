@@ -32,7 +32,7 @@ public class FundsDAO extends DAO{
 
     public void fillDataFromResultSet(FundDTO dto, ResultSet rs)throws SQLException{
         dto.setFundId(rs.getLong(Columns.FUND_ID.toString()));
-        dto.setUserID(rs.getLong(Columns.USER_ID.toString()));
+        dto.setUserId(rs.getLong(Columns.USER_ID.toString()));
         dto.setProjectId(rs.getLong(Columns.PROJECT_ID.toString()));
         dto.setRewardId(rs.getLong(Columns.REWARD_ID.toString()));
         dto.setQuantity(rs.getLong(Columns.QUANTITY.toString()));
@@ -49,7 +49,7 @@ public class FundsDAO extends DAO{
 
         try (PreparedStatement psmt = conn.prepareStatement(INSERT_SQL)) {
 
-            psmt.setLong(1, fundDTO.getUserID());
+            psmt.setLong(1, fundDTO.getUserId());
             psmt.setLong(2, fundDTO.getProjectId());
             psmt.setLong(3, fundDTO.getRewardId());
             psmt.setLong(4, fundDTO.getQuantity());

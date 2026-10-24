@@ -33,8 +33,8 @@ public class CanceledFundsDAO extends DAO{
 
     public void fillDataFromResultSet(CanceledFundDTO dto, ResultSet rs) throws SQLException {
         dto.setCanceledFundId(rs.getLong(Columns.CANCELED_FUND_ID.toString()));
-        dto.setUserID(rs.getLong(Columns.USER_ID.toString()));
-        dto.setProjectID(rs.getLong(Columns.PROJECT_ID.toString()));
+        dto.setUserId(rs.getLong(Columns.USER_ID.toString()));
+        dto.setProjectId(rs.getLong(Columns.PROJECT_ID.toString()));
         dto.setRewardId(rs.getLong(Columns.REWARD_ID.toString()));
         dto.setQuantity(rs.getLong(Columns.QUANTITY.toString()));
         dto.setContent(rs.getString(Columns.CONTENT.toString()));
@@ -51,8 +51,8 @@ public class CanceledFundsDAO extends DAO{
 
         try (PreparedStatement psmt = conn.prepareStatement(INSERT_SQL)) {
 
-            psmt.setLong(1, canceledFundDTO.getUserID());
-            psmt.setLong(2, canceledFundDTO.getProjectID());
+            psmt.setLong(1, canceledFundDTO.getUserId());
+            psmt.setLong(2, canceledFundDTO.getProjectId());
             psmt.setLong(3, canceledFundDTO.getRewardId());
             psmt.setLong(4, canceledFundDTO.getQuantity());
             psmt.setString(5, canceledFundDTO.getContent());

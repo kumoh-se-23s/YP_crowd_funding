@@ -97,11 +97,11 @@ public class ProjectsDAO extends DAO {
         return result;
     }
 
-    public List<ProjectDTO> getPendingProjects(Connection conn, long userID) throws SQLException {
+    public List<ProjectDTO> getPendingProjects(Connection conn, long userId) throws SQLException {
         List<ProjectDTO> result = new ArrayList<>();
 
         try (ResultSet rs = SQLSelect.allColumns(new DirectReferenceTable(Tables.PROJECTS))
-                .addCondition(new BasicCondition(new ColumnValueToken(Columns.USER_ID), ArithmeticConditionOperator.EQ, new UserValueToken(userID)))
+                .addCondition(new BasicCondition(new ColumnValueToken(Columns.USER_ID), ArithmeticConditionOperator.EQ, new UserValueToken(userId)))
                 .addCondition(new BasicCondition(new ColumnValueToken(Columns.APPROVAL_STATUS), ArithmeticConditionOperator.EQ, new UserValueToken(ApprovalStatus.PENDING)))
                 .execute(conn)) {
 
@@ -170,12 +170,12 @@ public class ProjectsDAO extends DAO {
 
     }
 
-    public int approveProjectUpdate(Connection conn, long projectID) throws SQLException {
+    public int approveProjectUpdate(Connection conn, long projectId) throws SQLException {
         return new SQLUpdate(new DirectReferenceTable(Tables.PROJECTS), new UpdateSelector[]{
                 new UpdateSelector(Columns.START_DATE, new UserValueToken(DateTimeUtil.now())),
                 new UpdateSelector(Columns.APPROVAL_STATUS, new UserValueToken(ApprovalStatus.APPROVED))
         })
-                .addCondition(new BasicCondition(new ColumnValueToken(Columns.PROJECT_ID), ArithmeticConditionOperator.EQ, new UserValueToken(projectID)))
+                .addCondition(new BasicCondition(new ColumnValueToken(Columns.PROJECT_ID), ArithmeticConditionOperator.EQ, new UserValueToken(projectId)))
                 .addCondition(new BasicCondition(new ColumnValueToken(Columns.APPROVAL_STATUS), ArithmeticConditionOperator.EQ, new UserValueToken(ApprovalStatus.PENDING)))
                 .execute(conn);
     }

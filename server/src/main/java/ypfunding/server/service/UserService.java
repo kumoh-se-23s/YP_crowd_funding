@@ -23,30 +23,30 @@ public class UserService extends Service{
     /**
      * returns true if the user is not an admin.
      */
-    public boolean checkNotAdmin(Connection conn, long userID) throws SQLException {
-        UserDTO dto = usersDAO.getUserById(conn, userID);
+    public boolean checkNotAdmin(Connection conn, long userId) throws SQLException {
+        UserDTO dto = usersDAO.getUserById(conn, userId);
         return dto == null || dto.getUserType() != UserType.ADMIN;
     }
 
     /**
      * returns true if the user is not an maker.
      */
-    public boolean checkNotMaker(Connection conn, long userID) throws SQLException {
-        UserDTO dto = usersDAO.getUserById(conn, userID);
+    public boolean checkNotMaker(Connection conn, long userId) throws SQLException {
+        UserDTO dto = usersDAO.getUserById(conn, userId);
         return dto == null || dto.getUserType() != UserType.MAKER;
     }
 
     /**
      * returns true if the user is not a supporter.
      */
-    public boolean checkNotSupporter(Connection conn, long userID) throws SQLException {
-        UserDTO dto = usersDAO.getUserById(conn, userID);
+    public boolean checkNotSupporter(Connection conn, long userId) throws SQLException {
+        UserDTO dto = usersDAO.getUserById(conn, userId);
         return dto == null || dto.getUserType() != UserType.SUPPORTER;
     }
 
 
 
-    public UserDTO getUserById(long userID) {
-        return transactionManager.execute(conn -> usersDAO.getUserById(conn, userID));
+    public UserDTO getUserById(long userId) {
+        return transactionManager.execute(conn -> usersDAO.getUserById(conn, userId));
     }
 }

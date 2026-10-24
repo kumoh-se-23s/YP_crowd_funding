@@ -72,7 +72,7 @@ public class FundService extends Service{
 
             //후원 저장. 중복이면 DAO가 DuplicateFundException
             FundDTO fund = new FundDTO();
-            fund.setUserID(user.userId());
+            fund.setUserId(user.userId());
             fund.setProjectId(reward.getProjectId());
             fund.setRewardId(rewardId);
             fund.setQuantity((long)quantity);
