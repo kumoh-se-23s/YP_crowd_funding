@@ -211,7 +211,7 @@ public class ProjectQueryDAO extends DAO {
     }
 
     public final List<ProjectQueryDTO> getActiveProjects(Connection conn) throws SQLException {
-        return getActiveProjects(conn);
+        return queryActiveProjects(conn);
     }
 
 
@@ -221,8 +221,8 @@ public class ProjectQueryDAO extends DAO {
     private List<ProjectQueryDTO> queryActiveProjects(Connection conn, Supplier<OrderBySelector>... sorter) throws SQLException {
         List<ProjectQueryDTO> result = new ArrayList<>();
         try (ResultSet rs = createProjectStatusSQLBuilder()
-                .addCondition(getProjectApprovalStatusCondition(ApprovalStatus.APPROVED))
-                .addCondition(getEndedCondition(false))
+                .addCondition(createProjectApprovalStatusCondition(ApprovalStatus.APPROVED))
+                .addCondition(createEndedCondition(false))
                 .orderBy(Arrays.stream(sorter).map(Supplier::get).toArray(OrderBySelector[]::new))
                 .execute(conn)) {
             while (rs.next()) {
@@ -236,9 +236,9 @@ public class ProjectQueryDAO extends DAO {
     private List<ProjectQueryDTO> queryFailedProjects(Connection conn, Supplier<OrderBySelector>... sorter) throws SQLException {
         List<ProjectQueryDTO> result = new ArrayList<>();
         try (ResultSet rs = createProjectStatusSQLBuilder()
-                .addCondition(getProjectApprovalStatusCondition(ApprovalStatus.APPROVED))
-                .addCondition(getEndedCondition(true))
-                .addCondition(getProjectProgressCondition(false))
+                .addCondition(createProjectApprovalStatusCondition(ApprovalStatus.APPROVED))
+                .addCondition(createEndedCondition(true))
+                .addCondition(createProjectProgressCondition(false))
                 .orderBy(Arrays.stream(sorter).map(Supplier::get).toArray(OrderBySelector[]::new))
                 .execute(conn)) {
             while (rs.next()) {
@@ -252,9 +252,9 @@ public class ProjectQueryDAO extends DAO {
     private List<ProjectQueryDTO> querySuccessProjects(Connection conn, Supplier<OrderBySelector>... sorter) throws SQLException {
         List<ProjectQueryDTO> result = new ArrayList<>();
         try (ResultSet rs = createProjectStatusSQLBuilder()
-                .addCondition(getProjectApprovalStatusCondition(ApprovalStatus.APPROVED))
-                .addCondition(getEndedCondition(true))
-                .addCondition(getProjectProgressCondition(true))
+                .addCondition(createProjectApprovalStatusCondition(ApprovalStatus.APPROVED))
+                .addCondition(createEndedCondition(true))
+                .addCondition(createProjectProgressCondition(true))
                 .orderBy(Arrays.stream(sorter).map(Supplier::get).toArray(OrderBySelector[]::new))
                 .execute(conn)) {
             while (rs.next()) {
@@ -264,7 +264,7 @@ public class ProjectQueryDAO extends DAO {
         return result;
     }
 
-    private BasicCondition getProjectApprovalStatusCondition(ApprovalStatus approvalStatus){
+    private BasicCondition createProjectApprovalStatusCondition(ApprovalStatus approvalStatus){
         return new BasicCondition(
                 new ColumnValueToken(ProjectsDAO.Columns.APPROVAL_STATUS),
                 ArithmeticConditionOperator.EQ,
@@ -272,7 +272,7 @@ public class ProjectQueryDAO extends DAO {
         );
     }
 
-    private BasicCondition getEndedCondition(boolean isEnd){
+    private BasicCondition createEndedCondition(boolean isEnd){
         return new BasicCondition(
                 new ColumnValueToken(ProjectsDAO.Columns.END_DATE),
                 isEnd ? ArithmeticConditionOperator.LE : ArithmeticConditionOperator.GT,
@@ -282,7 +282,7 @@ public class ProjectQueryDAO extends DAO {
         );
     }
 
-    private BasicCondition getProjectProgressCondition(boolean isSuccess){
+    private BasicCondition createProjectProgressCondition(boolean isSuccess){
         return new BasicCondition(
                 new ColumnValueToken(Columns.PROJECT_FUND_PROGRESS),
                 isSuccess ? ArithmeticConditionOperator.GE : ArithmeticConditionOperator.LT,
@@ -294,8 +294,8 @@ public class ProjectQueryDAO extends DAO {
     private List<ProjectQueryDTO> queryEndedProjects(Connection conn, Supplier<OrderBySelector>... sorter) throws SQLException {
         List<ProjectQueryDTO> result = new ArrayList<>();
         try (ResultSet rs = createProjectStatusSQLBuilder()
-                .addCondition(getProjectApprovalStatusCondition(ApprovalStatus.APPROVED))
-                .addCondition(getEndedCondition(true))
+                .addCondition(createProjectApprovalStatusCondition(ApprovalStatus.APPROVED))
+                .addCondition(createEndedCondition(true))
                 .orderBy(Arrays.stream(sorter).map(Supplier::get).toArray(OrderBySelector[]::new))
                 .execute(conn)) {
             while (rs.next()) {
@@ -310,7 +310,7 @@ public class ProjectQueryDAO extends DAO {
     private List<ProjectQueryDTO> queryPendingProjects(Connection conn, Supplier<OrderBySelector>... sorter) throws SQLException {
         List<ProjectQueryDTO> result = new ArrayList<>();
         try (ResultSet rs = createProjectStatusSQLBuilder()
-                .addCondition(getProjectApprovalStatusCondition(ApprovalStatus.PENDING))
+                .addCondition(createProjectApprovalStatusCondition(ApprovalStatus.PENDING))
                 .orderBy(Arrays.stream(sorter).map(Supplier::get).toArray(OrderBySelector[]::new))
                 .execute(conn)) {
             while (rs.next()) {
@@ -325,7 +325,7 @@ public class ProjectQueryDAO extends DAO {
     private List<ProjectQueryDTO> queryRejectedProjects(Connection conn, Supplier<OrderBySelector>... sorter) throws SQLException {
         List<ProjectQueryDTO> result = new ArrayList<>();
         try (ResultSet rs = createProjectStatusSQLBuilder()
-                .addCondition(getProjectApprovalStatusCondition(ApprovalStatus.REJECTED))
+                .addCondition(createProjectApprovalStatusCondition(ApprovalStatus.REJECTED))
                 .orderBy(Arrays.stream(sorter).map(Supplier::get).toArray(OrderBySelector[]::new))
                 .execute(conn)) {
             while (rs.next()) {
