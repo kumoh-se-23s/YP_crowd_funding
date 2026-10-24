@@ -93,7 +93,7 @@ public class ProjectQueryService extends Service {
     }
 
     /**
-     * Admin-only function. get all pending projects
+     * Admin-only function. Get all pending projects
      * @param user requested user
      * @param sorter sorting order. if empty, use default sorting (ID).
      * @return result projects sorted by most recent
@@ -102,7 +102,7 @@ public class ProjectQueryService extends Service {
         return getProjects(user, e -> projectQueryDAO.getPendingProjects(e, sorter), UserType.ADMIN);
     }
     /**
-     * Admin-only function. get all pending projects
+     * Admin-only function. Get all pending projects
      * @param user requested user
      * @param projectName filters project name. if empty, return all projects.
      * @param sorter sorting order. if empty, use default sorting (ID).
