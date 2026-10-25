@@ -186,4 +186,99 @@ public final class TestData {
             }
         }
     }
+    /** 비밀번호를 실제 해시로 넣은 사용자 (로그인 테스트용) */
+    public static long insertUserWithPassword(Connection conn, String loginId, String password,
+                                              UserType userType, LocalDateTime regdate) throws SQLException {
+        String salt = "0123456789abcdef0123456789abcdef";   // 32자
+        String sql = """
+                INSERT INTO users (login_id, password, salt, name, address, usertype, regdate)
+                VALUES (?, SHA2(CONCAT(?, ?), 256), ?, ?, ?, ?, ?)
+                """;
+        try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            ps.setString(1, loginId);
+            ps.setString(2, salt);
+            ps.setString(3, password);
+            ps.setString(4, salt);
+            ps.setString(5, loginId + " 이름");
+            ps.setString(6, loginId + " 주소");
+            ps.setString(7, userType.name());
+            ps.setObject(8, regdate);
+            ps.executeUpdate();
+            return generatedId(ps);
+        }
+    }
+
+    /** 리워드의 stock 값*/
+    public static long getStock(Connection conn, long rewardId) throws SQLException {
+        String sql = "SELECT stock FROM rewards WHERE reward_id = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, rewardId);
+            try (ResultSet rs = ps.executeQuery()) {
+                rs.next();
+                return rs.getLong(1);
+            }
+        }
+    }
+
+    /** 후원을 넣는다. 생성된 fund_id 반환 */
+    public static long insertFund(Connection conn, long userId, long projectId, long rewardId,
+                                  int quantity, LocalDateTime date) throws SQLException {
+        String sql = """
+            INSERT INTO funds (user_id, project_id, reward_id, quantity, date)
+            VALUES (?, ?, ?, ?, ?)
+            """;
+        try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            ps.setLong(1, userId);
+            ps.setLong(2, projectId);
+            ps.setLong(3, rewardId);
+            ps.setInt(4, quantity);
+            ps.setObject(5, date);
+            ps.executeUpdate();
+            return generatedId(ps);
+        }
+    }
+
+    /** 사용자의 취소 기록 개수*/
+    public static int countCanceledFunds(Connection conn, long userId) throws SQLException {
+        String sql = "SELECT COUNT(*) FROM canceled_funds WHERE user_id = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, userId);
+            try (ResultSet rs = ps.executeQuery()) {
+                rs.next();
+                return rs.getInt(1);
+            }
+        }
+    }
+
+    /** 사용자의 취소 기록을 넣고 canceled_id 반환*/
+    public static long insertCanceledFund(Connection conn, long userId, long projectId, long rewardId,
+                                          int quantity, String content, LocalDateTime cancelDate) throws SQLException {
+        String sql = """
+            INSERT INTO canceled_funds (user_id, project_id, reward_id, quantity, content, cancel_date)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """;
+        try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            ps.setLong(1, userId);
+            ps.setLong(2, projectId);
+            ps.setLong(3, rewardId);
+            ps.setInt(4, quantity);
+            ps.setString(5, content);
+            ps.setObject(6, cancelDate);
+            ps.executeUpdate();
+            return generatedId(ps);
+        }
+    }
+
+    /** 리뷰를 넣는다 */
+    public static void insertReview(Connection conn, long fundId, int star, String content,
+                                    LocalDateTime date) throws SQLException {
+        String sql = "INSERT INTO reviews (fund_id, star, content, date) VALUES (?, ?, ?, ?)";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, fundId);
+            ps.setInt(2, star);
+            ps.setString(3, content);
+            ps.setObject(4, date);
+            ps.executeUpdate();
+        }
+    }
 }

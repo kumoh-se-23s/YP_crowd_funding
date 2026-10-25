@@ -72,6 +72,14 @@ public class UserManagedDAO extends DAO {
         }
     }
 
+    public UserLoginDTO getById(Connection conn, long userId) throws SQLException {
+        try (ResultSet rs = selectLoginInfo()
+                .addCondition(eq(Columns.USER_ID, userId))
+                .execute(conn)) {
+            return rs.next() ? toLoginDTO(rs) : null;
+        }
+    }
+
     // =================================================================
     // 3. UPDATE
     // =================================================================

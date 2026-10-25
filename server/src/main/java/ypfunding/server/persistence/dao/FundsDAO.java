@@ -85,7 +85,7 @@ public class FundsDAO extends DAO{
     }
 
     // 리워드의 유효한 후원 수량 합계. 후원이 없으면 0
-// 리워드 행을 먼저 FOR UPDATE로 잠근 뒤 호출해야 최신 값이 읽힌다
+    // 리워드 행을 먼저 FOR UPDATE로 잠근 뒤 호출해야 최신 값이 읽힌다
     public long sumQuantityByReward(Connection conn, long rewardId) throws SQLException {
         final String SUM_SQL = "SELECT COALESCE(SUM(quantity), 0) FROM funds WHERE reward_id = ?";
 
