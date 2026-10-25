@@ -6,6 +6,7 @@ import ypfunding.common.protocol.packets.MessagePacket;
 import ypfunding.common.util.LogUtil;
 
 import java.io.IOException;
+import java.util.concurrent.TimeoutException;
 
 public class Main {
     static void main() {
@@ -14,9 +15,10 @@ public class Main {
             connector.start();
             MessagePacket pkt = new MessagePacket();
             pkt.setMessage("HELLO WORLD!");
-            connector.sendPacket(pkt);
+            pkt = connector.sendAndWaitReply(pkt, MessagePacket.class);
+            System.out.println("Response : " + pkt.getMessage());
             connector.pause();
-        }catch (IOException e){
+        }catch (IOException | TimeoutException e){
             LogUtil.log("Error : " + e.getMessage());
         }
     }

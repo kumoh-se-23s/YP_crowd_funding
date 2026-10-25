@@ -1,6 +1,7 @@
 package ypfunding.server;
 
 import ypfunding.common.constant.NetworkConstants;
+import ypfunding.common.parallel.ThreadPool;
 import ypfunding.common.protocol.TLSConnection;
 import ypfunding.common.util.DateTimeUtil;
 import ypfunding.common.util.LogUtil;
@@ -10,6 +11,7 @@ import ypfunding.server.network.RequestManager;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLException;
 import javax.swing.*;
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
@@ -51,6 +53,10 @@ public class RuntimeServer implements AutoCloseable {
 
     public void endConnection(SocketChannel socket) {
         sslEngineMap.get(socket).closeOutbound();
+        try {
+            sslEngineMap.get(socket).closeInbound();
+        } catch (SSLException _) {
+        }
         sslEngineMap.remove(socket);
         tlsConnectionMap.get(socket).close();
         tlsConnectionMap.remove(socket);
@@ -61,10 +67,10 @@ public class RuntimeServer implements AutoCloseable {
         return context;
     }
 
-    public void createConnection(SocketChannel socket, SelectionKey selectionKey){
+    public void createConnection(SocketChannel socket, ThreadPool tp, SelectionKey selectionKey){
         SSLEngine engine = TLSServerConfig.createServerEngine(sslContext);
         sslEngineMap.put(socket, engine);
-        tlsConnectionMap.computeIfAbsent(socket, _ -> new TLSConnection(engine, selectionKey, socket));
+        tlsConnectionMap.computeIfAbsent(socket, _ -> new TLSConnection(engine, tp, selectionKey, socket));
     }
 
     public TLSConnection getConnection(SocketChannel socket){

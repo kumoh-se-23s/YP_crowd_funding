@@ -1,6 +1,7 @@
 package ypfunding.client.network;
 
 import ypfunding.common.constant.NetworkConstants;
+import ypfunding.common.parallel.ThreadPool;
 import ypfunding.common.protocol.PacketManager;
 import ypfunding.common.protocol.TLSConnection;
 import ypfunding.common.protocol.packets.Packet;
@@ -8,11 +9,13 @@ import ypfunding.common.util.LogUtil;
 
 import javax.net.ssl.SSLEngine;
 import java.io.IOException;
+import java.nio.channels.ClosedSelectorException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.Iterator;
 import java.util.Scanner;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -21,25 +24,25 @@ public class ClientTCPConnector implements ClientNetworkConnector {
     private final Selector selector;
     private final SocketChannel dstSocket;
     private final TLSConnection connection;
-    private final SelectionKey selectionKey;
-    private final SSLEngine engine;
-    private final AtomicBoolean loopFinished;
     private final Scanner scanner;
-
+    private final boolean connectedAtStart;
+    private final ThreadPool threadPool;
+    private final AtomicBoolean started = new AtomicBoolean();
+    private final CountDownLatch loopDone = new CountDownLatch(1);
+    private volatile boolean closeRequested;
 
     public ClientTCPConnector() { // the server address is constant
         try {
-            engine = TLSClientConfig.create();
+            SSLEngine engine = TLSClientConfig.create();    // 반드시 client mode
             selector = Selector.open();
             dstSocket = SocketChannel.open();
             dstSocket.configureBlocking(false);
-            if (dstSocket.connect(NetworkConstants.SERVER_ADDRESS)) {
-                selectionKey = dstSocket.register(selector, SelectionKey.OP_READ);
-            }else{
-                selectionKey = dstSocket.register(selector, SelectionKey.OP_CONNECT);
-            }
-            connection = new TLSConnection(engine, selectionKey, dstSocket);
-            loopFinished = new AtomicBoolean(false);
+            threadPool = new ThreadPool(1);
+
+            connectedAtStart = dstSocket.connect(NetworkConstants.SERVER_ADDRESS);
+            SelectionKey key = dstSocket.register(selector,
+                    connectedAtStart ? SelectionKey.OP_READ : SelectionKey.OP_CONNECT);
+            connection = new TLSConnection(engine, threadPool, key, dstSocket);
             scanner = new Scanner(System.in);
         } catch (Exception e) {
             throw new IllegalStateException("Failed to create network connection", e);
@@ -47,108 +50,83 @@ public class ClientTCPConnector implements ClientNetworkConnector {
     }
 
     public void start() {
-        new Thread(this::loop).start();
+        if (started.compareAndSet(false, true)) {
+            new Thread(this::loop, "client-io").start();
+        }
     }
 
     public void loop() {
-        boolean connected = true;
-        while (connected) {
-            try {
+        try {
+            if (connectedAtStart) connection.onConnected();     // 핸드셰이크는 IO 스레드에서 시작
+
+            while (!closeRequested && !connection.isClosed()) {
                 selector.select();
+                if (closeRequested) break;
+
                 Iterator<SelectionKey> it = selector.selectedKeys().iterator();
                 while (it.hasNext()) {
                     SelectionKey key = it.next();
-                    if (key.isConnectable() && dstSocket.finishConnect()) {
-                        key.interestOps(SelectionKey.OP_READ);
-                        if (connection.sendPacketCount() > 0) {
-                            key.interestOps(key.interestOps() | SelectionKey.OP_WRITE);
-                        }
-                        engine.beginHandshake();
-                        connection.driveTLSHandshake();
-                    }
-                    if (key.isValid() && key.isWritable()) {
-                        connection.flushTLSData();
-                        connection.driveTLSHandshake();
-                    }
-                    if (key.isValid() && key.isReadable()) {
-                        connected = connection.readTLSData();
-                        if (connected) {
-                            connection.driveTLSHandshake();
-                        }
-                    }
                     it.remove();
-                }
-            } catch (IOException e) {
-                throw new IllegalStateException("Error : ", e);
-            }
-        }
-        loopFinished.set(true);
-    }
+                    if (!key.isValid()) continue;
 
-
-    public <S extends Packet, R extends Packet> R sendAndWaitReply(S packetToSend, Class<R> packetToReceiveClass) throws TimeoutException {
-        sendPacket(packetToSend);
-        receivePacket(packetToReceiveClass);
-        R receivedPacket = null;
-        long deadline = System.currentTimeMillis() + PacketManager.TIMEOUT_MS;
-
-        synchronized (this) {
-            while (receivedPacket == null) {
-                try {
-                    long remaining = deadline - System.currentTimeMillis();
-
-                    if (remaining <= 0) {
-                        throw new TimeoutException("Connection timed out");
+                    if (key.isConnectable()) {
+                        if (dstSocket.finishConnect()) connection.onConnected();
+                        continue;
                     }
-
-                    wait(remaining);
-                    receivedPacket = connection.popReceivedPacket(packetToReceiveClass);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    throw new IllegalStateException("Error : ", e);
+                    if (key.isValid() && key.isWritable()) connection.onWritable();
+                    if (key.isValid() && key.isReadable()) connection.onReadable();
                 }
             }
+        } catch (IOException e) {
+            LogUtil.logError(e);
+        } catch (ClosedSelectorException ignored) {
+        } finally {
+            connection.close();                                  // IO 스레드에서 종료
+            try { selector.close(); } catch (IOException ignored) { }
+            loopDone.countDown();
         }
-
-        return packetToReceiveClass.cast(receivedPacket);
     }
 
-    public synchronized void sendPacket(Packet packet) {
-        connection.queuePacketToSend(packet);
-        if (selectionKey.isValid()) selectionKey.interestOps(selectionKey.interestOps() | SelectionKey.OP_WRITE);
-
-
-    }
-
-
-    private synchronized <P extends Packet> void receivePacket(Class<P> clazz) {
-        P packet = connection.popReceivedPacket(clazz);
-        if (packet == null) return;
-        if (selectionKey.isValid()) selectionKey.interestOps(selectionKey.interestOps() | SelectionKey.OP_READ);
-    }
-
-
-    @Override
-    public void close() throws IOException {
-        selectionKey.cancel();
-        scanner.close();
-        connection.close();
-        dstSocket.close();
-        selector.close();
-    }
-
-    @Override
-    public synchronized void pause() {
-        String input;
-        do {
-            input = scanner.nextLine();
-            //TODO switch input
-        } while (!input.equals("exit") && !loopFinished.get());
-
+    public <S extends Packet, R extends Packet> R sendAndWaitReply(S packetToSend, Class<R> packetToReceiveClass)
+            throws TimeoutException {
+        sendPacket(packetToSend);
         try {
-            while (!loopFinished.get()) {
-                wait();
-            }
+            return connection.awaitPacket(packetToReceiveClass, PacketManager.TIMEOUT_MS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Interrupted while waiting for reply", e);
+        }
+    }
+
+    public void sendPacket(Packet packet) {
+        connection.queuePacketToSend(packet);                   // OP_WRITE 설정과 wakeup은 내부에서 처리
+    }
+
+    @Override
+    public void close() {
+        closeRequested = true;
+        if (started.get()) {
+            selector.wakeup();                                  // 정리는 loop의 finally가 수행
+        } else {
+            connection.close();
+            try { selector.close(); } catch (IOException ignored) { }
+            loopDone.countDown();
+        }
+        threadPool.close();
+        scanner.close();
+    }
+
+    @Override
+    public void pause() {
+        while (loopDone.getCount() > 0 && scanner.hasNextLine()) {
+            String input = scanner.nextLine();
+            //TODO switch input
+            if (input.equals("exit")) break;
+        }
+        closeRequested = true;
+        selector.wakeup();
+        try {
+            loopDone.await();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             LogUtil.logError("Unexpected interrupt");

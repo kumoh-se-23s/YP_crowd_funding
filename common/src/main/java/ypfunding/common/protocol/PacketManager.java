@@ -93,18 +93,9 @@ public class PacketManager {
     }
 
     public static <P extends Packet> P decodePacket(ByteBuffer buffer, Class<P> clazz) {
-
-        RawPacketTemp raw = demux(buffer);
-        if (raw == null) {
-            // no packets to decode
-            return null;
-        }
-        if (raw.packetClass() != clazz) {
-            throw new IllegalStateException("Packet type does not match");
-        }
         P pkt = createPacket(clazz);
         try {
-            pkt.decode(raw.payload());
+            pkt.decode(buffer);
         } catch (IOException e) {
             throw new IllegalStateException("Failed to decode packet", e);
         }

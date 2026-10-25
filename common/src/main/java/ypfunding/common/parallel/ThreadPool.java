@@ -2,11 +2,12 @@ package ypfunding.common.parallel;
 
 import ypfunding.common.util.LogUtil;
 
+import java.io.Closeable;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class ThreadPool {
+public class ThreadPool implements AutoCloseable {
     private final Thread[] pool;
     private final Queue<Runnable> tasks;
     private final AtomicInteger runningTaskCount = new AtomicInteger(0);
@@ -69,5 +70,12 @@ public class ThreadPool {
     private synchronized Runnable poll() {
         if (tasks.isEmpty()) return null;
         return tasks.poll();
+    }
+
+    @Override
+    public void close() {
+        for (Thread t : pool) {
+            t.interrupt();
+        }
     }
 }
