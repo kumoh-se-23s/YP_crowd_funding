@@ -14,13 +14,14 @@ public class PasswordHasher {
     //소문자 hex 변환
     private static final HexFormat HEX = HexFormat.of();
 
-    //새 salt
+    //새 salt 생성
     public static String newSalt() {
         byte[] bytes = new byte[SALT_BYTES];
         RANDOM.nextBytes(bytes);
         return HEX.formatHex(bytes);
     }
 
+    //해시
     public static String hash(String salt, String password) {
         Objects.requireNonNull(salt, "salt");
         Objects.requireNonNull(password, "password");
@@ -34,6 +35,7 @@ public class PasswordHasher {
         }
     }
 
+    //맞는지 확인
     public static boolean matches(String salt, String password, String expectedHash) {
         Objects.requireNonNull(expectedHash, "expectedHash");
         byte[] actual = hash(salt, password).getBytes(StandardCharsets.US_ASCII);
