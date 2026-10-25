@@ -1,6 +1,7 @@
 package ypfunding.server.persistence.dao;
 
 import ypfunding.common.dto.ReviewDTO;
+import ypfunding.server.exception.DuplicateReviewException;
 import ypfunding.server.persistence.dao.dynamicsql.builder.SQLDelete;
 import ypfunding.server.persistence.dao.dynamicsql.builder.SQLInsert;
 import ypfunding.server.persistence.dao.dynamicsql.builder.SQLSelect;
@@ -49,12 +50,18 @@ public class ReviewsDAO extends DAO {
     // =================================================================
 
     public void insert(Connection conn, ReviewDTO reviewDTO) throws SQLException {
-        new SQLInsert(Tables.REVIEWS)
-                .addTarget(Columns.FUND_ID, reviewDTO.getFundId())
-                .addTarget(Columns.STAR, reviewDTO.getStar())
-                .addTarget(Columns.CONTENT, reviewDTO.getContent())
-                .addTarget(Columns.DATE, reviewDTO.getDate())
-                .execute(conn);
+        final String INSERT_SQL = "INSERT INTO reviews (fund_id, star, content, date) VALUES (?, ?, ?, ?)";
+
+        try (PreparedStatement psmt = conn.prepareStatement(INSERT_SQL)) {
+            psmt.setLong(1, reviewDTO.getFundId());
+            psmt.setInt(2, reviewDTO.getStar());
+            psmt.setString(3, reviewDTO.getContent());   // null이면 NULL로 저장
+            psmt.setObject(4, reviewDTO.getDate());
+            psmt.executeUpdate();
+        } catch (SQLException e) {
+            if (e.getErrorCode() == 1062) throw new DuplicateReviewException(e);
+            throw e;
+        }
     }
 
     // =================================================================
