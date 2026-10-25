@@ -10,6 +10,6 @@ public class UserLoginDTO {
     private Long userId;
     private UserType userType;
     private String loginId;
-    private String encryptedPassword;
+    private String PasswordHash;
     private String salt;
 }
