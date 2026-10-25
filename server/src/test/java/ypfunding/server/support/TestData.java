@@ -281,4 +281,16 @@ public final class TestData {
             ps.executeUpdate();
         }
     }
+
+    /** 후원의 리뷰 개수 (0 또는 1)*/
+    public static int countReviews(Connection conn, long fundId) throws SQLException {
+        String sql = "SELECT COUNT(*) FROM reviews WHERE fund_id = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, fundId);
+            try (ResultSet rs = ps.executeQuery()) {
+                rs.next();
+                return rs.getInt(1);
+            }
+        }
+    }
 }

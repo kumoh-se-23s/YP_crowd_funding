@@ -31,6 +31,7 @@ public class AppContext implements AutoCloseable {
     private final CanceledFundsDAO canceledFundsDAO;
     private final RewardsDAO rewardsDAO;
     private final FundQueryDAO fundQueryDAO;
+    private final ReviewsDAO reviewsDAO;
 
     //service
     //private final ~Service;
@@ -48,6 +49,8 @@ public class AppContext implements AutoCloseable {
     private final LikeService likeService;
     @Getter
     private final FundService fundService;
+    @Getter
+    private final ReviewService reviewService;
 
     public AppContext() {
         this(AppProperties.DEFAULT_PATH, Clock.system(DateTimeUtil.KST));
@@ -74,6 +77,7 @@ public class AppContext implements AutoCloseable {
             this.canceledFundsDAO = new CanceledFundsDAO();
             this.rewardsDAO = new RewardsDAO();
             this.fundQueryDAO = new FundQueryDAO();
+            this.reviewsDAO = new ReviewsDAO();
             this.authService = new AuthService(transactionManager, userManagedDAO, clock);
             this.userService = new UserService(transactionManager, usersDAO);
             this.adminService = new AdminService(transactionManager, usersDAO, projectsDAO, rejectsDAO);
@@ -81,6 +85,7 @@ public class AppContext implements AutoCloseable {
             this.supporterService = new SupporterService(transactionManager, usersDAO);
             this.likeService = new LikeService(transactionManager, likesDAO, projectsDAO, clock);
             this.fundService = new FundService(transactionManager, fundsDAO, canceledFundsDAO, rewardsDAO, projectsDAO, fundQueryDAO, clock);
+            this.reviewService = new ReviewService(transactionManager, reviewsDAO, fundsDAO, fundQueryDAO, clock);
         } catch (RuntimeException | Error e) {
             closeQuietly(e);
             throw e;

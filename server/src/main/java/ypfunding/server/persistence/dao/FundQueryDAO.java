@@ -130,4 +130,29 @@ public class FundQueryDAO extends DAO{
         }
         return result;
     }
+
+    //프로젝트 성공 여부 판단
+    public ProjectFundingStatus findProjectStatus(Connection conn, long projectId, LocalDateTime now) throws SQLException {
+        final String STATUS_SQL = """
+            SELECT CASE
+                       WHEN p.end_date > ? THEN 'ONGOING'
+                       WHEN COALESCE((SELECT SUM(r.price * f.quantity)
+                                        FROM funds f
+                                        JOIN rewards r ON r.reward_id = f.reward_id
+                                       WHERE f.project_id = p.project_id), 0) >= p.goal THEN 'SUCCESS'
+                       ELSE 'FAILED'
+                   END AS status
+            FROM projects p
+            WHERE p.project_id = ?
+            """;
+
+        try (PreparedStatement psmt = conn.prepareStatement(STATUS_SQL)) {
+            psmt.setObject(1, now);
+            psmt.setLong(2, projectId);
+
+            try (ResultSet rs = psmt.executeQuery()) {
+                return rs.next() ? ProjectFundingStatus.valueOf(rs.getString(Columns.STATUS.toString())) : null;
+            }
+        }
+    }
 }
