@@ -14,6 +14,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class RequestEvent {
     private final Selector selector;
 
+    @Getter
     private final RuntimeServer server;
     @Getter
     private final SocketChannel srcSocket;
@@ -48,7 +49,4 @@ public class RequestEvent {
     }
 
 
-    public RuntimeServer getServer() {
-        return server;
-    }
 }

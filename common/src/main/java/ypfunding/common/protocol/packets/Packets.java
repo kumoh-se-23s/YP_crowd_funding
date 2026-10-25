@@ -5,8 +5,8 @@ import lombok.Getter;
 @Getter
 public enum Packets {
     LOGIN(LoginPacket.class),
-    NOTIFICATION(NotificationPacket.class),
     MESSAGE(MessagePacket.class),
+    NOTIFICATION(NotificationPacket.class),
     ;
     private final Class<? extends Packet> packetClass;
 
