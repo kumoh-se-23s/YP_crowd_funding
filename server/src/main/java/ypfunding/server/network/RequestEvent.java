@@ -37,7 +37,6 @@ public class RequestEvent {
             writeQueue.offer(packet);
             key.interestOps(key.interestOps() | SelectionKey.OP_WRITE);
         });
-        selector.wakeup();
     }
 
     public void reply(String message) {

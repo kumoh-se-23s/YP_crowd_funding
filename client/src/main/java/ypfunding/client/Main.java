@@ -15,6 +15,7 @@ public class Main {
             MessagePacket pkt = new MessagePacket();
             pkt.setMessage("HELLO WORLD!");
             connector.sendPacket(pkt);
+            connector.pause();
         }catch (IOException e){
             LogUtil.log("Error : " + e.getMessage());
         }

@@ -90,7 +90,10 @@ public class RequestManager implements AutoCloseable {
                 connection.driveTLSHandshake();
                 threadPool.queue(() -> receiveRequest(srcSocket, connection.popReceivedPacket()));
             }else{
+                selectionKey.cancel();
+                requestEvents.remove(srcSocket);
                 runtimeServer.endConnection(srcSocket);
+                LogUtil.log("Connection closed by client | socket " + srcSocket);
             }
         }
 

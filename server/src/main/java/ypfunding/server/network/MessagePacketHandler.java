@@ -1,6 +1,7 @@
 package ypfunding.server.network;
 
 import ypfunding.common.protocol.packets.MessagePacket;
+import ypfunding.common.util.LogUtil;
 
 import java.nio.ByteBuffer;
 
@@ -9,5 +10,6 @@ public class MessagePacketHandler implements RequestHandler<MessagePacket>{
     public void handle(RequestEvent event, MessagePacket packet) {
         //TODO
         event.reply("IRECEIVEDMESSAGE");
+        LogUtil.log("Received message: " + packet.getMessage());
     }
 }
