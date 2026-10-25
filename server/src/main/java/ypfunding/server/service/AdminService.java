@@ -1,6 +1,5 @@
 package ypfunding.server.service;
 
-import ypfunding.common.dto.ProjectDTO;
 import ypfunding.common.dto.RejectDTO;
 import ypfunding.common.dto.UserDTO;
 import ypfunding.common.notifications.PermissionDeniedNotification;

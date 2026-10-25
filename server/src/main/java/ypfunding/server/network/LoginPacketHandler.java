@@ -1,6 +1,5 @@
 package ypfunding.server.network;
 
-import ypfunding.common.dto.UserDTO;
 import ypfunding.common.protocol.packets.LoginPacket;
 import ypfunding.server.auth.LoginUser;
 import ypfunding.server.persistence.dto.UserLoginDTO;

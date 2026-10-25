@@ -2,14 +2,10 @@ package ypfunding.server.service;
 
 import lombok.Getter;
 import ypfunding.common.dto.UserDTO;
-import ypfunding.common.type.UserType;
 import ypfunding.server.auth.LoginUser;
 import ypfunding.server.persistence.TransactionManager;
 import ypfunding.server.persistence.dao.UsersDAO;
-import ypfunding.server.persistence.dto.UserLoginDTO;
 
-import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.List;
 
 public class UserService extends Service{

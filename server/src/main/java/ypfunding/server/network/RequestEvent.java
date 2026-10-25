@@ -1,13 +1,10 @@
 package ypfunding.server.network;
 
 import lombok.Getter;
-import ypfunding.common.protocol.PacketManager;
 import ypfunding.common.protocol.packets.MessagePacket;
 import ypfunding.common.protocol.packets.Packet;
 import ypfunding.server.RuntimeServer;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;

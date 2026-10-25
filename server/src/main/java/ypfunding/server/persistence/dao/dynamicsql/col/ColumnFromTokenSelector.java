@@ -1,7 +1,6 @@
 package ypfunding.server.persistence.dao.dynamicsql.col;
 
 import ypfunding.server.persistence.dao.ColumnsEnum;
-import ypfunding.server.persistence.dao.dynamicsql.token.ValueExpressionToken;
 import ypfunding.server.persistence.dao.dynamicsql.token.ValueToken;
 
 import java.util.List;

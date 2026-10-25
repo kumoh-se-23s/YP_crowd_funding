@@ -3,7 +3,6 @@ package ypfunding.common.protocol.packets;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
