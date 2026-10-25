@@ -50,24 +50,31 @@ public class FundService extends Service{
 
         transactionManager.execute(conn ->{
             //리워드 확인
-            RewardDTO reward = rewardsDAO.findById(conn, rewardId);
+            RewardDTO reward = rewardsDAO.findByIdForUpdate(conn, rewardId);
             if(reward == null)
                 throw new BusinessException("존재하지 않는 리워드입니다.");
 
             //프로젝트 확인
             ProjectDTO project = projectsDAO.findById(conn, reward.getProjectId());
+            if (project == null) {
+                throw new BusinessException("존재하지 않는 프로젝트입니다.");
+            }
             //만약 projectDAO에서 진행중인지 확인하는 메서드가 구현될시 교체 예정
             boolean ongoing = project.getApprovalStatus() == ApprovalStatus.APPROVED
                     && !now.isBefore(project.getStartDate())
                     && now.isBefore(project.getEndDate());
 
-            if (project == null || !ongoing) {
+            if (!ongoing) {
                 throw new BusinessException("진행 중인 프로젝트에만 후원할 수 있습니다.");
             }
 
-            //재고 차감
-            if (rewardsDAO.decreaseStock(conn, rewardId, quantity) == 0) {
-                throw new SoldOutException();
+            //남은 수량 확인. stock = 제공 수량, 0 = 무제한
+            long stock = reward.getStock();
+            if (stock != 0) {
+                long sold = fundsDAO.sumQuantityByReward(conn, rewardId);
+                if (sold + quantity > stock) {
+                    throw new SoldOutException();
+                }
             }
 
             //후원 저장. 중복이면 DAO가 DuplicateFundException
@@ -75,7 +82,7 @@ public class FundService extends Service{
             fund.setUserId(user.userId());
             fund.setProjectId(reward.getProjectId());
             fund.setRewardId(rewardId);
-            fund.setQuantity((long)quantity);
+            fund.setQuantity((long) quantity);
             fund.setDate(now);
             fundsDAO.insert(conn, fund);
 

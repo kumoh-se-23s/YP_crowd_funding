@@ -85,6 +85,26 @@ public class RewardsDAO extends DAO {
     }
 
     /**
+     * 후원 신청·취소용: 리워드 행을 잠그고 조회한다 (SELECT ... FOR UPDATE)
+     * 반드시 트랜잭션의 첫 SQL로 호출할 것.
+     * 잠금 전에 다른 SELECT를 하면 이후 합계가 옛날 값으로 읽혀 초과 판매가 생길 수 있다.
+     * @param conn     커넥션
+     * @param rewardId 리워드 id
+     * @return 리워드 DTO, 없으면 null
+     */
+    public RewardDTO findByIdForUpdate(Connection conn, long rewardId) throws SQLException {
+        final String FIND_FOR_UPDATE_SQL = "SELECT * FROM rewards WHERE reward_id = ? FOR UPDATE";
+
+        try (PreparedStatement psmt = conn.prepareStatement(FIND_FOR_UPDATE_SQL)) {
+            psmt.setLong(1, rewardId);
+
+            try (ResultSet rs = psmt.executeQuery()) {
+                return rs.next() ? toDTO(rs) : null;
+            }
+        }
+    }
+
+    /**
      * 프로젝트 ID 기반 조회 (reward_id 오름차순)
      * @param conn      커넥션
      * @param projectId 프로젝트 ID
