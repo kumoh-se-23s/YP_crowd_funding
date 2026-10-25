@@ -60,13 +60,26 @@ public class RewardsDAO extends DAO {
      * @throws SQLException DB 오류 발생 시
      */
     public void insert(Connection conn, RewardDTO rewardDTO) throws SQLException {
-        new SQLInsert(Tables.REWARDS)
+        SQLInsert sqlInsert = new SQLInsert(Tables.REWARDS)
                 .addTarget(Columns.PROJECT_ID, rewardDTO.getProjectId())
                 .addTarget(Columns.NAME, rewardDTO.getName())
                 .addTarget(Columns.PRICE, rewardDTO.getPrice())
-                .addTarget(Columns.DESCRIPTION, rewardDTO.getDescription())
-                .addTarget(Columns.STOCK, rewardDTO.getStock())
-                .execute(conn);
+                .addTarget(Columns.DESCRIPTION, rewardDTO.getDescription());
+
+        // SQLLogger가 null 파라미터에서 NPE를 던지므로 stock이 null(무제한)이면 addTarget 생략 -> DB에 NULL로 저장됨
+        if (rewardDTO.getStock() != null) {
+            sqlInsert.addTarget(Columns.STOCK, rewardDTO.getStock());
+        }
+
+        sqlInsert.execute(conn);
+
+        //DB내에서는 rewardId를 AI로 갱신하지만 자바 메모리엔 갱신이 안되어 직접 갱신
+        try (PreparedStatement ps = conn.prepareStatement("SELECT LAST_INSERT_ID()");
+             ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) {
+                rewardDTO.setRewardId(rs.getLong(1));
+            }
+        }
     }
 
     // =================================================================
@@ -202,14 +215,14 @@ public class RewardsDAO extends DAO {
 
     /**
      * 특정 프로젝트의 모든 리워드를 삭제 기능
-     * 주의@@: 반려 프로젝트 재신청 시 반드시 이미지 테이블 을 먼저 삭제!!
+     * 주의@@: 반려 프로젝트 재신청 시 반드시 이미지 테이블 을 먼저 삭제해야함
      *
      * @param conn      커넥션
      * @param projectId 프로젝트 ID
      * @return 삭제된 행 수
      * @throws SQLException DB 오류 발생 시
      */
-    public int delete(Connection conn, long projectId) throws SQLException {
+    public int deleteByProjectId(Connection conn, long projectId) throws SQLException {
         return new SQLDelete(Tables.REWARDS)
                 .addCondition(new BasicCondition(
                         new ColumnValueToken(Columns.PROJECT_ID),

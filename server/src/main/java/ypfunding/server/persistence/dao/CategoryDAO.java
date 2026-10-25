@@ -50,7 +50,7 @@ public class CategoryDAO extends DAO {
     public void insert(Connection conn, CategoryDTO categoryDTO) throws SQLException {
         new SQLInsert(Tables.CATEGORY)
                 .addTarget(Columns.PROJECT_ID, categoryDTO.getProjectId())
-                .addTarget(Columns.CATEGORY_NAME, categoryDTO.getCategoryName())
+                .addTarget(Columns.CATEGORY_NAME, categoryDTO.getCategoryName().name())
                 .execute(conn);
     }
 

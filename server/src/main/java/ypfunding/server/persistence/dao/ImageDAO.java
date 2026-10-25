@@ -185,7 +185,7 @@ public class ImageDAO extends DAO {
     // =================================================================
 
     /**
-     * 리워드의 이미지를 삭제 기능
+     * 리워드 아래의 이미지(1개)를 삭제 기능
      * @param conn     커넥션
      * @param rewardId 리워드 ID
      * @return 삭제된 행 수
@@ -199,5 +199,4 @@ public class ImageDAO extends DAO {
                         new UserValueToken(rewardId)))
                 .execute(conn);
     }
-
 }
