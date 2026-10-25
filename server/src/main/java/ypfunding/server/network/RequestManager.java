@@ -3,14 +3,13 @@ package ypfunding.server.network;
 import lombok.Getter;
 import ypfunding.common.constant.NetworkConstants;
 import ypfunding.common.parallel.ThreadPool;
-import ypfunding.common.protocol.PacketManager;
 import ypfunding.common.protocol.RawPacketTemp;
 import ypfunding.common.protocol.TLSConnection;
+import ypfunding.common.protocol.packets.Packet;
 import ypfunding.common.util.LogUtil;
 import ypfunding.server.RuntimeServer;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
@@ -64,6 +63,16 @@ public class RequestManager implements AutoCloseable {
             Runnable task;
             while ((task = value.getRequestEvent().getSelectorTasks().poll()) != null) {
                 task.run(); // not a request, it is request handling.
+                threadPool.queue(() -> {
+                    Queue<Packet> writeQueue = value.getRequestEvent().getWriteQueue();
+                    while (!writeQueue.isEmpty()) {
+                        Packet packet = writeQueue.poll();
+                        SocketChannel srcSocket = (SocketChannel) selectionKey.channel();
+                        TLSConnection connection = runtimeServer.getConnection(srcSocket);
+                        connection.queuePacketToSend(packet);
+                    }
+
+                });
             }
         }
 
@@ -71,51 +80,33 @@ public class RequestManager implements AutoCloseable {
             SocketChannel srcSocket = serverSocket.accept();
             srcSocket.configureBlocking(false);
             srcSocket.register(selector, SelectionKey.OP_READ);
-
+            runtimeServer.createConnection(srcSocket, selectionKey);
             requestResolvers.put(srcSocket, new RequestResolver(runtimeServer, selector, srcSocket));
+
+            TLSConnection connection = runtimeServer.getConnection(srcSocket);
+            connection.driveTLSHandshake();
         }
         if (selectionKey.isValid() && selectionKey.isReadable()) {
             SocketChannel srcSocket = (SocketChannel) selectionKey.channel();
-            ByteBuffer result;
+            TLSConnection connection = runtimeServer.getConnection(srcSocket);
+            connection.readTLSData();
+            connection.driveTLSHandshake();
+            threadPool.queue(() -> receiveRequest(srcSocket, connection.popReceivedPacket()));
 
-            while ((result = srcSocket.read()).length > 1) {
-                byte[] packet = result;
-                threadPool.queue(() -> receiveRequest(srcSocket, packet));
-            }
-            if (result[0] == -1) {
-                selectionKey.cancel();
-                requestResolvers.remove(srcSocket);
-                srcSocket.close();
-            }
         }
 
         if (selectionKey.isValid() && selectionKey.isWritable()) {
-            SocketChannel channel = (SocketChannel) selectionKey.channel();
-            RequestResolver handler = requestResolvers.get(channel);
-            Queue<ByteBuffer> queue = handler.getRequestEvent().getWriteQueue();
-
-            while (!queue.isEmpty()) {
-                ByteBuffer buf = queue.peek();
-                channel.write(buf);
-
-                if (buf.hasRemaining()) {
-                    break;
-                }
-                queue.poll();
-            }
-
-            if (queue.isEmpty()) {
-                selectionKey.interestOps(selectionKey.interestOps() & ~SelectionKey.OP_WRITE);
-            }
+            SocketChannel srcSocket = (SocketChannel) selectionKey.channel();
+            TLSConnection connection = runtimeServer.getConnection(srcSocket);
+            connection.flushTLSData();
+            connection.driveTLSHandshake();
         }
 
     }
 
-    private void receiveRequest(SocketChannel sender, ByteBuffer buffer) {
-        RequestEvent event = requestResolvers.get(sender).getRequestEvent();
-        RawPacketTemp raw = PacketManager.demux(buffer);
+    private void receiveRequest(SocketChannel sender, RawPacketTemp raw) {
         if(raw == null) return;
-
+        RequestEvent event = requestResolvers.get(sender).getRequestEvent();
         RequestHandlers.values()[raw.ordinal()].handle(event, raw.payload());
     }
 

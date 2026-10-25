@@ -54,7 +54,7 @@ public class ClientTCPConnector implements ClientNetworkConnector {
                     SelectionKey key = it.next();
                     if (key.isConnectable() && dstSocket.finishConnect()) {
                         key.interestOps(SelectionKey.OP_READ);
-                        if (!connection.getSendPacketQueue().isEmpty()) {
+                        if (connection.sendPacketCount() > 0) {
                             key.interestOps(key.interestOps() | SelectionKey.OP_WRITE);
                         }
                         engine.beginHandshake();
@@ -79,12 +79,11 @@ public class ClientTCPConnector implements ClientNetworkConnector {
     public <S extends Packet, R extends Packet> R sendAndWaitReply(S packetToSend, Class<R> packetToReceiveClass) throws TimeoutException {
         sendPacket(packetToSend);
         receivePacket(packetToReceiveClass);
-
-        Packet pkt = null;
+        R receivedPacket = null;
         long deadline = System.currentTimeMillis() + PacketManager.TIMEOUT_MS;
 
         synchronized (this) {
-            while (pkt == null) {
+            while (receivedPacket == null) {
                 try {
                     long remaining = deadline - System.currentTimeMillis();
 
@@ -93,8 +92,7 @@ public class ClientTCPConnector implements ClientNetworkConnector {
                     }
 
                     wait(remaining);
-                    pkt = connection.getReceivedPacket().get();
-                    connection.getReceivedPacket().set(null);
+                    receivedPacket = connection.popReceivedPacket(packetToReceiveClass);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     throw new IllegalStateException("Error : ", e);
@@ -102,18 +100,19 @@ public class ClientTCPConnector implements ClientNetworkConnector {
             }
         }
 
-        return packetToReceiveClass.cast(pkt);
+        return packetToReceiveClass.cast(receivedPacket);
     }
 
     public synchronized void sendPacket(Packet packet) {
-        connection.getSendPacketQueue().offer(packet);
+        connection.queuePacketToSend(packet);
         if (selectionKey.isValid()) selectionKey.interestOps(selectionKey.interestOps() | SelectionKey.OP_WRITE);
         selector.wakeup();
     }
 
 
     private synchronized <P extends Packet> void receivePacket(Class<P> clazz) {
-        connection.getReceivedPacketQueue().offer(clazz);
+        P packet = connection.popReceivedPacket(clazz);
+        if (packet == null) return;
         if (selectionKey.isValid()) selectionKey.interestOps(selectionKey.interestOps() | SelectionKey.OP_READ);
         selector.wakeup();
     }

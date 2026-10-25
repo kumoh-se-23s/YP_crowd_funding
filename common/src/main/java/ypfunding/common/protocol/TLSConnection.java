@@ -1,8 +1,7 @@
 package ypfunding.common.protocol;
 
-import lombok.Getter;
-import lombok.Setter;
 import ypfunding.common.protocol.packets.Packet;
+import ypfunding.common.util.LogUtil;
 
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
@@ -12,23 +11,19 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicReference;
 
-@Setter
-@Getter
 public class TLSConnection implements AutoCloseable {
     private final SSLEngine engine;
+
     private final SelectionKey selectionKey;
     private final SocketChannel socketChannel;
-    private final AtomicReference<Packet> receivedPacket = new AtomicReference<>();
     private final Queue<Packet> sendPacketQueue = new ConcurrentLinkedQueue<>();
-    private final Queue<Class<? extends Packet>> receivedPacketQueue = new ConcurrentLinkedQueue<>();
+    private final Queue<RawPacketTemp> receivedPacketQueue = new ConcurrentLinkedQueue<>();
 
-    private ByteBuffer netIn;
-    private ByteBuffer netOut;
-
-    private ByteBuffer appIn;
-    private ByteBuffer appOut;
+    private final ByteBuffer netIn;
+    private final ByteBuffer netOut;
+    private final ByteBuffer appIn;
+    private final ByteBuffer appOut;
 
     public TLSConnection(SSLEngine engine, SelectionKey selectionKey, SocketChannel socketChannel) {
         this.engine = engine;
@@ -55,12 +50,37 @@ public class TLSConnection implements AutoCloseable {
         }
     }
 
+    public void queuePacketToSend(Packet packet) {
+        sendPacketQueue.add(packet);
+    }
+    public int sendPacketCount() {
+        return sendPacketQueue.size();
+    }
+
+    public RawPacketTemp popReceivedPacket() {
+        return receivedPacketQueue.poll();
+    }
+
+    public <P extends Packet> P popReceivedPacket(Class<P> packetClass) {
+        RawPacketTemp temp = receivedPacketQueue.poll();
+        if (temp == null) return null;
+        try {
+            if (packetClass != temp.packetClass()) {
+                throw new IOException("Packet class mismatch");
+            }
+            P packet = PacketManager.createPacket(packetClass);
+            packet.decode(temp.payload());
+        } catch (IOException e) {
+            LogUtil.logError("Error decoding packet: " + e.getMessage());
+        }
+        return null;
+    }
+
     public void flushTLSData() throws IOException {
 
         Packet packet = sendPacketQueue.peek();
         if (packet == null) return;
-        ByteBuffer appOut = getAppOut();
-        ByteBuffer packetBuffer = PacketManager.makePacketBuffer(packet);
+        ByteBuffer packetBuffer = PacketManager.mux(packet);
         if (appOut.remaining() < packetBuffer.remaining()) {
             return;
         }
@@ -124,14 +144,13 @@ public class TLSConnection implements AutoCloseable {
                 switch (result.getStatus()) {
                     case OK -> {
                         appIn.flip();
-
+                        RawPacketTemp rawPacketTemp;
                         do {
-                            receivedPacket.set(PacketManager.decodePacket(appIn, receivedPacketQueue.peek()));
-                            if (receivedPacket.get() != null) {
-                                receivedPacketQueue.poll();
-                                selectionKey.interestOps(selectionKey.interestOps() & ~SelectionKey.OP_READ);
-                            }
-                        } while (receivedPacket.get() != null);
+                            rawPacketTemp = PacketManager.demux(appIn);
+                            if(rawPacketTemp != null) receivedPacketQueue.offer(rawPacketTemp);
+                        } while (rawPacketTemp != null);
+
+                        selectionKey.interestOps(selectionKey.interestOps() & ~SelectionKey.OP_READ);
                         synchronized (this) {
                             notifyAll();
                         }
@@ -159,6 +178,7 @@ public class TLSConnection implements AutoCloseable {
 
     @Override
     public void close() {
-        receivedPacket.set(null);
+        //noop
     }
+
 }

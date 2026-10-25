@@ -40,6 +40,22 @@ public class PacketManager {
 
     }
 
+    public static ByteBuffer mux(Packet packet) throws IOException {
+        ByteBuffer out = ByteBuffer.allocate(MAX_BUFFER_SIZE);
+        out.putShort((short) 0); //length of packet
+        out.putShort((short) PKT_TO_REQUESTS_MAP.get(packet.getClass()).ordinal()); //request number
+        packet.encode(out);
+        int size = out.position();
+
+        if (size > Short.MAX_VALUE) {
+            throw new IOException("Packet too large: " + size);
+        }
+
+        out.putShort(0, (short) size);
+        out.flip();
+        return out;
+    }
+
     public static RawPacketTemp demux(ByteBuffer buffer) {
         int headerSize = PACKET_LEN_HEADER_SIZE + MESSAGE_TYPE_HEADER_SIZE;
 
@@ -72,6 +88,10 @@ public class PacketManager {
     }
 
     @SuppressWarnings("unchecked")
+    public static <P extends Packet> P createPacket(Class<P> clazz) {
+        return (P) PKT_GENERATORS.get(clazz).apply(PKT_CONSTRUCTORS.get(clazz));
+    }
+
     public static <P extends Packet> P decodePacket(ByteBuffer buffer, Class<P> clazz) {
 
         RawPacketTemp raw = demux(buffer);
@@ -82,7 +102,7 @@ public class PacketManager {
         if (raw.packetClass() != clazz) {
             throw new IllegalStateException("Packet type does not match");
         }
-        P pkt = (P) PKT_GENERATORS.get(clazz).apply(PKT_CONSTRUCTORS.get(clazz));
+        P pkt = createPacket(clazz);
         try {
             pkt.decode(raw.payload());
         } catch (IOException e) {
@@ -99,19 +119,4 @@ public class PacketManager {
         }
     }
 
-    public static ByteBuffer makePacketBuffer(Packet packet) throws IOException {
-        ByteBuffer out = ByteBuffer.allocate(MAX_BUFFER_SIZE);
-        out.putShort((short) 0); //length of packet
-        out.putShort((short) PKT_TO_REQUESTS_MAP.get(packet.getClass()).ordinal()); //request number
-        packet.encode(out);
-        int size = out.position();
-
-        if (size > Short.MAX_VALUE) {
-            throw new IOException("Packet too large: " + size);
-        }
-
-        out.putShort(0, (short) size);
-        out.flip();
-        return out;
-    }
 }

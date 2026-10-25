@@ -19,7 +19,7 @@ public class RequestEvent {
     @Getter
     private final SocketChannel srcSocket;
     @Getter
-    private final Queue<ByteBuffer> writeQueue = new ConcurrentLinkedQueue<>();
+    private final Queue<Packet> writeQueue = new ConcurrentLinkedQueue<>();
     @Getter
     private final Queue<Runnable> selectorTasks = new ConcurrentLinkedQueue<>();
 
@@ -28,21 +28,16 @@ public class RequestEvent {
         this.srcSocket = srcSocket;
     }
 
-    public void reply(Packet packet){
-        try {
-            ByteBuffer buf = PacketManager.makePacketBuffer(packet);
-            selectorTasks.offer(() -> {
-                SelectionKey key = srcSocket.keyFor(selector);
-                if (key == null || !key.isValid()) {
-                    throw new IllegalStateException("Invalid reply target");
-                }
-                writeQueue.offer(buf);
-                key.interestOps(key.interestOps() | SelectionKey.OP_WRITE);
-            });
-            selector.wakeup();
-        } catch (IOException e) {
-            throw new IllegalStateException("Failed to create packet buffer", e);
-        }
+    public void reply(Packet packet) {
+        selectorTasks.offer(() -> {
+            SelectionKey key = srcSocket.keyFor(selector);
+            if (key == null || !key.isValid()) {
+                throw new IllegalStateException("Invalid reply target");
+            }
+            writeQueue.offer(packet);
+            key.interestOps(key.interestOps() | SelectionKey.OP_WRITE);
+        });
+        selector.wakeup();
     }
 
     public void reply(String message) {
@@ -52,7 +47,6 @@ public class RequestEvent {
 
         reply(msgPkt);
     }
-
 
 
 }
