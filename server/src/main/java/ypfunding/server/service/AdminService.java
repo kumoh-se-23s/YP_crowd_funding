@@ -1,68 +1,66 @@
 package ypfunding.server.service;
 
-import ypfunding.common.dto.ProjectDTO;
 import ypfunding.common.dto.RejectDTO;
 import ypfunding.common.dto.UserDTO;
 import ypfunding.common.notifications.PermissionDeniedNotification;
 import ypfunding.common.notifications.ProjectNotFoundNotification;
 import ypfunding.common.util.DateTimeUtil;
+import ypfunding.server.auth.LoginUser;
 import ypfunding.server.persistence.TransactionManager;
 import ypfunding.server.persistence.dao.ProjectsDAO;
 import ypfunding.server.persistence.dao.RejectDAO;
 import ypfunding.server.persistence.dao.UsersDAO;
 import ypfunding.server.util.NotificationUtils;
+import ypfunding.server.util.UserUtils;
 
 import java.util.Collections;
 import java.util.List;
 
-public class AdminService extends UserService {
-
+public class AdminService extends Service{
+    private final UsersDAO usersDAO;
     private final ProjectsDAO projectsDAO;
     private final RejectDAO rejectDAO;
 
 
     public AdminService(TransactionManager transactionManager, UsersDAO usersDAO, ProjectsDAO projectsDAO, RejectDAO rejectDAO) {
-        super(transactionManager, usersDAO);
+        super(transactionManager);
+        this.usersDAO = usersDAO;
         this.projectsDAO = projectsDAO;
         this.rejectDAO = rejectDAO;
     }
 
-
-    public List<UserDTO> getAllAdmins(long userID){
+    /**
+     * Admin-only function. Get all admins
+     * @param user requested user
+     * @return result admins
+     */
+    public List<UserDTO> getAllAdmins(LoginUser user){
 
         return transactionManager.execute(conn -> {
-            if(checkNotAdmin(conn, userID)){
+            if(UserUtils.checkNotAdmin(conn, usersDAO, user)){
                 NotificationUtils.sendNotification(new PermissionDeniedNotification());
-                return Collections.emptyList();
+                return List.of();
             }
             return usersDAO.getAllAdmins(conn);
         });
     }
 
 
-    public List<ProjectDTO> getPendingProjects(long userID) {
-
-        return transactionManager.execute(conn -> {
-            if(checkNotAdmin(conn, userID)){
-                NotificationUtils.sendNotification(new PermissionDeniedNotification());
-                return Collections.emptyList();
-            }
-            return projectsDAO.getPendingProjects(conn, userID);
-        });
-    }
-
-
-
-    public void approveFund(long userID, long projectID){
+    /**
+     * Admin-only function. Approve project funding
+     * @param user requested user
+     * @param projectId project ID
+     */
+    public void approveFund(LoginUser user, long projectId){
 
         transactionManager.execute(conn -> {
-            if(checkNotAdmin(conn, userID)){
+            if(UserUtils.checkNotAdmin(conn, usersDAO, user)){
                 NotificationUtils.sendNotification(new PermissionDeniedNotification());
                 return null;
             }
 
-            if(projectsDAO.approveProjectUpdate(conn, projectID) != 1){
-                NotificationUtils.sendNotification(new ProjectNotFoundNotification(projectID));
+            if(projectsDAO.approveProjectUpdate(conn, projectId) != 1){
+                NotificationUtils.sendNotification(new ProjectNotFoundNotification(projectId));
                 return null;
             }
 
@@ -70,20 +68,26 @@ public class AdminService extends UserService {
         });
     }
 
-    public void rejectFund(long userID, long projectID, String reason){
+    /**
+     * Admin-only function. Reject project funding
+     * @param user requested user
+     * @param projectId project ID
+     * @param reason reason for rejection
+     */
+    public void rejectFund(LoginUser user, long projectId, String reason){
 
         transactionManager.execute(conn -> {
-            if(checkNotAdmin(conn, userID)){
+            if(UserUtils.checkNotAdmin(conn, usersDAO, user)){
                 NotificationUtils.sendNotification(new PermissionDeniedNotification());
                 return null;
             }
-            if(projectsDAO.rejectProjectUpdate(conn, projectID) != 1){
-                NotificationUtils.sendNotification(new ProjectNotFoundNotification(projectID));
+            if(projectsDAO.rejectProjectUpdate(conn, projectId) != 1){
+                NotificationUtils.sendNotification(new ProjectNotFoundNotification(projectId));
                 return null;
             }
 
             RejectDTO rejectDTO = new RejectDTO();
-            rejectDTO.setProjectID(projectID);
+            rejectDTO.setProjectId(projectId);
             rejectDTO.setCreatedAt(DateTimeUtil.now());
             rejectDTO.setReason(reason);
             rejectDAO.insert(conn, rejectDTO);

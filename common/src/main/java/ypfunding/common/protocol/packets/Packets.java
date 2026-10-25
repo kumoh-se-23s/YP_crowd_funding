@@ -1,8 +1,12 @@
 package ypfunding.common.protocol.packets;
 
+import lombok.Getter;
+
+@Getter
 public enum Packets {
+    LOGIN(LoginPacket.class),
+    MESSAGE(MessagePacket.class),
     NOTIFICATION(NotificationPacket.class),
-    MESSAGE(MessagePacket.class)
     ;
     private final Class<? extends Packet> packetClass;
 
@@ -10,7 +14,4 @@ public enum Packets {
         this.packetClass = packetClass;
     }
 
-    public Class<? extends Packet> getPacketClass() {
-        return packetClass;
-    }
 }

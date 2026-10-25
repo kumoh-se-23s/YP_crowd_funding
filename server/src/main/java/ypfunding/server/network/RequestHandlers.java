@@ -1,27 +1,28 @@
 package ypfunding.server.network;
 
+import ypfunding.common.protocol.PacketManager;
+import ypfunding.common.protocol.packets.Packet;
 import ypfunding.common.protocol.packets.Packets;
 
 import java.nio.ByteBuffer;
 
 public enum RequestHandlers {
+    LOGIN(Packets.LOGIN, new LoginPacketHandler()),
     MESSAGE(Packets.MESSAGE, new MessagePacketHandler()),
     NOTIFICATION(Packets.NOTIFICATION, new NotificationPacketHandler()),
     ;
 
-    private final Packets packets;
-    private final RequestHandler handler;
+    private final Class<? extends Packet> packetClass;
+    private final RequestHandler<Packet> handler;
 
-    RequestHandlers(Packets packets, RequestHandler handler) {
-        this.packets = packets;
-        this.handler = handler;
-    }
-
-    public Packets getRequests() {
-        return packets;
+    @SuppressWarnings("unchecked")
+    <P extends Packet> RequestHandlers(Packets packets, RequestHandler<P> handler) {
+        this.packetClass = packets.getPacketClass();
+        this.handler = (event, packet) -> handler.handle(event, (P) packet);
     }
 
     public void handle(RequestEvent event, ByteBuffer payload) {
-        handler.handle(event, payload);
+        Packet p = PacketManager.decodePacket(payload, packetClass);
+        handler.handle(event, p);
     }
 }

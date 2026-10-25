@@ -1,14 +1,18 @@
 package ypfunding.server.persistence.dao.dynamicsql.builder;
 
+import ypfunding.server.persistence.dao.ColumnsEnum;
 import ypfunding.server.persistence.dao.Tables;
 import ypfunding.server.persistence.dao.dynamicsql.AccumulativePreparedStatement;
+import ypfunding.server.persistence.dao.dynamicsql.col.ColumnFromTokenSelector;
 import ypfunding.server.persistence.dao.dynamicsql.col.ColumnSelector;
+import ypfunding.server.persistence.dao.dynamicsql.col.DirectColumnSelector;
 import ypfunding.server.persistence.dao.dynamicsql.col.OrderBySelector;
 import ypfunding.server.persistence.dao.dynamicsql.condition.Condition;
 import ypfunding.server.persistence.dao.dynamicsql.log.SQLLogger;
 import ypfunding.server.persistence.dao.dynamicsql.table.DirectReferenceTable;
 import ypfunding.server.persistence.dao.dynamicsql.table.PredefinedReferenceTable;
 import ypfunding.server.persistence.dao.dynamicsql.table.ReferenceTable;
+import ypfunding.server.persistence.dao.dynamicsql.token.TableRefColumnToken;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -17,11 +21,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public final class SQLSelect extends SQLBuilder<ResultSet> {
     private final ColumnSelector[] columnSelectors;
     private final ReferenceTable referenceTable;
     private final List<OrderBySelector> orderBySelectors = new ArrayList<>();
+    private ColumnSelector[] groupByColumns = null;
 
     public SQLSelect(ColumnSelector columnSelector, ReferenceTable referenceTable, PredefinedReferenceTable... predefined) {
         this(new ColumnSelector[]{columnSelector}, referenceTable, predefined);
@@ -57,12 +63,19 @@ public final class SQLSelect extends SQLBuilder<ResultSet> {
         return "select " + (columnSelectors.length == 0 ? "*" : ColumnSelector.buildSelectColumnParentheses(columnSelectors)) +
                " from " +
                referenceTable + Condition.whereChain(conditions) +
-               orderBySelectors.stream().map(OrderBySelector::toString).collect(Collectors.joining(" "));
+               orderBySelectors.stream().map(OrderBySelector::toString).collect(Collectors.joining(", ")) +
+               (groupByColumns != null ? " group by " + Arrays.stream(groupByColumns).map(ColumnSelector::toString).collect(Collectors.joining(", ")) : "");
     }
 
     public SQLSelect orderBy(OrderBySelector token){
         this.orderBySelectors.add(token);
         this.userParameters.addAll(token.getUserParameters());
+        return this;
+    }
+
+    public SQLSelect orderBy(OrderBySelector... token){
+        this.orderBySelectors.addAll(List.of(token));
+        this.userParameters.addAll(Stream.of(token).flatMap(e -> e.getUserParameters().stream()).toList());
         return this;
     }
 
@@ -73,5 +86,18 @@ public final class SQLSelect extends SQLBuilder<ResultSet> {
                 PredefinedReferenceTable.makeQuery(predefined) + " " + this);
         preparedStatement.addParams(userParameters);
         return preparedStatement.applyParam().executeQuery();
+    }
+
+    public SQLSelect groupBy(TableRefColumnToken... columns) {
+        if(groupByColumns != null)
+            throw new IllegalStateException("Group by already set");
+        groupByColumns = Arrays.stream(columns).map(ColumnFromTokenSelector::new).toArray(ColumnSelector[]::new);
+        return this;
+    }
+    public SQLSelect groupBy(ColumnsEnum... columns) {
+        if(groupByColumns != null)
+            throw new IllegalStateException("Group by already set");
+        groupByColumns = Arrays.stream(columns).map(DirectColumnSelector::new).toArray(ColumnSelector[]::new);
+        return this;
     }
 }

@@ -25,8 +25,8 @@ public class LikesDAO extends DAO {
     }
 
     public void fillDataFromResultSet(LikeDTO dto, ResultSet rs) throws SQLException{
-        dto.setUserID(rs.getLong(Columns.USER_ID.toString()));
-        dto.setProjectID(rs.getLong(Columns.PROJECT_ID.toString()));
+        dto.setUserId(rs.getLong(Columns.USER_ID.toString()));
+        dto.setProjectId(rs.getLong(Columns.PROJECT_ID.toString()));
     }
 
     // =================================================================
@@ -40,8 +40,8 @@ public class LikesDAO extends DAO {
 
         try (PreparedStatement psmt = conn.prepareStatement(INSERT_SQL)) {
 
-            psmt.setLong(1, likeDTO.getUserID());
-            psmt.setLong(2, likeDTO.getProjectID());
+            psmt.setLong(1, likeDTO.getUserId());
+            psmt.setLong(2, likeDTO.getProjectId());
 
             psmt.executeUpdate();
         }

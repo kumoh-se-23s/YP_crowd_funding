@@ -16,7 +16,7 @@ public class FundDTO implements Serializable {
     //실질적으로 fund랑 reward가 서로서로 잘 연동되어 계산되어야할 거 같은데
     //이거도 회의 ㄱㄱ
     private Long fundId;
-    private Long userID;
+    private Long userId;
     private Long projectId;
     private Long rewardId;
     private Long quantity;

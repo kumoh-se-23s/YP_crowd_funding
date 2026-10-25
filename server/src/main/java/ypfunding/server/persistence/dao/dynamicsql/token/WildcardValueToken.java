@@ -5,7 +5,7 @@ import java.util.List;
 public final class WildcardValueToken extends ValueToken {
 
     private static final WildcardValueToken INSTANCE = new WildcardValueToken();
-    private WildcardValueToken(){
+    public WildcardValueToken(){
     }
 
     public WildcardValueToken instance(){

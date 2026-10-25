@@ -32,7 +32,7 @@ public class FundsDAO extends DAO{
 
     public void fillDataFromResultSet(FundDTO dto, ResultSet rs)throws SQLException{
         dto.setFundId(rs.getLong(Columns.FUND_ID.toString()));
-        dto.setUserID(rs.getLong(Columns.USER_ID.toString()));
+        dto.setUserId(rs.getLong(Columns.USER_ID.toString()));
         dto.setProjectId(rs.getLong(Columns.PROJECT_ID.toString()));
         dto.setRewardId(rs.getLong(Columns.REWARD_ID.toString()));
         dto.setQuantity(rs.getLong(Columns.QUANTITY.toString()));
@@ -49,7 +49,7 @@ public class FundsDAO extends DAO{
 
         try (PreparedStatement psmt = conn.prepareStatement(INSERT_SQL)) {
 
-            psmt.setLong(1, fundDTO.getUserID());
+            psmt.setLong(1, fundDTO.getUserId());
             psmt.setLong(2, fundDTO.getProjectId());
             psmt.setLong(3, fundDTO.getRewardId());
             psmt.setLong(4, fundDTO.getQuantity());
@@ -80,6 +80,21 @@ public class FundsDAO extends DAO{
                     return dto;
                 }
                 return null;
+            }
+        }
+    }
+
+    // 리워드의 유효한 후원 수량 합계. 후원이 없으면 0
+// 리워드 행을 먼저 FOR UPDATE로 잠근 뒤 호출해야 최신 값이 읽힌다
+    public long sumQuantityByReward(Connection conn, long rewardId) throws SQLException {
+        final String SUM_SQL = "SELECT COALESCE(SUM(quantity), 0) FROM funds WHERE reward_id = ?";
+
+        try (PreparedStatement psmt = conn.prepareStatement(SUM_SQL)) {
+            psmt.setLong(1, rewardId);
+
+            try (ResultSet rs = psmt.executeQuery()) {
+                rs.next();
+                return rs.getLong(1);
             }
         }
     }

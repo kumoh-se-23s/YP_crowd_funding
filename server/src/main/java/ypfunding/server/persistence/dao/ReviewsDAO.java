@@ -50,7 +50,7 @@ public class ReviewsDAO extends DAO {
 
     public void insert(Connection conn, ReviewDTO reviewDTO) throws SQLException {
         new SQLInsert(Tables.REVIEWS)
-                .addTarget(Columns.FUND_ID, reviewDTO.getFundID())
+                .addTarget(Columns.FUND_ID, reviewDTO.getFundId())
                 .addTarget(Columns.STAR, reviewDTO.getStar())
                 .addTarget(Columns.CONTENT, reviewDTO.getContent())
                 .addTarget(Columns.DATE, reviewDTO.getDate())
@@ -114,7 +114,7 @@ public class ReviewsDAO extends DAO {
 
     private ReviewDTO toDTO(ResultSet rs) throws SQLException {
         ReviewDTO reviewDTO = new ReviewDTO();
-        reviewDTO.setFundID(rs.getLong(Columns.FUND_ID.name));
+        reviewDTO.setFundId(rs.getLong(Columns.FUND_ID.name));
         reviewDTO.setStar(rs.getInt(Columns.STAR.name));
         reviewDTO.setContent(rs.getString(Columns.CONTENT.name));
         reviewDTO.setDate(rs.getObject(Columns.DATE.name, LocalDateTime.class));
@@ -134,8 +134,8 @@ public class ReviewsDAO extends DAO {
 //
 //            psmt.setLong(1, reviewDTO.getStar());
 //            psmt.setString(2, reviewDTO.getContent());
-//            psmt.setLong(3, reviewDTO.getUserID());
-//            psmt.setLong(4, reviewDTO.getProjectID());
+//            psmt.setLong(3, reviewDTO.getUserId());
+//            psmt.setLong(4, reviewDTO.getProjectId());
 //
 //            psmt.executeUpdate();
 //        }

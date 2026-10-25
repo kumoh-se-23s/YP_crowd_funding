@@ -12,7 +12,7 @@ import java.util.Date;
 @ToString
 public class RejectDTO {
     private Long rejectReasonId;
-    private Long projectID;
+    private Long projectId;
     private String reason;
     private LocalDateTime createdAt;
 }

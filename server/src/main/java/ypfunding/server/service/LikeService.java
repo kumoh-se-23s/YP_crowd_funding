@@ -45,7 +45,7 @@ public class LikeService extends Service{
             if(project == null)
                 throw new BusinessException("존재하지 않는 프로젝트입니다.");
 
-            //만약 projectDAO에서 진행중인지 확인하는 메서드가 구현될시 교체 예정
+            //TODO 만약 projectDAO에서 진행중인지 확인하는 메서드가 구현될시 교체 예정
             boolean ongoing = project.getApprovalStatus() == ApprovalStatus.APPROVED
                     && !now.isBefore(project.getStartDate())
                     && now.isBefore(project.getEndDate());
@@ -57,8 +57,8 @@ public class LikeService extends Service{
             if(delete == 1) return false;
 
             LikeDTO like = new LikeDTO();
-            like.setUserID(user.userId());
-            like.setProjectID(projectId);
+            like.setUserId(user.userId());
+            like.setProjectId(projectId);
             likesDAO.insert(conn, like);
             return true;
         });

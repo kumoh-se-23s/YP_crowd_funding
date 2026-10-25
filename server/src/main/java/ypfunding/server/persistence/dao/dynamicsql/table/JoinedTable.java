@@ -22,11 +22,6 @@ public final class JoinedTable extends ReferenceTable{
 
     }
 
-    @Override
-    public String getVarPrefix() {
-        return "__jt";
-    }
-
 
     private boolean noParenthesesRequired(ReferenceTable table){
         return table instanceof DirectReferenceTable || table instanceof PredefinedReferenceTable;
@@ -38,7 +33,7 @@ public final class JoinedTable extends ReferenceTable{
         String lhsStr = noParenthesesRequired(lhs) ? lhs.toString() : ("(" + lhs + ")");
         String rhsStr = noParenthesesRequired(rhs) ? rhs.toString() : ("(" + rhs + ")");
 
-        return "(" + lhsStr + " " + type + " " + rhsStr + " on " + joinCondition + ") as " + getVarName();
+        return "(" + lhsStr + " " + type + " " + rhsStr + " on " + joinCondition + ")";
     }
 
     @Override

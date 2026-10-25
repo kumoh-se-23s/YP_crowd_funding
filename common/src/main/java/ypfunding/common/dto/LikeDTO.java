@@ -11,6 +11,6 @@ import java.io.Serializable;
 @Setter
 @ToString
 public class LikeDTO implements Serializable {
-    private Long userID;
-    private Long projectID;
+    private Long userId;
+    private Long projectId;
 }

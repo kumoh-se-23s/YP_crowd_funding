@@ -174,4 +174,16 @@ public final class TestData {
             }
         }
     }
+
+    /** 리워드의 팔린 수량 합계 (검증용) */
+    public static long sumFundQuantity(Connection conn, long rewardId) throws SQLException {
+        String sql = "SELECT COALESCE(SUM(quantity), 0) FROM funds WHERE reward_id = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, rewardId);
+            try (ResultSet rs = ps.executeQuery()) {
+                rs.next();
+                return rs.getLong(1);
+            }
+        }
+    }
 }

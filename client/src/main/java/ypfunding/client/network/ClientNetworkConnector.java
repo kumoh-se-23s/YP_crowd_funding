@@ -11,6 +11,9 @@ public interface ClientNetworkConnector extends AutoCloseable{
 
     void sendPacket(Packet packet);
 
+    void start();
     @Override
     void close() throws IOException;
+
+    void pause();
 }

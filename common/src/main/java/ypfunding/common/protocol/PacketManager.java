@@ -40,43 +40,7 @@ public class PacketManager {
 
     }
 
-    public static RawPacketTemp demultiplex(byte[] buffer){
-        byte[] payloadBuf = new byte[buffer.length - PACKET_LEN_HEADER_SIZE - MESSAGE_TYPE_HEADER_SIZE];
-        ByteBuffer payload = ByteBuffer.wrap(payloadBuf);
-        int index = (buffer[PACKET_LEN_HEADER_SIZE] & 0xff) | ((buffer[PACKET_LEN_HEADER_SIZE + 1] & 0xff) << 8); // the size of request number is 2 byte
-        System.arraycopy(buffer, PACKET_LEN_HEADER_SIZE + MESSAGE_TYPE_HEADER_SIZE, payloadBuf, 0, payloadBuf.length);
-
-        if (index >= ALL_PACKETS.length) {
-            throw new IllegalStateException("Invalid request number: " + index);
-        }
-        return new RawPacketTemp(index, ALL_PACKETS[index].getPacketClass(), payload);
-    }
-
-    @SuppressWarnings("unchecked")
-    public static <P extends Packet> P decodePacket(byte[] buffer, Class<P> clazz) {
-
-        RawPacketTemp raw = demultiplex(buffer);
-        if (raw.packetClass() != clazz) {
-            throw new IllegalStateException("Packet type does not match");
-        }
-        P pkt = (P) PKT_GENERATORS.get(clazz).apply(PKT_CONSTRUCTORS.get(clazz));
-        try {
-            pkt.decode(raw.payload());
-        } catch (IOException e) {
-            throw new IllegalStateException("Failed to decode packet", e);
-        }
-        return pkt;
-    }
-
-    private static <P extends Packet> P constructPacket(Constructor<P> ctor) {
-        try {
-            return ctor.newInstance();
-        } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
-            throw new IllegalStateException("Packet class does not have a default constructor", e);
-        }
-    }
-
-    public static ByteBuffer makePacketBuffer(Packet packet) throws IOException {
+    public static ByteBuffer mux(Packet packet) throws IOException {
         ByteBuffer out = ByteBuffer.allocate(MAX_BUFFER_SIZE);
         out.putShort((short) 0); //length of packet
         out.putShort((short) PKT_TO_REQUESTS_MAP.get(packet.getClass()).ordinal()); //request number
@@ -91,4 +55,59 @@ public class PacketManager {
         out.flip();
         return out;
     }
+
+    public static RawPacketTemp demux(ByteBuffer buffer) {
+        int headerSize = PACKET_LEN_HEADER_SIZE + MESSAGE_TYPE_HEADER_SIZE;
+
+        if (buffer.remaining() < headerSize) {
+            return null;
+        }
+        int position = buffer.position();
+        int packetLen = Short.toUnsignedInt(buffer.getShort());
+
+        if (packetLen < headerSize) {
+            throw new IllegalStateException("Invalid packet length: " + packetLen);
+        }
+
+        int messageType = Short.toUnsignedInt(buffer.getShort());
+
+        if (messageType >= ALL_PACKETS.length) {
+            throw new IllegalStateException("Invalid request number: " + messageType);
+        }
+
+        int payloadSize = packetLen - headerSize;
+
+        if (buffer.remaining() < payloadSize) {
+            buffer.position(position);
+            return null;
+        }
+
+        byte[] payloadBuf = new byte[payloadSize];
+        buffer.get(payloadBuf);
+        return new RawPacketTemp(messageType, ALL_PACKETS[messageType].getPacketClass(), ByteBuffer.wrap(payloadBuf));
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <P extends Packet> P createPacket(Class<P> clazz) {
+        return (P) PKT_GENERATORS.get(clazz).apply(PKT_CONSTRUCTORS.get(clazz));
+    }
+
+    public static <P extends Packet> P decodePacket(ByteBuffer buffer, Class<P> clazz) {
+        P pkt = createPacket(clazz);
+        try {
+            pkt.decode(buffer);
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to decode packet", e);
+        }
+        return pkt;
+    }
+
+    private static <P extends Packet> P constructPacket(Constructor<P> ctor) {
+        try {
+            return ctor.newInstance();
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
+            throw new IllegalStateException("Packet class does not have a default constructor", e);
+        }
+    }
+
 }
