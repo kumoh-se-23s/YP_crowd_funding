@@ -121,6 +121,7 @@ public class ClientTCPConnector implements ClientNetworkConnector {
     @Override
     public void close() throws IOException {
         this.selectionKey.cancel();
+        connection.close();
         dstSocket.close();
         selector.close();
     }
