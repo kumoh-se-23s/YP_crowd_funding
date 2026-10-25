@@ -12,7 +12,9 @@ import java.util.Objects;
 import lombok.Getter;
 import ypfunding.server.persistence.dao.LikesDAO;
 import ypfunding.server.persistence.dao.ProjectsDAO;
-import ypfunding.server.service.LikeService;
+import ypfunding.server.persistence.dao.RejectDAO;
+import ypfunding.server.persistence.dao.UsersDAO;
+import ypfunding.server.service.*;
 
 public class AppContext implements AutoCloseable {
     @Getter
@@ -23,11 +25,23 @@ public class AppContext implements AutoCloseable {
 
     //DAO
     //private final ~DAO;
+    @Getter
+    private final UsersDAO usersDAO;
+    @Getter
     private final LikesDAO likesDAO;
+    @Getter
     private final ProjectsDAO projectsDAO;
+    @Getter
+    private final RejectDAO rejectsDAO;
 
     //service
     //private final ~Service;
+    @Getter
+    private final AdminService adminService;
+    @Getter
+    private final MakerService makerService;
+    @Getter
+    private final SupporterService supporterService;
     @Getter
     private final LikeService likeService;
 
@@ -47,8 +61,13 @@ public class AppContext implements AutoCloseable {
             this.transactionManager = new TransactionManager(dataSource); //관리자
             //this.*DAO = new *DAO
             //this.*Service = new *Service
+            this.usersDAO = new UsersDAO();
             this.likesDAO = new LikesDAO();
             this.projectsDAO = new ProjectsDAO();
+            this.rejectsDAO = new RejectDAO();
+            this.adminService = new AdminService(transactionManager, usersDAO, projectsDAO, rejectsDAO);
+            this.makerService = new MakerService(transactionManager, usersDAO);
+            this.supporterService = new SupporterService(transactionManager, usersDAO);
             this.likeService = new LikeService(transactionManager, likesDAO, projectsDAO, clock);
         } catch (RuntimeException | Error e) {
             closeQuietly(e);

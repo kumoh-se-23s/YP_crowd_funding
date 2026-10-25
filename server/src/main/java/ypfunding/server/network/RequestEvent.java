@@ -15,8 +15,9 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class RequestEvent {
     private final Selector selector;
-    private final SocketChannel srcSocket;
 
+    @Getter
+    private final SocketChannel srcSocket;
     @Getter
     private final Queue<ByteBuffer> writeQueue = new ConcurrentLinkedQueue<>();
     @Getter
@@ -51,5 +52,7 @@ public class RequestEvent {
 
         reply(msgPkt);
     }
+
+
 
 }

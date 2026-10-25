@@ -7,6 +7,7 @@ import ypfunding.common.protocol.packets.Packets;
 import java.nio.ByteBuffer;
 
 public enum RequestHandlers {
+    LOGIN(Packets.LOGIN, new LoginPacketHandler()),
     MESSAGE(Packets.MESSAGE, new MessagePacketHandler()),
     NOTIFICATION(Packets.NOTIFICATION, new NotificationPacketHandler()),
     ;

@@ -40,22 +40,45 @@ public class PacketManager {
 
     }
 
-    public static RawPacketTemp demultiplex(byte[] buffer){
-        byte[] payloadBuf = new byte[buffer.length - PACKET_LEN_HEADER_SIZE - MESSAGE_TYPE_HEADER_SIZE];
-        ByteBuffer payload = ByteBuffer.wrap(payloadBuf);
-        int index = (buffer[PACKET_LEN_HEADER_SIZE] & 0xff) | ((buffer[PACKET_LEN_HEADER_SIZE + 1] & 0xff) << 8); // the size of request number is 2 byte
-        System.arraycopy(buffer, PACKET_LEN_HEADER_SIZE + MESSAGE_TYPE_HEADER_SIZE, payloadBuf, 0, payloadBuf.length);
+    public static RawPacketTemp demux(ByteBuffer buffer) {
+        int headerSize = PACKET_LEN_HEADER_SIZE + MESSAGE_TYPE_HEADER_SIZE;
 
-        if (index >= ALL_PACKETS.length) {
-            throw new IllegalStateException("Invalid request number: " + index);
+        if (buffer.remaining() < headerSize) {
+            return null;
         }
-        return new RawPacketTemp(index, ALL_PACKETS[index].getPacketClass(), payload);
+        int position = buffer.position();
+        int packetLen = Short.toUnsignedInt(buffer.getShort());
+
+        if (packetLen < headerSize) {
+            throw new IllegalStateException("Invalid packet length: " + packetLen);
+        }
+
+        int messageType = Short.toUnsignedInt(buffer.getShort());
+
+        if (messageType >= ALL_PACKETS.length) {
+            throw new IllegalStateException("Invalid request number: " + messageType);
+        }
+
+        int payloadSize = packetLen - headerSize;
+
+        if (buffer.remaining() < payloadSize) {
+            buffer.position(position);
+            return null;
+        }
+
+        byte[] payloadBuf = new byte[payloadSize];
+        buffer.get(payloadBuf);
+        return new RawPacketTemp(messageType, ALL_PACKETS[messageType].getPacketClass(), ByteBuffer.wrap(payloadBuf));
     }
 
     @SuppressWarnings("unchecked")
     public static <P extends Packet> P decodePacket(ByteBuffer buffer, Class<P> clazz) {
 
-        RawPacketTemp raw = demultiplex(buffer.array());
+        RawPacketTemp raw = demux(buffer);
+        if (raw == null) {
+            // no packets to decode
+            return null;
+        }
         if (raw.packetClass() != clazz) {
             throw new IllegalStateException("Packet type does not match");
         }

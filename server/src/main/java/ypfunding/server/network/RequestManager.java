@@ -1,12 +1,15 @@
 package ypfunding.server.network;
 
+import lombok.Getter;
+import ypfunding.common.constant.NetworkConstants;
 import ypfunding.common.parallel.ThreadPool;
 import ypfunding.common.protocol.PacketManager;
 import ypfunding.common.protocol.RawPacketTemp;
+import ypfunding.common.protocol.TLSConnection;
 import ypfunding.common.util.LogUtil;
+import ypfunding.server.RuntimeServer;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -16,22 +19,26 @@ import java.util.*;
 
 public class RequestManager implements AutoCloseable {
 
+    @Getter
+    private final RuntimeServer runtimeServer;
+
     private final Selector selector;
     private final ServerSocketChannel serverSocket;
     private final ThreadPool threadPool;
-    private final Map<SocketChannel, RequestResolver> requestHandlers = new HashMap<>();
+    private final Map<SocketChannel, RequestResolver> requestResolvers = new HashMap<>();
 
-    public RequestManager(int port) throws IOException {
+    public RequestManager(RuntimeServer server) throws IOException {
+        this.runtimeServer = server;
         selector = Selector.open();
         serverSocket = ServerSocketChannel.open();
-        serverSocket.bind(new InetSocketAddress(port));
+        serverSocket.bind(NetworkConstants.SERVER_ADDRESS);
         serverSocket.configureBlocking(false);
         serverSocket.register(selector, SelectionKey.OP_ACCEPT);
-        threadPool = new ThreadPool(Runtime.getRuntime().availableProcessors());
-        start();
+        int threads = Runtime.getRuntime().availableProcessors();
+        threadPool = new ThreadPool(threads);
     }
 
-    private void start() {
+    public void start() {
         new Thread(this::selectorLoop).start();
     }
 
@@ -53,7 +60,7 @@ public class RequestManager implements AutoCloseable {
     }
 
     private void processSelectedKey(SelectionKey selectionKey) throws IOException {
-        for (RequestResolver value : requestHandlers.values()) {
+        for (RequestResolver value : requestResolvers.values()) {
             Runnable task;
             while ((task = value.getRequestEvent().getSelectorTasks().poll()) != null) {
                 task.run(); // not a request, it is request handling.
@@ -64,28 +71,27 @@ public class RequestManager implements AutoCloseable {
             SocketChannel srcSocket = serverSocket.accept();
             srcSocket.configureBlocking(false);
             srcSocket.register(selector, SelectionKey.OP_READ);
-            requestHandlers.put(srcSocket, new RequestResolver(selector, srcSocket));
+
+            requestResolvers.put(srcSocket, new RequestResolver(runtimeServer, selector, srcSocket));
         }
         if (selectionKey.isValid() && selectionKey.isReadable()) {
             SocketChannel srcSocket = (SocketChannel) selectionKey.channel();
-            RequestResolver handler = requestHandlers.get(srcSocket);
+            ByteBuffer result;
 
-            byte[] result;
-
-            while ((result = handler.getPacketProcessor().read()).length > 1) {
+            while ((result = srcSocket.read()).length > 1) {
                 byte[] packet = result;
                 threadPool.queue(() -> receiveRequest(srcSocket, packet));
             }
             if (result[0] == -1) {
                 selectionKey.cancel();
-                requestHandlers.remove(srcSocket);
+                requestResolvers.remove(srcSocket);
                 srcSocket.close();
             }
         }
 
         if (selectionKey.isValid() && selectionKey.isWritable()) {
             SocketChannel channel = (SocketChannel) selectionKey.channel();
-            RequestResolver handler = requestHandlers.get(channel);
+            RequestResolver handler = requestResolvers.get(channel);
             Queue<ByteBuffer> queue = handler.getRequestEvent().getWriteQueue();
 
             while (!queue.isEmpty()) {
@@ -105,14 +111,17 @@ public class RequestManager implements AutoCloseable {
 
     }
 
-    private void receiveRequest(SocketChannel sender, byte[] buffer) {
-        RequestEvent event = requestHandlers.get(sender).getRequestEvent();
-        RawPacketTemp raw = PacketManager.demultiplex(buffer);
+    private void receiveRequest(SocketChannel sender, ByteBuffer buffer) {
+        RequestEvent event = requestResolvers.get(sender).getRequestEvent();
+        RawPacketTemp raw = PacketManager.demux(buffer);
+        if(raw == null) return;
+
         RequestHandlers.values()[raw.ordinal()].handle(event, raw.payload());
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() throws IOException {
+        serverSocket.close();
         selector.close();
     }
 }

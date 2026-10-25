@@ -7,8 +7,9 @@ import ypfunding.common.notifications.NotificationType;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
+@Setter
 public class NotificationPacket implements Packet {
-    @Setter
+
     private CompleteNotification notification;
 
     @Override

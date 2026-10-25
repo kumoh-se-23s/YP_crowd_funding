@@ -1,9 +1,12 @@
 package ypfunding.common.constant;
 
 //개발용 상수 모음
-//다 static이니까 new로 생성자 선언하지 말것!!!!!!!!!
 //너무 많아진다 or 쓰기 불편하다싶으면 서비스별 상수 등으로 파일분리 해도 됨
 public class DomainRules {
+    private DomainRules() {
+
+    }
+
     //프로젝트-------------------------
     //프로젝트 하나 당 최소 카테고리 수
     //TODO: 조건 정확히 파악 후 수정 필요

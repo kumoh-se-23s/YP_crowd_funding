@@ -1,16 +1,14 @@
 package ypfunding.common.protocol.packets;
 
-import lombok.Getter;
 import lombok.Setter;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
 
+@Setter
 public class MessagePacket implements Packet{
 
-    @Setter
-    @Getter
     private String message;
 
 

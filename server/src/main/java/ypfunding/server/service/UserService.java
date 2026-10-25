@@ -10,9 +10,9 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
 
-public class UserService extends Service{
+public abstract class UserService extends Service{
     protected final UsersDAO usersDAO;
-    public UserService(TransactionManager transactionManager, UsersDAO usersDAO) {
+    protected UserService(TransactionManager transactionManager, UsersDAO usersDAO) {
         super(transactionManager);
         this.usersDAO = usersDAO;
     }
