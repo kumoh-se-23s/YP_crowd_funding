@@ -1,6 +1,5 @@
 package ypfunding.server.service;
 
-import lombok.Getter;
 import ypfunding.common.constant.DomainRules;
 import ypfunding.common.dto.UserDTO;
 import ypfunding.server.auth.LoginUser;
@@ -8,8 +7,6 @@ import ypfunding.server.exception.BusinessException;
 import ypfunding.server.persistence.TransactionManager;
 import ypfunding.server.persistence.dao.UsersDAO;
 import ypfunding.server.util.InputValidator;
-
-import java.util.List;
 import java.util.Objects;
 
 public class UserService extends Service{
