@@ -12,18 +12,20 @@ import ypfunding.server.persistence.dao.ProjectsDAO;
 import ypfunding.server.persistence.dao.RejectDAO;
 import ypfunding.server.persistence.dao.UsersDAO;
 import ypfunding.server.util.NotificationUtils;
+import ypfunding.server.util.UserUtils;
 
 import java.util.Collections;
 import java.util.List;
 
-public class AdminService extends UserService {
-
+public class AdminService extends Service{
+    private final UsersDAO usersDAO;
     private final ProjectsDAO projectsDAO;
     private final RejectDAO rejectDAO;
 
 
     public AdminService(TransactionManager transactionManager, UsersDAO usersDAO, ProjectsDAO projectsDAO, RejectDAO rejectDAO) {
-        super(transactionManager, usersDAO);
+        super(transactionManager);
+        this.usersDAO = usersDAO;
         this.projectsDAO = projectsDAO;
         this.rejectDAO = rejectDAO;
     }
@@ -36,7 +38,7 @@ public class AdminService extends UserService {
     public List<UserDTO> getAllAdmins(LoginUser user){
 
         return transactionManager.execute(conn -> {
-            if(checkNotAdmin(conn, user)){
+            if(UserUtils.checkNotAdmin(conn, usersDAO, user)){
                 NotificationUtils.sendNotification(new PermissionDeniedNotification());
                 return List.of();
             }
@@ -53,7 +55,7 @@ public class AdminService extends UserService {
     public void approveFund(LoginUser user, long projectId){
 
         transactionManager.execute(conn -> {
-            if(checkNotAdmin(conn, user)){
+            if(UserUtils.checkNotAdmin(conn, usersDAO, user)){
                 NotificationUtils.sendNotification(new PermissionDeniedNotification());
                 return null;
             }
@@ -76,7 +78,7 @@ public class AdminService extends UserService {
     public void rejectFund(LoginUser user, long projectId, String reason){
 
         transactionManager.execute(conn -> {
-            if(checkNotAdmin(conn, user)){
+            if(UserUtils.checkNotAdmin(conn, usersDAO, user)){
                 NotificationUtils.sendNotification(new PermissionDeniedNotification());
                 return null;
             }

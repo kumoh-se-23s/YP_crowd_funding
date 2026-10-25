@@ -24,7 +24,7 @@ public class RequestManager implements AutoCloseable {
     private final Selector selector;
     private final ServerSocketChannel serverSocket;
     private final ThreadPool threadPool;
-    private final Map<SocketChannel, RequestResolver> requestResolvers = new HashMap<>();
+    private final Map<SocketChannel, RequestEvent> requestEvents = new HashMap<>();
 
     public RequestManager(RuntimeServer server) throws IOException {
         this.runtimeServer = server;
@@ -59,12 +59,12 @@ public class RequestManager implements AutoCloseable {
     }
 
     private void processSelectedKey(SelectionKey selectionKey) throws IOException {
-        for (RequestResolver value : requestResolvers.values()) {
+        for (RequestEvent value : requestEvents.values()) {
             Runnable task;
-            while ((task = value.getRequestEvent().getSelectorTasks().poll()) != null) {
+            while ((task = value.getSelectorTasks().poll()) != null) {
                 task.run(); // not a request, it is request handling.
                 threadPool.queue(() -> {
-                    Queue<Packet> writeQueue = value.getRequestEvent().getWriteQueue();
+                    Queue<Packet> writeQueue = value.getWriteQueue();
                     while (!writeQueue.isEmpty()) {
                         Packet packet = writeQueue.poll();
                         SocketChannel srcSocket = (SocketChannel) selectionKey.channel();
@@ -81,7 +81,7 @@ public class RequestManager implements AutoCloseable {
             srcSocket.configureBlocking(false);
             srcSocket.register(selector, SelectionKey.OP_READ);
             runtimeServer.createConnection(srcSocket, selectionKey);
-            requestResolvers.put(srcSocket, new RequestResolver(runtimeServer, selector, srcSocket));
+            requestEvents.put(srcSocket, new RequestEvent(selector, runtimeServer, srcSocket));
 
             TLSConnection connection = runtimeServer.getConnection(srcSocket);
             connection.driveTLSHandshake();
@@ -106,7 +106,7 @@ public class RequestManager implements AutoCloseable {
 
     private void receiveRequest(SocketChannel sender, RawPacketTemp raw) {
         if(raw == null) return;
-        RequestEvent event = requestResolvers.get(sender).getRequestEvent();
+        RequestEvent event = requestEvents.get(sender);
         RequestHandlers.values()[raw.ordinal()].handle(event, raw.payload());
     }
 

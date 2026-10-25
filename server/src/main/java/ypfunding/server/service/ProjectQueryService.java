@@ -11,6 +11,7 @@ import ypfunding.server.persistence.TransactionManager;
 import ypfunding.server.persistence.dao.*;
 import ypfunding.server.persistence.dao.dynamicsql.col.SimpleOrderBySelector;
 import ypfunding.server.util.NotificationUtils;
+import ypfunding.server.util.UserUtils;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -19,18 +20,18 @@ import java.util.Set;
 
 public class ProjectQueryService extends Service {
 
-    private final UserService userService;
+    private final UsersDAO usersDAO;
     private final ProjectQueryDAO projectQueryDAO;
 
-    public ProjectQueryService(TransactionManager transactionManager, UserService userService) {
+    public ProjectQueryService(TransactionManager transactionManager, UsersDAO usersDAO) {
         super(transactionManager);
-        this.userService = userService;
+        this.usersDAO = usersDAO;
         this.projectQueryDAO = new ProjectQueryDAO();
     }
 
     public List<ProjectQueryDTO> getSelectedProjectWithStatus(LoginUser user, long projectId) {
         return transactionManager.execute(conn -> {
-            if (userService.checkNotAdmin(conn, user)) {
+            if (UserUtils.checkNotAdmin(conn, usersDAO, user)) {
                 NotificationUtils.sendNotification(new PermissionDeniedNotification());
                 return List.of();
             }
@@ -116,7 +117,7 @@ public class ProjectQueryService extends Service {
     private List<ProjectQueryDTO> getProjects(LoginUser user, ProjectQueryFunc func, UserType... permission) {
 
         return transactionManager.execute(conn -> {
-            UserDTO dto = userService.usersDAO.getUserById(conn, user.userId());
+            UserDTO dto = usersDAO.getUserById(conn, user.userId());
             if (dto == null || !Set.of(permission).contains(dto.getUserType())) {
                 NotificationUtils.sendNotification(new PermissionDeniedNotification());
                 return List.of();

@@ -8,6 +8,7 @@ import ypfunding.server.persistence.dao.dynamicsql.condition.BasicCondition;
 import ypfunding.server.persistence.dao.dynamicsql.op.ArithmeticConditionOperator;
 import ypfunding.server.persistence.dao.dynamicsql.token.ColumnValueToken;
 import ypfunding.server.persistence.dao.dynamicsql.token.UserValueToken;
+import ypfunding.server.persistence.dto.UserLoginDTO;
 
 import java.sql.*;
 import java.time.LocalDateTime;
@@ -43,8 +44,8 @@ public class UsersDAO extends DAO {
     // 1. CREATE SECTION
     // =================================================================
 
-
-    private void fillDataFromResultSet(UserDTO dto, ResultSet rs) throws SQLException {
+    private UserDTO toDTO(ResultSet rs) throws SQLException {
+        UserDTO dto = new UserDTO();
         dto.setUserId(rs.getLong(Columns.USER_ID.name));
         dto.setLoginId(rs.getString(Columns.LOGIN_ID.name));
         dto.setEncryptedPassword(rs.getString(Columns.PASSWORD.name));
@@ -52,6 +53,7 @@ public class UsersDAO extends DAO {
         dto.setAddress(rs.getString(Columns.ADDRESS.name));
         dto.setUserType(UserType.valueOf(rs.getString(Columns.USERTYPE.name)));
         dto.setRegDate(rs.getObject(Columns.REGDATE.name, LocalDateTime.class));
+        return dto;
     }
 
     //TODO salt casdasjido nasichj oiauslhiaounsdyhaioudsjnsaoiludhjmoail
@@ -70,19 +72,16 @@ public class UsersDAO extends DAO {
     // 2. READ SECTION
     // =================================================================
 
-
     public UserDTO getUserById(Connection conn, long id) throws SQLException {
-        UserDTO dto = null;
         try (ResultSet rs = SQLSelect.allColumns(Tables.USERS)
                 .addCondition(new BasicCondition(new ColumnValueToken(Columns.USER_ID), ArithmeticConditionOperator.EQ, new UserValueToken(id)))
                 .execute(conn)) {
             if (rs.next()) {
-                dto = new UserDTO();
-                fillDataFromResultSet(dto, rs);
+                return toDTO(rs);
             }
         }
 
-        return dto;
+        return null;
     }
     public List<UserDTO> getAllAdmins(Connection conn) throws SQLException{
         try (ResultSet rs = SQLSelect.allColumns(Tables.USERS)
@@ -90,9 +89,7 @@ public class UsersDAO extends DAO {
                 .execute(conn)){
             List<UserDTO> result = new ArrayList<>();
             while (rs.next()) {
-                UserDTO dto = new UserDTO();
-                fillDataFromResultSet(dto, rs);
-                result.add(dto);
+                result.add(toDTO(rs));
             }
             return result;
         }
@@ -107,11 +104,7 @@ public class UsersDAO extends DAO {
              ResultSet rs = statement.executeQuery(sql)) {
 
             while (rs.next()) {
-                UserDTO dto = new UserDTO();
-
-                fillDataFromResultSet(dto, rs);
-
-                result.add(dto);
+                result.add(toDTO(rs));
             }
         }
         return result;

@@ -4,6 +4,7 @@ import lombok.Getter;
 import ypfunding.common.protocol.PacketManager;
 import ypfunding.common.protocol.packets.MessagePacket;
 import ypfunding.common.protocol.packets.Packet;
+import ypfunding.server.RuntimeServer;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -16,6 +17,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class RequestEvent {
     private final Selector selector;
 
+    private final RuntimeServer server;
     @Getter
     private final SocketChannel srcSocket;
     @Getter
@@ -23,8 +25,9 @@ public class RequestEvent {
     @Getter
     private final Queue<Runnable> selectorTasks = new ConcurrentLinkedQueue<>();
 
-    public RequestEvent(Selector selector, SocketChannel srcSocket) {
+    public RequestEvent(Selector selector, RuntimeServer server, SocketChannel srcSocket) {
         this.selector = selector;
+        this.server = server;
         this.srcSocket = srcSocket;
     }
 
@@ -49,4 +52,7 @@ public class RequestEvent {
     }
 
 
+    public RuntimeServer getServer() {
+        return server;
+    }
 }
