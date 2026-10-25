@@ -22,7 +22,7 @@ public class AppContext implements AutoCloseable {
 
     //DAO
     //private final ~DAO;
-    private final UserManagedDAO managedDAO;
+    private final UserManagedDAO userManagedDAO;
     private final UsersDAO usersDAO;
     private final LikesDAO likesDAO;
     private final ProjectsDAO projectsDAO;
@@ -34,7 +34,7 @@ public class AppContext implements AutoCloseable {
     //service
     //private final ~Service;
     @Getter
-    private final UserManagedService managedService;
+    private final AuthService authService;
     @Getter
     private final UserService userService;
     @Getter
@@ -64,7 +64,7 @@ public class AppContext implements AutoCloseable {
             this.transactionManager = new TransactionManager(dataSource); //관리자
             //this.*DAO = new *DAO
             //this.*Service = new *Service
-            this.managedDAO = new UserManagedDAO();
+            this.userManagedDAO = new UserManagedDAO();
             this.usersDAO = new UsersDAO();
             this.likesDAO = new LikesDAO();
             this.projectsDAO = new ProjectsDAO();
@@ -72,7 +72,7 @@ public class AppContext implements AutoCloseable {
             this.fundsDAO = new FundsDAO();
             this.canceledFundsDAO = new CanceledFundsDAO();
             this.rewardsDAO = new RewardsDAO();
-            this.managedService = new UserManagedService(transactionManager, managedDAO);
+            this.authService = new AuthService(transactionManager, userManagedDAO, clock);
             this.userService = new UserService(transactionManager, usersDAO);
             this.adminService = new AdminService(transactionManager, usersDAO, projectsDAO, rejectsDAO);
             this.makerService = new MakerService(transactionManager, usersDAO);
