@@ -186,4 +186,25 @@ public final class TestData {
             }
         }
     }
+
+    public static long insertUserWithPassword(Connection conn, String loginId, String password,
+                                              UserType userType, LocalDateTime regdate) throws SQLException {
+        String salt = "0123456789abcdef0123456789abcdef";   // 32자
+        String sql = """
+                INSERT INTO users (login_id, password, salt, name, address, usertype, regdate)
+                VALUES (?, SHA2(CONCAT(?, ?), 256), ?, ?, ?, ?, ?)
+                """;
+        try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            ps.setString(1, loginId);
+            ps.setString(2, salt);
+            ps.setString(3, password);
+            ps.setString(4, salt);
+            ps.setString(5, loginId + " 이름");
+            ps.setString(6, loginId + " 주소");
+            ps.setString(7, userType.name());
+            ps.setObject(8, regdate);
+            ps.executeUpdate();
+            return generatedId(ps);
+        }
+    }
 }
