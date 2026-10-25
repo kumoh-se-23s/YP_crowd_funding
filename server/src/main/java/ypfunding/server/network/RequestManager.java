@@ -121,6 +121,7 @@ public class RequestManager implements AutoCloseable {
                 Session s = new Session(ch, connection, new RequestEvent(selector, runtimeServer, ch));
                 clientKey.attach(s);
                 sessions.put(ch, s);
+                LogUtil.log("New connection accepted | socket " + s.channel.socket().getInetAddress() + ":" + s.channel.socket().getPort());
                 // 서버 핸드셰이크는 ClientHello 수신 시 onReadable → pump에서 시작됨
             } catch (IOException | RuntimeException e) {
                 LogUtil.logError("Accept failed: " + e);
