@@ -38,10 +38,6 @@ public class RequestManager implements AutoCloseable {
     }
 
     public void start() {
-        new Thread(this::selectorLoop).start();
-    }
-
-    private void selectorLoop() {
         while (true) {
             try {
                 selector.select();
@@ -89,10 +85,13 @@ public class RequestManager implements AutoCloseable {
         if (selectionKey.isValid() && selectionKey.isReadable()) {
             SocketChannel srcSocket = (SocketChannel) selectionKey.channel();
             TLSConnection connection = runtimeServer.getConnection(srcSocket);
-            connection.readTLSData();
-            connection.driveTLSHandshake();
-            threadPool.queue(() -> receiveRequest(srcSocket, connection.popReceivedPacket()));
-
+            boolean connected = connection.readTLSData();
+            if(connected){
+                connection.driveTLSHandshake();
+                threadPool.queue(() -> receiveRequest(srcSocket, connection.popReceivedPacket()));
+            }else{
+                runtimeServer.endConnection(srcSocket);
+            }
         }
 
         if (selectionKey.isValid() && selectionKey.isWritable()) {

@@ -32,20 +32,12 @@ public class ClientTCPConnector implements ClientNetworkConnector {
             dstSocket.connect(NetworkConstants.SERVER_ADDRESS);
             selectionKey = dstSocket.register(selector, SelectionKey.OP_CONNECT);
             connection = new TLSConnection(engine, selectionKey, dstSocket);
-            start();
         } catch (Exception e) {
             throw new IllegalStateException("Failed to create network connection", e);
         }
     }
 
-
-    private void start() {
-        new Thread(this::loop).start();
-    }
-
-
-
-    private void loop() {
+    public void start() {
         while (true) {
             try {
                 selector.select();
@@ -65,8 +57,12 @@ public class ClientTCPConnector implements ClientNetworkConnector {
                         connection.driveTLSHandshake();
                     }
                     if (key.isValid() && key.isReadable()) {
-                        connection.readTLSData();
-                        connection.driveTLSHandshake();
+                        boolean connected = connection.readTLSData();
+                        if (connected) {
+                            connection.driveTLSHandshake();
+                        }else{
+                            throw new IllegalStateException("Connection Closed");
+                        }
                     }
                     it.remove();
                 }
@@ -75,6 +71,7 @@ public class ClientTCPConnector implements ClientNetworkConnector {
             }
         }
     }
+
 
     public <S extends Packet, R extends Packet> R sendAndWaitReply(S packetToSend, Class<R> packetToReceiveClass) throws TimeoutException {
         sendPacket(packetToSend);

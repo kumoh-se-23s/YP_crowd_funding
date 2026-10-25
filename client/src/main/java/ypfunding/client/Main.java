@@ -11,6 +11,7 @@ public class Main {
     static void main() {
         // TODO
         try(ClientNetworkConnector connector = new ClientTCPConnector()){
+            connector.start();
             MessagePacket pkt = new MessagePacket();
             pkt.setMessage("HELLO WORLD!");
             connector.sendPacket(pkt);

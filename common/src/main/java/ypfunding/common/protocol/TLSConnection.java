@@ -35,19 +35,16 @@ public class TLSConnection implements AutoCloseable {
         appOut = ByteBuffer.allocate(engine.getSession().getApplicationBufferSize());
     }
 
-    public void readTLSData() throws IOException {
+    public boolean readTLSData() throws IOException {
         if (socketChannel.read(netIn) == -1) {
-            close();
-            synchronized (this) {
-                notifyAll();
-            }
-            throw new IOException("Connection closed");
+            return false;
         } else {
             netIn.flip();
-            synchronized (this) {
-                notifyAll();
-            }
         }
+        synchronized (this) {
+            notifyAll();
+        }
+        return true;
     }
 
     public void queuePacketToSend(Packet packet) {
