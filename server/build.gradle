@@ -10,6 +10,11 @@ dependencies {
 }
 
 sourceSets {
+    main{
+        resources{
+            srcDir rootProject.file('sql') //checkMain용
+        }
+    }
     test{
         resources{
             srcDir rootProject.file('sql')
