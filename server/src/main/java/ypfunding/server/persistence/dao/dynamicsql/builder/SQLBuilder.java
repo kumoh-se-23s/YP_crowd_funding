@@ -1,5 +1,6 @@
 package ypfunding.server.persistence.dao.dynamicsql.builder;
 
+import lombok.Getter;
 import ypfunding.server.persistence.dao.dynamicsql.condition.Condition;
 import ypfunding.server.persistence.dao.dynamicsql.table.PredefinedReferenceTable;
 
@@ -17,6 +18,7 @@ public abstract sealed class SQLBuilder<T> permits
         SQLUpdate {
     protected final List<Condition> conditions = new ArrayList<>();
     protected final List<Object> userParameters = new ArrayList<>();
+    @Getter
     protected final PredefinedReferenceTable[] predefined;
 
     protected SQLBuilder(PredefinedReferenceTable... predefined) {

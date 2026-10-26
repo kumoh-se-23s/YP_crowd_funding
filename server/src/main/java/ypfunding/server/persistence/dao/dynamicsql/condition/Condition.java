@@ -15,14 +15,22 @@ public abstract sealed class Condition permits
         this.userParameters = List.copyOf(userParameters);
     }
 
-    public static Condition and(Condition... conditions) {
-        List<Object> combined = Arrays.stream(conditions).flatMap(e -> e.getUserParameters().stream()).toList();
-        return new CombinedCondition(Arrays.stream(conditions).map(e -> "(" + e + ")").collect(Collectors.joining(" AND ")), combined);
+    public static Condition and(List<Condition> conditions) {
+        List<Object> combined = conditions.stream().flatMap(e -> e.getUserParameters().stream()).toList();
+        return new CombinedCondition(conditions.stream().map(e -> "(" + e + ")").collect(Collectors.joining(" AND ")), combined);
     }
 
-    public static Condition or(Condition... conditions) {
-        List<Object> combined = Arrays.stream(conditions).flatMap(e -> e.getUserParameters().stream()).toList();
-        return new CombinedCondition(Arrays.stream(conditions).map(e -> "(" + e + ")").collect(Collectors.joining(" OR ")), combined);
+    public static Condition or(List<Condition> conditions) {
+        List<Object> combined = conditions.stream().flatMap(e -> e.getUserParameters().stream()).toList();
+        return new CombinedCondition(conditions.stream().map(e -> "(" + e + ")").collect(Collectors.joining(" OR ")), combined);
+    }
+
+    public static Condition and(Condition... conditions) {
+        return and(List.of(conditions));
+    }
+
+    public static Condition or(Condition... conditions){
+        return or(List.of(conditions));
     }
 
     public static Condition not(Condition v) {
@@ -33,11 +41,4 @@ public abstract sealed class Condition permits
         return Collections.unmodifiableList(userParameters);
     }
 
-    public static String whereChain(List<Condition> conditions) {
-        StringBuilder whereBuilder = new StringBuilder();
-        for (Condition condition : conditions) {
-            whereBuilder.append(" where ").append(condition);
-        }
-        return whereBuilder.toString();
-    }
 }

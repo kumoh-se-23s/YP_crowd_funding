@@ -117,7 +117,7 @@ public class ProjectsDAO extends DAO {
                         new ColumnValueToken(Columns.USER_ID),
                         ArithmeticConditionOperator.EQ,
                         new UserValueToken(userId)))
-                .orderBy(new OrderBySelector(new ColumnValueToken(Columns.PROJECT_ID), false))
+                .orderBy(new SimpleOrderBySelector(Columns.PROJECT_ID, false))
                 .execute(conn)) {
             while (rs.next()) {
                 result.add(toDTO(rs));
@@ -158,7 +158,7 @@ public class ProjectsDAO extends DAO {
 
 
     public List<ProjectDTO> getDisplayedProjects(Connection conn) throws SQLException{
-        return getDisplayedProjects(conn, new OrderBySelector(new ColumnValueToken(Columns.PROJECT_ID), true));
+        return getDisplayedProjects(conn, new SimpleOrderBySelector(Columns.PROJECT_ID,  true));
     }
 
     // Displayed projects (a.k.a. Approved Projects)
