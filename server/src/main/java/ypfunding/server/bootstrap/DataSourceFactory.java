@@ -1,7 +1,7 @@
 package ypfunding.server.bootstrap;
 
 import org.apache.commons.dbcp2.BasicDataSource;
-import ypfunding.server.config.AppProperties;
+import ypfunding.server.config.ServerAppProperties;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Duration;
@@ -15,7 +15,7 @@ public class DataSourceFactory {
     static final Duration MAX_WAIT = Duration.ofSeconds(3); //모든 커넥션이 사용중일 때 최대 대기시간, 넘으면 SQLException
     static final String INIT_SQL = "SET time_zone = '+09:00'";
 
-    public static BasicDataSource create (AppProperties props) {
+    public static BasicDataSource create (ServerAppProperties props) {
         Objects.requireNonNull(props, "props");
 
         BasicDataSource ds = new BasicDataSource();
@@ -42,7 +42,7 @@ public class DataSourceFactory {
     }
 
     //커넥션 살아있는지 테스트
-    private static void verifyConnection(BasicDataSource ds, AppProperties props) {
+    private static void verifyConnection(BasicDataSource ds, ServerAppProperties props) {
         try (Connection ignored = ds.getConnection()) {
             //예외 안났으면 성공이니까 바로 넘어감
         } catch (SQLException e) {

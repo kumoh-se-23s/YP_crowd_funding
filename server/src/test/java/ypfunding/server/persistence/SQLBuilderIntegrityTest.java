@@ -2,11 +2,13 @@ package ypfunding.server.persistence;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import ypfunding.server.persistence.dao.ColumnsEnum;
 import ypfunding.server.persistence.dao.ProjectsDAO;
 import ypfunding.server.persistence.dao.Tables;
 import ypfunding.server.persistence.dao.UsersDAO;
 import ypfunding.server.persistence.dao.dynamicsql.builder.SQLBuilder;
 import ypfunding.server.persistence.dao.dynamicsql.builder.SQLSelect;
+import ypfunding.server.persistence.dao.dynamicsql.col.ColumnSelector;
 import ypfunding.server.persistence.dao.dynamicsql.col.DirectColumnSelector;
 import ypfunding.server.persistence.dao.dynamicsql.col.ScalarSubqueryColumnSelector;
 import ypfunding.server.persistence.dao.dynamicsql.condition.BasicCondition;
@@ -26,6 +28,10 @@ import java.util.List;
 
 public class SQLBuilderIntegrityTest extends DbTestBase {
 
+    private enum Columns implements ColumnsEnum {
+        A, B
+    }
+
     @Test
     @DisplayName("SQL Builder 무결성 검사")
     public void test() {
@@ -34,14 +40,14 @@ public class SQLBuilderIntegrityTest extends DbTestBase {
 // 프로젝트 조회용 Inline View
         var projectView = new InlineViewReferenceTable(
                 new SQLSelect(
-                        List.of(
+                        new ColumnSelector[]{
                                 new DirectColumnSelector(ProjectsDAO.Columns.PROJECT_ID),
                                 new DirectColumnSelector(ProjectsDAO.Columns.USER_ID),
                                 new DirectColumnSelector(ProjectsDAO.Columns.TITLE),
                                 new DirectColumnSelector(ProjectsDAO.Columns.GOAL),
                                 new DirectColumnSelector(ProjectsDAO.Columns.DURATION),
                                 new DirectColumnSelector(ProjectsDAO.Columns.APPROVAL_STATUS)
-                        ),
+                        },
                         new DirectReferenceTable(Tables.PROJECTS)
                 )
                         .addCondition(
@@ -76,9 +82,9 @@ public class SQLBuilderIntegrityTest extends DbTestBase {
         var correlatedProject = new DirectReferenceTable(Tables.PROJECTS);
 
         var correlatedProjectQuery = new SQLSelect(
-                List.of(
+                new ColumnSelector[]{
                         new DirectColumnSelector(ProjectsDAO.Columns.PROJECT_ID)
-                ),
+                },
                 correlatedProject
         ).addCondition(
                 BasicCondition.and(
@@ -97,17 +103,17 @@ public class SQLBuilderIntegrityTest extends DbTestBase {
 
 // 사용자별 프로젝트 조건을 검증하는 중첩 서브쿼리
         var userProjectQuery = new SQLSelect(
-                List.of(
+                new ColumnSelector[]{
                         new DirectColumnSelector(ProjectsDAO.Columns.PROJECT_ID)
-                ),
+                },
                 new InlineViewReferenceTable(
                         new SQLSelect(
-                                List.of(
+                                new ColumnSelector[]{
                                         new DirectColumnSelector(ProjectsDAO.Columns.PROJECT_ID),
                                         new DirectColumnSelector(ProjectsDAO.Columns.USER_ID),
                                         new DirectColumnSelector(ProjectsDAO.Columns.GOAL),
                                         new DirectColumnSelector(ProjectsDAO.Columns.APPROVAL_STATUS)
-                                ),
+                                },
                                 new DirectReferenceTable(Tables.PROJECTS)
                         ).addCondition(
                                 BasicCondition.and(
@@ -144,7 +150,7 @@ public class SQLBuilderIntegrityTest extends DbTestBase {
         var projects = new DirectReferenceTable(Tables.PROJECTS);
 
         SQLBuilder<?> builder = new SQLSelect(
-                List.of(
+                new ColumnSelector[]{
                         new DirectColumnSelector(ProjectsDAO.Columns.PROJECT_ID),
                         new DirectColumnSelector(ProjectsDAO.Columns.TITLE),
                         new DirectColumnSelector(ProjectsDAO.Columns.GOAL),
@@ -155,10 +161,11 @@ public class SQLBuilderIntegrityTest extends DbTestBase {
                         new DirectColumnSelector(UsersDAO.Columns.ADDRESS),
 
                         new ScalarSubqueryColumnSelector(
+                                Columns.A,
                                 new SQLSelect(
-                                        List.of(
+                                        new ColumnSelector[]{
                                                 new DirectColumnSelector(UsersDAO.Columns.LOGIN_ID)
-                                        ),
+                                        },
                                         new JoinedTable(users, JoinType.LEFT, projects,
                                                 new BasicCondition(
                                                         new TableRefColumnToken(users, UsersDAO.Columns.USER_ID),
@@ -166,10 +173,9 @@ public class SQLBuilderIntegrityTest extends DbTestBase {
                                                         new TableRefColumnToken(projects, ProjectsDAO.Columns.USER_ID)
                                                 )
                                         )
-                                ),
-                                "owner_login_id"
+                                )
                         )
-                ),
+                },
                 joined
         )
                 .addCondition(

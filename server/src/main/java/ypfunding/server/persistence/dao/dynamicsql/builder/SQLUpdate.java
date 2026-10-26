@@ -3,6 +3,7 @@ package ypfunding.server.persistence.dao.dynamicsql.builder;
 import ypfunding.server.persistence.dao.ColumnsEnum;
 import ypfunding.server.persistence.dao.Tables;
 import ypfunding.server.persistence.dao.dynamicsql.AccumulativePreparedStatement;
+import ypfunding.server.persistence.dao.dynamicsql.col.ColumnSelector;
 import ypfunding.server.persistence.dao.dynamicsql.col.UpdateSelector;
 import ypfunding.server.persistence.dao.dynamicsql.condition.Condition;
 import ypfunding.server.persistence.dao.dynamicsql.log.SQLLogger;
@@ -44,18 +45,18 @@ public final class SQLUpdate extends SQLBuilder<Integer> {
     @Override
     public Integer execute(Connection conn) throws SQLException {
         SQLLogger.logQuery(this);
-        AccumulativePreparedStatement preparedStatement = new AccumulativePreparedStatement(conn, PredefinedReferenceTable.makeQuery(predefined) + " " + this);
+        AccumulativePreparedStatement preparedStatement = new AccumulativePreparedStatement(conn, toString());
         preparedStatement.addParams(userParameters);
         return preparedStatement.applyParam().executeUpdate();
     }
 
     @Override
     public String toString() {
+        String cteStr = predefined.length == 0 ? "" : PredefinedReferenceTable.makeQuery(predefined) + "\n";
+        String whereStr = conditions.isEmpty() ? "" : "where " + Condition.and(conditions) + "\n";
         String setValueQuery = columns.stream().map(e -> e + "=?").collect(Collectors.joining(","));
-        return " update " +
-               referenceTable +
-               " set " +
-               setValueQuery +
-               Condition.whereChain(conditions);
+        return cteStr + "update " + referenceTable +
+               "\nset " + setValueQuery +
+               "\n" + whereStr;
     }
 }

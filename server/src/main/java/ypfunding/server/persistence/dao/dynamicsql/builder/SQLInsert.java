@@ -31,14 +31,15 @@ public final class SQLInsert extends SQLBuilder<Integer> {
 
     @Override
     public String toString() {
-        return PredefinedReferenceTable.makeQuery(predefined) + " insert into " + table +
+        String cteStr = predefined.length == 0 ? "" : PredefinedReferenceTable.makeQuery(predefined) + "\n";
+        return cteStr + "insert into " + table +
                ColumnSelector.buildColumnParenthesesWithValues(columns);
     }
 
     @Override
     public Integer execute(Connection conn) throws SQLException {
         SQLLogger.logQuery(this);
-        AccumulativePreparedStatement preparedStatement = new AccumulativePreparedStatement(conn, PredefinedReferenceTable.makeQuery(predefined) + " " + this);
+        AccumulativePreparedStatement preparedStatement = new AccumulativePreparedStatement(conn, toString());
         preparedStatement.addParams(userParameters);
         return preparedStatement.applyParam().executeUpdate();
     }

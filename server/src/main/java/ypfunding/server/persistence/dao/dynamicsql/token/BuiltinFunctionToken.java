@@ -6,7 +6,7 @@ public final class BuiltinFunctionToken extends ValueToken{
     private final BuiltinFunctions func;
     private final ValueToken[] parameters;
 
-    public BuiltinFunctionToken(BuiltinFunctions func, ValueToken[] parameters){
+    public BuiltinFunctionToken(BuiltinFunctions func, ValueToken... parameters){
         this.func = func;
         this.parameters = parameters;
     }

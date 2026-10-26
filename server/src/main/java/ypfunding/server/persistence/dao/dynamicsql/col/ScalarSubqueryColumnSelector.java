@@ -1,29 +1,31 @@
 package ypfunding.server.persistence.dao.dynamicsql.col;
 
+import ypfunding.server.persistence.dao.ColumnsEnum;
 import ypfunding.server.persistence.dao.dynamicsql.builder.SQLSelect;
 
 import java.util.List;
 
 public final class ScalarSubqueryColumnSelector extends ColumnSelector {
+
+    private final ColumnsEnum resultColumnName;
     private final SQLSelect query;
-    private final String resultColumnName;
 
     public ScalarSubqueryColumnSelector(SQLSelect query){
-        this(query, "");
+        this(null, query);
     }
-    public ScalarSubqueryColumnSelector(SQLSelect query, String resultColumnName) {
-        this.query = query;
+    public ScalarSubqueryColumnSelector(ColumnsEnum resultColumnName, SQLSelect query) {
         this.resultColumnName = resultColumnName;
+        this.query = query;
     }
 
 
     public String getResultColumnName() {
-        return resultColumnName;
+        return resultColumnName.toString();
     }
 
     @Override
     public String toString() {
-        if(resultColumnName.isBlank()){
+        if(resultColumnName == null){
             return "(" + query.toString() + ")";
         }
         return "(" + query.toString() + ") as " + resultColumnName;

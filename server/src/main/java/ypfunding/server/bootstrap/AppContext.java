@@ -2,7 +2,7 @@ package ypfunding.server.bootstrap;
 
 import org.apache.commons.dbcp2.BasicDataSource;
 import ypfunding.common.util.DateTimeUtil;
-import ypfunding.server.config.AppProperties;
+import ypfunding.server.config.ServerAppProperties;
 import ypfunding.server.exception.DataAccessException;
 import ypfunding.server.persistence.TransactionManager;
 
@@ -10,6 +10,8 @@ import java.sql.SQLException;
 import java.time.Clock;
 import java.util.Objects;
 import lombok.Getter;
+import ypfunding.server.persistence.dao.*;
+import ypfunding.server.service.*;
 
 public class AppContext implements AutoCloseable {
     @Getter
@@ -20,12 +22,38 @@ public class AppContext implements AutoCloseable {
 
     //DAO
     //private final ~DAO;
+    private final UserManagedDAO userManagedDAO;
+    private final UsersDAO usersDAO;
+    private final LikesDAO likesDAO;
+    private final ProjectsDAO projectsDAO;
+    private final RejectDAO rejectsDAO;
+    private final FundsDAO fundsDAO;
+    private final CanceledFundsDAO canceledFundsDAO;
+    private final RewardsDAO rewardsDAO;
+    private final FundQueryDAO fundQueryDAO;
+    private final ReviewsDAO reviewsDAO;
 
     //service
     //private final ~Service;
+    @Getter
+    private final AuthService authService;
+    @Getter
+    private final UserService userService;
+    @Getter
+    private final AdminService adminService;
+    @Getter
+    private final MakerService makerService;
+    @Getter
+    private final SupporterService supporterService;
+    @Getter
+    private final LikeService likeService;
+    @Getter
+    private final FundService fundService;
+    @Getter
+    private final ReviewService reviewService;
 
     public AppContext() {
-        this(AppProperties.DEFAULT_PATH, Clock.system(DateTimeUtil.KST));
+        this(ServerAppProperties.DEFAULT_PATH, Clock.system(DateTimeUtil.KST));
     }
 
     public AppContext(String propertiesPath, Clock clock) {
@@ -33,13 +61,31 @@ public class AppContext implements AutoCloseable {
 
         this.clock = Objects.requireNonNull(clock, "clock");
 
-        AppProperties props = AppProperties.load(propertiesPath); //설정 읽기
+        ServerAppProperties props = ServerAppProperties.load(propertiesPath); //설정 읽기
         this.dataSource = DataSourceFactory.create(props); //커넥션 풀 꺼내기
 
         try {
             this.transactionManager = new TransactionManager(dataSource); //관리자
             //this.*DAO = new *DAO
             //this.*Service = new *Service
+            this.userManagedDAO = new UserManagedDAO();
+            this.usersDAO = new UsersDAO();
+            this.likesDAO = new LikesDAO();
+            this.projectsDAO = new ProjectsDAO();
+            this.rejectsDAO = new RejectDAO();
+            this.fundsDAO = new FundsDAO();
+            this.canceledFundsDAO = new CanceledFundsDAO();
+            this.rewardsDAO = new RewardsDAO();
+            this.fundQueryDAO = new FundQueryDAO();
+            this.reviewsDAO = new ReviewsDAO();
+            this.authService = new AuthService(transactionManager, userManagedDAO, clock);
+            this.userService = new UserService(transactionManager, usersDAO);
+            this.adminService = new AdminService(transactionManager, usersDAO, projectsDAO, rejectsDAO);
+            this.makerService = new MakerService(transactionManager, usersDAO);
+            this.supporterService = new SupporterService(transactionManager, usersDAO);
+            this.likeService = new LikeService(transactionManager, likesDAO, projectsDAO, clock);
+            this.fundService = new FundService(transactionManager, fundsDAO, canceledFundsDAO, rewardsDAO, projectsDAO, fundQueryDAO, clock);
+            this.reviewService = new ReviewService(transactionManager, reviewsDAO, fundsDAO, fundQueryDAO, clock);
         } catch (RuntimeException | Error e) {
             closeQuietly(e);
             throw e;

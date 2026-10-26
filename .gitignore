@@ -16,5 +16,4 @@ Thumbs.db
 
 # ---------- 비밀 설정 (DB 계정·비밀번호 등) ----------
 # 실제 설정 파일은 각자 PC에만 두고, 키 목록은 *.example 파일로 공유.
-**/application.properties
-**/application-test.properties
+*.properties

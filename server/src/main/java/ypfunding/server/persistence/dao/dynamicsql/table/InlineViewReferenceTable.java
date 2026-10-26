@@ -4,7 +4,7 @@ import ypfunding.server.persistence.dao.dynamicsql.builder.SQLSelect;
 
 import java.util.List;
 
-public final class InlineViewReferenceTable extends ReferenceTable {
+public final class InlineViewReferenceTable extends VarNameReferenceTable {
     SQLSelect query;
 
     public InlineViewReferenceTable(SQLSelect query) {

@@ -2,7 +2,17 @@ package ypfunding.server.persistence.dao;
 
 
 import ypfunding.common.dto.CategoryDTO;
-import ypfunding.server.util.DynamicSQLUtil;
+import ypfunding.common.type.Category;
+import ypfunding.server.persistence.dao.dynamicsql.builder.SQLDelete;
+import ypfunding.server.persistence.dao.dynamicsql.builder.SQLInsert;
+import ypfunding.server.persistence.dao.dynamicsql.builder.SQLSelect;
+import ypfunding.server.persistence.dao.dynamicsql.builder.SQLUpdate;
+import ypfunding.server.persistence.dao.dynamicsql.col.SimpleOrderBySelector;
+import ypfunding.server.persistence.dao.dynamicsql.col.UpdateSelector;
+import ypfunding.server.persistence.dao.dynamicsql.condition.BasicCondition;
+import ypfunding.server.persistence.dao.dynamicsql.op.ArithmeticConditionOperator;
+import ypfunding.server.persistence.dao.dynamicsql.token.ColumnValueToken;
+import ypfunding.server.persistence.dao.dynamicsql.token.UserValueToken;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -27,76 +37,124 @@ public class CategoryDAO extends DAO{
         }
     }
 
-    public void fillDataFromResultSet(CategoryDTO dto, ResultSet rs){
-        //TODO
-    }
-
     // =================================================================
     // 1. CREATE SECTION
     // =================================================================
 
+    /**
+     * 프로젝트의 카테고리를 등록 기능
+     * @param conn 커넥션
+     * @param categoryDTO 등록할 카테고리 정보
+     * @throws SQLException DB 오류 발생 시 (중복 카테고리 시 에러 1062)
+     */
     public void insert(Connection conn, CategoryDTO categoryDTO) throws SQLException {
-        final String INSERT_SQL = DynamicSQLUtil.generate("INSERT INTO category ({}) VALUES ({})",
-                Columns.CATEGORY_ID, Columns.PROJECT_ID, Columns.CATEGORY_NAME);
-
-        try(PreparedStatement psmt = conn.prepareStatement(INSERT_SQL)){
-
-            psmt.setLong(1, categoryDTO.getCategoryId());
-            psmt.setLong(2, categoryDTO.getProjectId());
-            psmt.setString(3, categoryDTO.getCategoryName().name());
-            psmt.executeUpdate();
-
-        }
+        new SQLInsert(Tables.CATEGORY)
+                .addTarget(Columns.PROJECT_ID, categoryDTO.getProjectId())
+                .addTarget(Columns.CATEGORY_NAME, categoryDTO.getCategoryName().name())
+                .execute(conn);
     }
 
     // =================================================================
     // 2. READ SECTION
     // =================================================================
 
-    public List<CategoryDTO> getProjectsByCategory(Connection conn, CategoryDTO categoryDTO) throws SQLException {
-        final String READ_SQL = DynamicSQLUtil.generate("SELECT * FROM category WHERE project_id = ({})",
-                Columns.CATEGORY_ID);
+    /**
+     * 특정 프로젝트에 속한 카테고리 목록을 조회 기능 (프로젝트 상세 보기용)
+     * @param conn 커넥션
+     * @param projectId 조회할 프로젝트 ID
+     * @return 해당 프로젝트의 카테고리 목록
+     * @throws SQLException DB 오류 발생 시
+     */
+    public List<CategoryDTO> findByProjectId(Connection conn, long projectId) throws SQLException {
         List<CategoryDTO> resultList = new ArrayList<>();
 
-        try (PreparedStatement psmt = conn.prepareStatement(READ_SQL)) {
-
-             psmt.setLong(1, categoryDTO.getCategoryId());
-
-
-            try (ResultSet rs = psmt.executeQuery()) {
-                //카테고리 내 모든 내역 반환
-                while (rs.next()) {
-                    CategoryDTO dto = new CategoryDTO();
-
-                    dto.setProjectId(rs.getLong(Columns.PROJECT_ID.toString()));
-                    dto.setCategoryName(CategoryDTO.Category.valueOf(rs.getString(Columns.CATEGORY_NAME.toString())));
-
-                    resultList.add(dto);
-                }
+        try (ResultSet rs = SQLSelect.allColumns(Tables.CATEGORY)
+                .addCondition(new BasicCondition(
+                        new ColumnValueToken(Columns.PROJECT_ID),
+                        ArithmeticConditionOperator.EQ,
+                        new UserValueToken(projectId)
+                ))
+                .orderBy(new SimpleOrderBySelector(Columns.CATEGORY_ID, true))
+                .execute(conn)) {
+            while (rs.next()) {
+                resultList.add(toDTO(rs));
             }
         }
         return resultList;
     }
 
+    /**
+     * 특정 카테고리에 속한 모든 내역 조회 기능
+     * @param conn 커넥션
+     * @param categoryDTO (조회할 카테고리 조건)
+     * @return 카테고리 DTO 목록
+     * @throws SQLException DB 오류 발생 시
+     */
+    public List<CategoryDTO> getProjectsByCategory(Connection conn, CategoryDTO categoryDTO) throws SQLException {
+        List<CategoryDTO> resultList = new ArrayList<>();
+
+        try (ResultSet rs = SQLSelect.allColumns(Tables.CATEGORY)
+                .addCondition(new BasicCondition(
+                        new ColumnValueToken(Columns.CATEGORY_NAME),
+                        ArithmeticConditionOperator.EQ,
+                        new UserValueToken(categoryDTO.getCategoryName().name())
+                ))
+                .execute(conn)) {
+            while (rs.next()) {
+                resultList.add(toDTO(rs));
+            }
+        }
+        return resultList;
+    }
+
+    private CategoryDTO toDTO(ResultSet rs) throws SQLException {
+        CategoryDTO dto = new CategoryDTO();
+        dto.setCategoryId(rs.getLong(Columns.CATEGORY_ID.name));
+        dto.setProjectId(rs.getLong(Columns.PROJECT_ID.name));
+        dto.setCategoryName(Category.valueOf(rs.getString(Columns.CATEGORY_NAME.name)));
+        return dto;
+    }
+
     // =================================================================
     // 3. UPDATE SECTION
     // =================================================================
-
-    //카테고리 수정 기능(카테고리 잘못 기입)
-    public void update(Connection conn, CategoryDTO categoryDTO) throws SQLException {
-        final String UPDATE_SQL = DynamicSQLUtil.generate("UPDATE category SET ({}) WHERE project_id = ({})",
-                Columns.CATEGORY_NAME, Columns.PROJECT_ID);
-
-        try(PreparedStatement psmt = conn.prepareStatement(UPDATE_SQL)){
-            psmt.setString(1, categoryDTO.getCategoryName().name());
-            psmt.setLong(2, categoryDTO.getProjectId());
-
-            psmt.executeUpdate();
-        }
+    /**
+     * 카테고리 수정 기능
+     * @param conn 커넥션
+     * @param categoryDTO 수정할 카테고리 정보 (categoryId, categoryName 필수)
+     * @return 영향받은 행 수
+     * @throws SQLException DB 오류 발생 시
+     */
+    public int update(Connection conn, CategoryDTO categoryDTO) throws SQLException {
+        return new SQLUpdate(Tables.CATEGORY,
+                new UpdateSelector[]{
+                        new UpdateSelector(Columns.CATEGORY_NAME, new UserValueToken(categoryDTO.getCategoryName().name()))
+                })
+                .addCondition(new BasicCondition(
+                        new ColumnValueToken(Columns.CATEGORY_ID),
+                        ArithmeticConditionOperator.EQ,
+                        new UserValueToken(categoryDTO.getCategoryId())
+                ))
+                .execute(conn);
     }
 
     // =================================================================
     // 4. DELETE SECTION
     // =================================================================
-
+    /**
+     * 특정 프로젝트의 카테고리 삭제 기능
+     * @param conn 커넥션
+     * @param projectId 프로젝트ID
+     * @return 삭제된 행 수
+     * @throws SQLException DB 오류 발생 시
+     */
+    public int deleteByProjectId(Connection conn, long projectId) throws SQLException {
+        return new SQLDelete(Tables.CATEGORY)
+                .addCondition(new BasicCondition(
+                        new ColumnValueToken(Columns.PROJECT_ID),
+                        ArithmeticConditionOperator.EQ,
+                        new UserValueToken(projectId)
+                ))
+                .execute(conn);
+    }
 }

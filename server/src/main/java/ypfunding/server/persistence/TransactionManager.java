@@ -39,7 +39,7 @@ public class TransactionManager {
             } catch (SQLException e) { //db오류
                 rollback(conn, e);
                 throw new DataAccessException("트랜잭션 처리 중 db오류 발생", e);
-            } catch (Exception e) { //businessException 등
+            } catch (RuntimeException | Error e) { //businessException 등 + AssertionError, StackOverFlowError 등
                 rollback(conn, e);
                 throw e;
             } finally {

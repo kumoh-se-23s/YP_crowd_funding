@@ -117,4 +117,18 @@ class TransactionManagerTest extends DbTestBase {
             }
         });
     }
+
+    @Test
+    @DisplayName("Error(AssertionError 등)가 나도 롤백되고, 같은 Error가 그대로 나온다")
+    void rollsBackOnError() {
+        AssertionError thrown = new AssertionError("테스트 검증 실패");
+
+        AssertionError caught = assertThrows(AssertionError.class, () -> tx.execute(conn -> {
+            TestData.insertUser(conn, "user1", UserType.SUPPORTER, clock.now());
+            throw thrown;
+        }));
+
+        assertSame(thrown, caught);        // 감싸지 않고 그대로
+        assertEquals(0, countUsers());     // 롤백되지 않으면 1 (autoCommit 복구 때 커밋됨)
+    }
 }

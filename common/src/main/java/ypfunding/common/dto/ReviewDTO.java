@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.Date;
 
@@ -11,8 +12,8 @@ import java.util.Date;
 @Getter
 @Setter
 @ToString
-public class ReviewDTO {
-    private Long fundID;
+public class ReviewDTO implements Serializable {
+    private Long fundId;
     private Integer star;
     private String content;
     private LocalDateTime date;

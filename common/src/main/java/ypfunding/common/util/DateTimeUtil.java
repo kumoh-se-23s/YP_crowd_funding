@@ -27,6 +27,10 @@ public class DateTimeUtil {
             return dateTime.format(DISPLAY_DATETIME_FORMAT);
     }
 
+    public static LocalDateTime now(){
+        return LocalDateTime.now(KST);
+    }
+
     //날짜를 화면표시용으로 변환
     public static String formatDate(LocalDateTime dateTime) {
         if(dateTime == null)

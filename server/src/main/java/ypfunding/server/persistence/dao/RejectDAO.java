@@ -44,7 +44,7 @@ public class RejectDAO extends DAO{
 
         try(PreparedStatement psmt = conn.prepareStatement(INSERT_SQL)){
 
-            psmt.setLong(1, rejectDTO.getProjectID());
+            psmt.setLong(1, rejectDTO.getProjectId());
             psmt.setString(2, rejectDTO.getReason());
             psmt.setObject(3, rejectDTO.getCreatedAt());
 
@@ -70,7 +70,7 @@ public class RejectDAO extends DAO{
                     RejectDTO dto = new RejectDTO();
 
                     dto.setRejectReasonId(rs.getLong(Columns.REJECTREASON_ID.name));
-                    dto.setProjectID(rs.getLong(Columns.PROJECT_ID.name));
+                    dto.setProjectId(rs.getLong(Columns.PROJECT_ID.name));
                     dto.setReason(rs.getString(Columns.REASON.name));
                     dto.setCreatedAt(rs.getObject(Columns.CREATED_AT.name, LocalDateTime.class));
 

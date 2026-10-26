@@ -6,7 +6,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public final class PredefinedReferenceTable extends ReferenceTable {
+public final class PredefinedReferenceTable extends VarNameReferenceTable {
     private final SQLSelect query;
 
     public PredefinedReferenceTable(SQLSelect query){
