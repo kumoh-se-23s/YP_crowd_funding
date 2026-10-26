@@ -4,6 +4,7 @@ import ypfunding.common.protocol.packets.Packet;
 
 import java.io.IOException;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 
 public interface ClientNetworkConnector extends AutoCloseable{
 
@@ -15,5 +16,5 @@ public interface ClientNetworkConnector extends AutoCloseable{
     @Override
     void close() throws IOException;
 
-    void pause();
+    void pause(Consumer<String> consoleInput);
 }

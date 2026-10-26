@@ -1,8 +1,10 @@
 package ypfunding.common.protocol;
 
+import ypfunding.common.constant.NetworkConstants;
 import ypfunding.common.parallel.ThreadPool;
 import ypfunding.common.protocol.packets.Packet;
 import ypfunding.common.util.LogUtil;
+
 import java.nio.channels.CancelledKeyException;
 import java.util.concurrent.TimeoutException;
 import javax.net.ssl.SSLEngine;
@@ -11,7 +13,6 @@ import javax.net.ssl.SSLEngineResult.HandshakeStatus;
 import javax.net.ssl.SSLException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.CancelledKeyException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
@@ -24,7 +25,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class TLSConnection implements AutoCloseable {
     private static final ByteBuffer EMPTY = ByteBuffer.allocate(0);
 
-    private interface IOTask { void run() throws IOException; }
+    private interface IOTask {
+        void run() throws IOException;
+    }
 
     private final SSLEngine engine;
     private final ThreadPool threadPool;
@@ -53,8 +56,8 @@ public class TLSConnection implements AutoCloseable {
         this.threadPool = pool;
         this.selectionKey = selectionKey;
         this.socketChannel = socketChannel;
-        int pkt = Math.max(PacketManager.MAX_BUFFER_SIZE, engine.getSession().getPacketBufferSize());
-        int app = Math.max(PacketManager.MAX_BUFFER_SIZE, engine.getSession().getApplicationBufferSize());
+        int pkt = Math.max(NetworkConstants.MAX_BUFFER_SIZE, engine.getSession().getPacketBufferSize());
+        int app = Math.max(NetworkConstants.MAX_BUFFER_SIZE, engine.getSession().getApplicationBufferSize());
         netIn = ByteBuffer.allocate(pkt);
         netOut = ByteBuffer.allocate(pkt);
         appIn = ByteBuffer.allocate(app);
@@ -78,7 +81,9 @@ public class TLSConnection implements AutoCloseable {
         return receivedPacketQueue.poll();
     }
 
-    /** 소비자가 하나라는 전제 (peek 후 poll). 타입이 다르면 패킷을 버리지 않고 null. */
+    /**
+     * 소비자가 하나라는 전제 (peek 후 poll). 타입이 다르면 패킷을 버리지 않고 null.
+     */
     public <P extends Packet> P popReceivedPacket(Class<P> packetClass) {
         RawPacketTemp temp = receivedPacketQueue.peek();
         if (temp == null || packetClass != temp.packetClass()) return null;
@@ -107,7 +112,9 @@ public class TLSConnection implements AutoCloseable {
 
     // ================= IO 스레드 진입점 =================
 
-    /** 클라이언트는 연결 완료 후 한 번 호출. 서버는 불필요. */
+    /**
+     * 클라이언트는 연결 완료 후 한 번 호출. 서버는 불필요.
+     */
     public void startHandshake() {
         guard(() -> {
             engine.beginHandshake();
@@ -120,13 +127,18 @@ public class TLSConnection implements AutoCloseable {
             boolean eof = !readTLSData();
             pump();                                    // EOF여도 버퍼에 남은 데이터를 먼저 처리
             if (eof) {
-                try { engine.closeInbound(); } catch (SSLException ignored) { }
+                try {
+                    engine.closeInbound();
+                } catch (SSLException ignored) {
+                }
                 close();
             }
         });
     }
 
-    /** OP_WRITE: 소켓 쓰기 재개, 태스크 완료 후 재개, 새 패킷 전송 요청 모두 여기로 옴. */
+    /**
+     * OP_WRITE: 소켓 쓰기 재개, 태스크 완료 후 재개, 새 패킷 전송 요청 모두 여기로 옴.
+     */
     public void onWritable() {
         guard(() -> {
             flushNetOut();
@@ -201,7 +213,8 @@ public class TLSConnection implements AutoCloseable {
                 while (appOut.hasRemaining()) {
                     SSLEngineResult r = engine.wrap(appOut, netOut);
                     switch (r.getStatus()) {
-                        case OK -> { }
+                        case OK -> {
+                        }
                         case BUFFER_OVERFLOW -> {
                             if (netOut.position() == 0) throw new IOException("netOut too small");
                             if (!flushNetOut()) return;   // finally에서 appOut compact됨
@@ -228,7 +241,9 @@ public class TLSConnection implements AutoCloseable {
         }
     }
 
-    /** 큐의 패킷을 mux해서 appOut(write-mode)이 찰 때까지 채운다. 큰 패킷은 쪼개서 옮김. */
+    /**
+     * 큐의 패킷을 mux해서 appOut(write-mode)이 찰 때까지 채운다. 큰 패킷은 쪼개서 옮김.
+     */
     private void fillAppOut() throws IOException {
         while (appOut.hasRemaining()) {
             if (pendingPlain == null || !pendingPlain.hasRemaining()) {
@@ -249,7 +264,9 @@ public class TLSConnection implements AutoCloseable {
 
     // ---------- 수신 (핸드셰이크/데이터 공용) ----------
 
-    /** @return true: 진행했음(상태 재확인), false: 데이터 부족 또는 진전 없음 */
+    /**
+     * @return true: 진행했음(상태 재확인), false: 데이터 부족 또는 진전 없음
+     */
     private boolean unwrapOnce() throws IOException {
         if (netIn.position() == 0) return false;
         SSLEngineResult r;
@@ -310,17 +327,24 @@ public class TLSConnection implements AutoCloseable {
             appIn.compact();                           // 불완전한 패킷은 남겨둠
         }
         if (any) {
-            synchronized (recvLock) { recvLock.notifyAll(); }
+            synchronized (recvLock) {
+                recvLock.notifyAll();
+            }
         }
     }
 
     // ---------- 소켓 쓰기 ----------
 
-    /** @return true: netOut 전부 전송됨 */
+    /**
+     * @return true: netOut 전부 전송됨
+     */
     private boolean flushNetOut() throws IOException {
         netOut.flip();
         try {
-            while (netOut.hasRemaining() && socketChannel.write(netOut) > 0) { }
+            while (netOut.hasRemaining() && socketChannel.write(netOut) > 0) {
+                // repeats netOut flushing. if socketChannel is not writable, write returns 0 and will exit loop
+                // not blocking
+            }
         } finally {
             netOut.compact();
         }
@@ -334,7 +358,8 @@ public class TLSConnection implements AutoCloseable {
             try {
                 int ops = selectionKey.interestOps();
                 selectionKey.interestOps(on ? ops | SelectionKey.OP_WRITE : ops & ~SelectionKey.OP_WRITE);
-            } catch (CancelledKeyException ignored) { }
+            } catch (CancelledKeyException ignored) {
+            }
         }
     }
 
@@ -381,8 +406,13 @@ public class TLSConnection implements AutoCloseable {
         } catch (IOException | RuntimeException ignored) {
         } finally {
             selectionKey.cancel();
-            try { socketChannel.close(); } catch (IOException ignored) { }
-            synchronized (recvLock) { recvLock.notifyAll(); }
+            try {
+                socketChannel.close();
+            } catch (IOException ignored) {
+            }
+            synchronized (recvLock) {
+                recvLock.notifyAll();
+            }
         }
     }
 
@@ -390,18 +420,23 @@ public class TLSConnection implements AutoCloseable {
         return closed.get();
     }
 
-    /** IO 스레드: finishConnect 직후(또는 즉시 연결된 경우) 호출. */
+    /**
+     * IO 스레드: finishConnect 직후(또는 즉시 연결된 경우) 호출.
+     */
     public void onConnected() {
         synchronized (opsLock) {
             try {
                 int ops = selectionKey.interestOps();
                 selectionKey.interestOps((ops & ~SelectionKey.OP_CONNECT) | SelectionKey.OP_READ);
-            } catch (CancelledKeyException ignored) { }
+            } catch (CancelledKeyException ignored) {
+            }
         }
         startHandshake();
     }
 
-    /** 앱 스레드: 해당 타입의 패킷이 올 때까지 대기. */
+    /**
+     * 앱 스레드: 해당 타입의 패킷이 올 때까지 대기.
+     */
     public <P extends Packet> P awaitPacket(Class<P> cls, long timeoutMs)
             throws InterruptedException, TimeoutException {
         long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeoutMs);

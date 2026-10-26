@@ -2,7 +2,7 @@ package ypfunding.server.bootstrap;
 
 import org.apache.commons.dbcp2.BasicDataSource;
 import ypfunding.common.util.DateTimeUtil;
-import ypfunding.server.config.AppProperties;
+import ypfunding.server.config.ServerAppProperties;
 import ypfunding.server.exception.DataAccessException;
 import ypfunding.server.persistence.TransactionManager;
 
@@ -53,7 +53,7 @@ public class AppContext implements AutoCloseable {
     private final ReviewService reviewService;
 
     public AppContext() {
-        this(AppProperties.DEFAULT_PATH, Clock.system(DateTimeUtil.KST));
+        this(ServerAppProperties.DEFAULT_PATH, Clock.system(DateTimeUtil.KST));
     }
 
     public AppContext(String propertiesPath, Clock clock) {
@@ -61,7 +61,7 @@ public class AppContext implements AutoCloseable {
 
         this.clock = Objects.requireNonNull(clock, "clock");
 
-        AppProperties props = AppProperties.load(propertiesPath); //설정 읽기
+        ServerAppProperties props = ServerAppProperties.load(propertiesPath); //설정 읽기
         this.dataSource = DataSourceFactory.create(props); //커넥션 풀 꺼내기
 
         try {

@@ -9,7 +9,7 @@ public class MessagePacketHandler implements RequestHandler<MessagePacket>{
     @Override
     public void handle(RequestEvent event, MessagePacket packet) {
         //TODO
-        event.reply("IRECEIVEDMESSAGE");
+        event.reply("Success");
         LogUtil.log("Received message: " + packet.getMessage());
     }
 }

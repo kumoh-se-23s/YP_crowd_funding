@@ -10,15 +10,27 @@ import java.util.concurrent.TimeoutException;
 
 public class Main {
     static void main() {
+        // Minimal example for client
         // TODO
         try(ClientNetworkConnector connector = new ClientTCPConnector()){
             connector.start();
-            MessagePacket pkt = new MessagePacket();
-            pkt.setMessage("HELLO WORLD!");
-            pkt = connector.sendAndWaitReply(pkt, MessagePacket.class);
-            System.out.println("Response : " + pkt.getMessage());
-            connector.pause();
-        }catch (IOException | TimeoutException e){
+            System.out.println("[ Enter the message here ]");
+            connector.pause(e -> {
+                if(e.isBlank()) return;
+
+                MessagePacket pkt = new MessagePacket();
+                pkt.setMessage(e);
+
+                try {
+                    pkt = connector.sendAndWaitReply(pkt, MessagePacket.class);
+                } catch (TimeoutException ex) {
+                    LogUtil.log("Timeout : " + ex.getMessage());
+                }
+
+                pkt.setMessage(e);
+                System.out.println("Response : " + pkt.getMessage());
+            });
+        }catch (IOException e){
             LogUtil.log("Error : " + e.getMessage());
         }
     }

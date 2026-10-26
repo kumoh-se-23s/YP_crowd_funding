@@ -13,12 +13,12 @@ AppProperties가 설정 파일을 올바르게 읽고, 잘못된 설정을 바�
 DB 접속 없이 파일 읽기만 검사
 테스트용 설정 파일은 server/src/test/resources/config/test-props/ 아래
  */
-class AppPropertiesTest {
+class ServerAppPropertiesTest {
 
     @Test
     @DisplayName("정상 파일: 세 값을 모두 읽고, 앞뒤 공백을 잘라낸다")
     void loadsValuesAndTrims() {
-        AppProperties props = AppProperties.load("config/test-props/valid.properties");
+        ServerAppProperties props = ServerAppProperties.load("config/test-props/valid.properties");
 
         assertEquals("jdbc:mysql://localhost:3306/some_db", props.getDbUrl());
         assertEquals("tester", props.getDbUsername());
@@ -28,7 +28,7 @@ class AppPropertiesTest {
     @Test
     @DisplayName("한글 값도 깨지지 않고 읽는다 (UTF-8로 읽는지 확인)")
     void readsUtf8() {
-        AppProperties props = AppProperties.load("config/test-props/korean.properties");
+        ServerAppProperties props = ServerAppProperties.load("config/test-props/korean.properties");
 
         assertEquals("한글계정", props.getDbUsername());
     }
@@ -36,7 +36,7 @@ class AppPropertiesTest {
     @Test
     @DisplayName("비밀번호 값이 비어 있어도 된다 (비밀번호 없는 로컬 계정)")
     void allowsEmptyPassword() {
-        AppProperties props = AppProperties.load("config/test-props/empty-password.properties");
+        ServerAppProperties props = ServerAppProperties.load("config/test-props/empty-password.properties");
 
         assertEquals("", props.getDbPassword());
     }
@@ -45,7 +45,7 @@ class AppPropertiesTest {
     @DisplayName("파일이 없으면 즉시 예외, 메시지에 해결 방법이 있다")
     void failsWhenFileMissing() {
         IllegalStateException e = assertThrows(IllegalStateException.class,
-                () -> AppProperties.load("config/test-props/no-such-file.properties"));
+                () -> ServerAppProperties.load("config/test-props/no-such-file.properties"));
 
         assertTrue(e.getMessage().contains(".example"));
     }
@@ -54,7 +54,7 @@ class AppPropertiesTest {
     @DisplayName("db.username 값이 비어 있으면 즉시 예외")
     void failsWhenUsernameBlank() {
         IllegalStateException e = assertThrows(IllegalStateException.class,
-                () -> AppProperties.load("config/test-props/blank-username.properties"));
+                () -> ServerAppProperties.load("config/test-props/blank-username.properties"));
 
         assertTrue(e.getMessage().contains("db.username"));
     }
@@ -63,7 +63,7 @@ class AppPropertiesTest {
     @DisplayName("db.password 항목 자체가 없으면 즉시 예외")
     void failsWhenPasswordKeyMissing() {
         IllegalStateException e = assertThrows(IllegalStateException.class,
-                () -> AppProperties.load("config/test-props/no-password-key.properties"));
+                () -> ServerAppProperties.load("config/test-props/no-password-key.properties"));
 
         assertTrue(e.getMessage().contains("db.password"));
     }
@@ -71,7 +71,7 @@ class AppPropertiesTest {
     @Test
     @DisplayName("toString에 비밀번호가 그대로 나오지 않는다")
     void toStringHidesPassword() {
-        AppProperties props = AppProperties.load("config/test-props/valid.properties");
+        ServerAppProperties props = ServerAppProperties.load("config/test-props/valid.properties");
 
         assertFalse(props.toString().contains("pw 1234"));
     }

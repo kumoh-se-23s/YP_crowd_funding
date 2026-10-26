@@ -1,5 +1,6 @@
 package ypfunding.common.protocol;
 
+import ypfunding.common.constant.NetworkConstants;
 import ypfunding.common.protocol.packets.Packet;
 import ypfunding.common.protocol.packets.Packets;
 
@@ -13,11 +14,6 @@ import java.util.function.Function;
 
 public class PacketManager {
 
-
-    public static final int MAX_BUFFER_SIZE = 1024;
-    public static final int PACKET_LEN_HEADER_SIZE = 2;
-    public static final int MESSAGE_TYPE_HEADER_SIZE = 2;
-    public static final int TIMEOUT_MS = 5000;
 
     private static final Packets[] ALL_PACKETS = Packets.values();
     private static final Map<Class<? extends Packet>, Constructor<? extends Packet>> PKT_CONSTRUCTORS = new HashMap<>();
@@ -41,7 +37,7 @@ public class PacketManager {
     }
 
     public static ByteBuffer mux(Packet packet) throws IOException {
-        ByteBuffer out = ByteBuffer.allocate(MAX_BUFFER_SIZE);
+        ByteBuffer out = ByteBuffer.allocate(NetworkConstants.MAX_BUFFER_SIZE);
         out.putShort((short) 0); //length of packet
         out.putShort((short) PKT_TO_REQUESTS_MAP.get(packet.getClass()).ordinal()); //request number
         packet.encode(out);
@@ -57,7 +53,7 @@ public class PacketManager {
     }
 
     public static RawPacketTemp demux(ByteBuffer buffer) {
-        int headerSize = PACKET_LEN_HEADER_SIZE + MESSAGE_TYPE_HEADER_SIZE;
+        int headerSize = NetworkConstants.PACKET_LEN_HEADER_SIZE + NetworkConstants.MESSAGE_TYPE_HEADER_SIZE;
 
         if (buffer.remaining() < headerSize) {
             return null;

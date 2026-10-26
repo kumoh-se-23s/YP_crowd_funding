@@ -18,6 +18,7 @@ import java.util.Scanner;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 
 public class ClientTCPConnector implements ClientNetworkConnector {
 
@@ -82,7 +83,10 @@ public class ClientTCPConnector implements ClientNetworkConnector {
         } catch (ClosedSelectorException ignored) {
         } finally {
             connection.close();                                  // IO 스레드에서 종료
-            try { selector.close(); } catch (IOException ignored) { }
+            try {
+                selector.close();
+            } catch (IOException ignored) {
+            }
             loopDone.countDown();
         }
     }
@@ -91,7 +95,7 @@ public class ClientTCPConnector implements ClientNetworkConnector {
             throws TimeoutException {
         sendPacket(packetToSend);
         try {
-            return connection.awaitPacket(packetToReceiveClass, PacketManager.TIMEOUT_MS);
+            return connection.awaitPacket(packetToReceiveClass, NetworkConstants.TIMEOUT_MS);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException("Interrupted while waiting for reply", e);
@@ -109,7 +113,10 @@ public class ClientTCPConnector implements ClientNetworkConnector {
             selector.wakeup();                                  // 정리는 loop의 finally가 수행
         } else {
             connection.close();
-            try { selector.close(); } catch (IOException ignored) { }
+            try {
+                selector.close();
+            } catch (IOException ignored) {
+            }
             loopDone.countDown();
         }
         threadPool.close();
@@ -117,10 +124,11 @@ public class ClientTCPConnector implements ClientNetworkConnector {
     }
 
     @Override
-    public void pause() {
+    public void pause(Consumer<String> consoleInput) {
         while (loopDone.getCount() > 0 && scanner.hasNextLine()) {
             String input = scanner.nextLine();
             //TODO switch input
+            consoleInput.accept(input);
             if (input.equals("exit")) break;
         }
         closeRequested = true;
