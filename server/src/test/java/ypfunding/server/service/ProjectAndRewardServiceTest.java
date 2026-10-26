@@ -45,7 +45,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class ProjectAndRewardServiceTest {
 
     private static BasicDataSource dataSource;
-    private static TransactionManager tx;
+    private static TransactionManager transactionManager;
 
     private static ProjectsDAO projectsDAO;
     private static CategoryDAO categoryDAO;
@@ -78,15 +78,15 @@ class ProjectAndRewardServiceTest {
         dataSource.setMaxTotal(10);
         dataSource.setConnectionInitSqls(List.of("SET time_zone = '+09:00'"));
 
-        tx = new TransactionManager(dataSource);
+        transactionManager = new TransactionManager(dataSource);
         projectsDAO = new ProjectsDAO();
         categoryDAO = new CategoryDAO();
         rewardsDAO = new RewardsDAO();
         imageDAO = new ImageDAO();
         reviewsDAO = new ReviewsDAO();
 
-        projectService = new ProjectService(tx, projectsDAO, categoryDAO, rewardsDAO, imageDAO, reviewsDAO);
-        rewardService = new RewardService(tx, projectsDAO, rewardsDAO, imageDAO);
+        projectService = new ProjectService(transactionManager, projectsDAO, categoryDAO, rewardsDAO, imageDAO, reviewsDAO);
+        rewardService = new RewardService(transactionManager, projectsDAO, rewardsDAO, imageDAO);
     }
 
     @AfterAll
@@ -99,7 +99,7 @@ class ProjectAndRewardServiceTest {
     @BeforeEach
     void setUp() {
         // 각 테스트마다 깨끗한 상태에서 시작하도록 테이블 초기화 및 기본 사용자 생성
-        tx.execute(conn -> {
+        transactionManager.execute(conn -> {
             try (Statement stmt = conn.createStatement()) {
                 stmt.executeUpdate("DELETE FROM reviews");
                 stmt.executeUpdate("DELETE FROM canceled_funds");
@@ -257,7 +257,7 @@ class ProjectAndRewardServiceTest {
         );
 
         // 3. 관리자가 프로젝트를 반려(REJECTED) 처리한 상황 재현
-        tx.execute(conn -> {
+        transactionManager.execute(conn -> {
             assertEquals(1, projectsDAO.rejectProjectUpdate(conn, projectId));
             return null;
         });
@@ -319,7 +319,7 @@ class ProjectAndRewardServiceTest {
 
         // 승인 처리 및 후원 2건 + 시간차 리뷰 2건 삽입
         LocalDateTime approvedAt = LocalDateTime.of(2026, 10, 1, 12, 0, 0);
-        tx.execute(conn -> {
+        transactionManager.execute(conn -> {
             assertEquals(1, projectsDAO.approveProjectUpdate(conn, projectId));
             List<RewardDTO> rewards = rewardsDAO.findByProjectId(conn, projectId);
             long rewardId = rewards.get(0).getRewardId();
