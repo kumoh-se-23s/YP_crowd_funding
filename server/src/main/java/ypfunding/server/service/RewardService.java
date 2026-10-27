@@ -15,7 +15,6 @@ import ypfunding.server.persistence.dao.ProjectsDAO;
 import ypfunding.server.persistence.dao.RewardsDAO;
 import ypfunding.server.util.FileUtil;
 
-import javax.sql.rowset.serial.SerialBlob;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.*;
@@ -297,15 +296,11 @@ public class RewardService extends Service{
             throw new BusinessException("지원하지 않는 이미지 형식입니다. (PNG, JPEG, GIF, WEBP, BMP만 허용)");
         }
 
-        try {
-            ImageDTO cleanDto = new ImageDTO();
-            cleanDto.setName(cleanFileName);
-            cleanDto.setType(detectedMimeType);
-            cleanDto.setImageData(new SerialBlob(imageBytes));
-            return cleanDto;
-        } catch (SQLException e) {
-            throw new BusinessException("이미지 데이터 변환 중 오류가 발생했습니다.", e);
-        }
+        ImageDTO cleanDto = new ImageDTO();
+        cleanDto.setName(cleanFileName);
+        cleanDto.setType(detectedMimeType);
+        cleanDto.setImageData(imageBytes); // SerialBlob 없이 순수 byte[] 그대로 세팅!
+        return cleanDto;
     }
 
     private String validateAndExtractFileName(String rawPath) {
@@ -319,22 +314,14 @@ public class RewardService extends Service{
         return fileName;
     }
 
-    private byte[] validateAndExtractImageBytes( java.sql.Blob blob) {
-        if (blob == null) {
+    private byte[] validateAndExtractImageBytes(byte[] bytes) {
+        if (bytes == null || bytes.length == 0) {
             throw new BusinessException("이미지 데이터가 비어 있습니다.");
         }
-        try {
-            long length = blob.length();
-            if (length <= 0) {
-                throw new BusinessException("이미지 데이터가 비어 있습니다.");
-            }
-            if (length > DomainRules.MAX_IMAGE_BYTES) {
-                throw new BusinessException("이미지 크기는 최대 " + (DomainRules.MAX_IMAGE_BYTES / (1024 * 1024)) + "MB를 초과할 수 없습니다.");
-            }
-            return blob.getBytes(1, (int) length);
-        } catch (SQLException e) {
-            throw new BusinessException("이미지 데이터를 읽는 중 오류가 발생했습니다.", e);
+        if (bytes.length > DomainRules.MAX_IMAGE_BYTES) {
+            throw new BusinessException("이미지 크기는 최대 " + (DomainRules.MAX_IMAGE_BYTES / (1024 * 1024)) + "MB를 초과할 수 없습니다.");
         }
+        return bytes;
     }
 
     // =================================================================

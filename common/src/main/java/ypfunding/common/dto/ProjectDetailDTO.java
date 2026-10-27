@@ -5,8 +5,6 @@ import lombok.Setter;
 import lombok.ToString;
 import ypfunding.common.type.Category;
 
-import java.io.Serial;
-import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -14,10 +12,7 @@ import java.util.List;
 @Getter
 @Setter
 @ToString
-public class ProjectDetailDTO implements Serializable {
-    @Serial
-    private static final long serialVersionUID = 1L;
-
+public class ProjectDetailDTO {
     // 프로젝트 기본 정보 (제목, 설명, 목표 금액, 기간, 시작일, 종료일, 승인 상태 등)
     private ProjectDTO project;
 
