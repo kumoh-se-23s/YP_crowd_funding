@@ -1,15 +1,29 @@
 package ypfunding.server.util;
 
-import ypfunding.common.dto.UserDTO;
 import ypfunding.common.type.UserType;
 import ypfunding.server.auth.LoginUser;
-import ypfunding.server.persistence.dao.UsersDAO;
-
-import java.sql.Connection;
-import java.sql.SQLException;
+import ypfunding.server.exception.PermissionDeniedException;
 
 public final class UserUtils {
     private UserUtils() {}
+
+    public static void assertNotAdmin(LoginUser user) {
+        if (checkNotAdmin(user)) {
+            throw new PermissionDeniedException(user + " is not admin");
+        }
+    }
+    public static void assertNotMaker(LoginUser user) {
+        if (checkNotMaker(user)) {
+            throw new PermissionDeniedException(user + " is not maker");
+        }
+    }
+
+    public static void assertNotSupporter(LoginUser user) {
+        if (checkNotSupporter(user)) {
+            throw new PermissionDeniedException(user + " is not supporter");
+        }
+    }
+
     /**
      * returns true if the user is not an admin.
      */

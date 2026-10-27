@@ -8,7 +8,7 @@ import ypfunding.common.type.ApprovalStatus;
 import ypfunding.common.type.UserType;
 import ypfunding.server.auth.LoginUser;
 import ypfunding.server.exception.BusinessException;
-import ypfunding.server.exception.NotAllowedException;
+import ypfunding.server.exception.PermissionDeniedException;
 import ypfunding.server.persistence.TransactionManager;
 import ypfunding.server.persistence.dao.ImageDAO;
 import ypfunding.server.persistence.dao.ProjectsDAO;
@@ -187,14 +187,14 @@ public class RewardService extends Service{
 
     private void requireLoginUser(LoginUser loginUser) {
         if (loginUser == null) {
-            throw new NotAllowedException("로그인이 필요한 기능입니다.");
+            throw new PermissionDeniedException("로그인이 필요한 기능입니다.");
         }
     }
 
     private void requireMaker(LoginUser loginUser) {
         requireLoginUser(loginUser);
         if (loginUser.userType() != UserType.MAKER) {
-            throw new NotAllowedException("메이커만 이용할 수 있는 기능입니다.");
+            throw new PermissionDeniedException("메이커만 이용할 수 있는 기능입니다.");
         }
     }
 
@@ -269,13 +269,13 @@ public class RewardService extends Service{
             return;
         }
         if (!isOwnerMaker(loginUser, project) && loginUser.userType() != UserType.ADMIN) {
-            throw new NotAllowedException("승인되지 않은 프로젝트의 리워드는 조회할 수 없습니다.");
+            throw new PermissionDeniedException("승인되지 않은 프로젝트의 리워드는 조회할 수 없습니다.");
         }
     }
 
     private void validateRewardEditableState(LoginUser loginUser, ProjectDTO project) {
         if (!isOwnerMaker(loginUser, project)) {
-            throw new NotAllowedException("본인이 등록한 프로젝트의 리워드만 추가하거나 수정할 수 있습니다.");
+            throw new PermissionDeniedException("본인이 등록한 프로젝트의 리워드만 추가하거나 수정할 수 있습니다.");
         }
         if (project.getApprovalStatus() == ApprovalStatus.APPROVED) {
             throw new BusinessException("승인된(APPROVED) 프로젝트의 리워드는 추가하거나 수정할 수 없습니다.");

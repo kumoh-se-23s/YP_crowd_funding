@@ -12,7 +12,7 @@ import ypfunding.common.type.Category;
 import ypfunding.common.type.UserType;
 import ypfunding.server.auth.LoginUser;
 import ypfunding.server.exception.BusinessException;
-import ypfunding.server.exception.NotAllowedException;
+import ypfunding.server.exception.PermissionDeniedException;
 import ypfunding.server.persistence.TransactionManager;
 import ypfunding.server.persistence.dao.CategoryDAO;
 import ypfunding.server.persistence.dao.ImageDAO;
@@ -238,14 +238,14 @@ public class ProjectService extends Service {
 
     private void requireLoginUser(LoginUser loginUser) {
         if (loginUser == null) {
-            throw new NotAllowedException("로그인이 필요한 기능입니다.");
+            throw new PermissionDeniedException("로그인이 필요한 기능입니다.");
         }
     }
 
     private void requireMaker(LoginUser loginUser) {
         requireLoginUser(loginUser);
         if (loginUser.userType() != UserType.MAKER) {
-            throw new NotAllowedException("메이커만 이용할 수 있는 기능입니다.");
+            throw new PermissionDeniedException("메이커만 이용할 수 있는 기능입니다.");
         }
     }
 
@@ -265,7 +265,7 @@ public class ProjectService extends Service {
             return;
         }
         if (!isOwnerMaker(loginUser, project) && loginUser.userType() != UserType.ADMIN) {
-            throw new NotAllowedException("승인되지 않은 프로젝트는 조회할 수 없습니다.");
+            throw new PermissionDeniedException("승인되지 않은 프로젝트는 조회할 수 없습니다.");
         }
     }
 
@@ -274,7 +274,7 @@ public class ProjectService extends Service {
      */
     private void validateResubmitPermissionAndState(LoginUser loginUser, ProjectDTO existing) {
         if (!isOwnerMaker(loginUser, existing)) {
-            throw new NotAllowedException("본인이 등록한 프로젝트만 수정할 수 있습니다.");
+            throw new PermissionDeniedException("본인이 등록한 프로젝트만 수정할 수 있습니다.");
         }
         if (existing.getApprovalStatus() != ApprovalStatus.REJECTED) {
             throw new BusinessException("반려(REJECTED) 상태인 프로젝트만 수정 및 재신청할 수 있습니다.");

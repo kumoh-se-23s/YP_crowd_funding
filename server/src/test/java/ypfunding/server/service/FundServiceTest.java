@@ -125,7 +125,7 @@ class FundServiceTest extends DbTestBase {
         long rewardId = insertReward(insertProject(), 10);
         long makerId = tx.execute(conn -> TestData.insertUser(conn, "maker2", UserType.MAKER, clock.now()));
 
-        assertThrows(NotAllowedException.class,
+        assertThrows(PermissionDeniedException.class,
                 () -> fundService().applyFund(new LoginUser(makerId, UserType.MAKER), rewardId, 1));
     }
 
@@ -306,7 +306,7 @@ class FundServiceTest extends DbTestBase {
         long fundId = insertFund(supporter("owner"), projectId, rewardId, 1);
         LoginUser other = supporter("other");
 
-        assertThrows(NotAllowedException.class, () -> fundService().cancelFund(other, fundId, "취소"));
+        assertThrows(PermissionDeniedException.class, () -> fundService().cancelFund(other, fundId, "취소"));
         assertEquals(1, soldOf(rewardId));
     }
 
@@ -517,7 +517,7 @@ class FundServiceTest extends DbTestBase {
     void historyMakerRejected() {
         long makerId = tx.execute(conn -> TestData.insertUser(conn, "maker", UserType.MAKER, clock.now()));
 
-        assertThrows(NotAllowedException.class,
+        assertThrows(PermissionDeniedException.class,
                 () -> fundService().getMyFunds(new LoginUser(makerId, UserType.MAKER)));
     }
 }

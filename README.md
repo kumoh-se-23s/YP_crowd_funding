@@ -181,7 +181,7 @@ public class XxxException extends BusinessException {
 | 잡고 버리기 (`catch (...) {}`, `printStackTrace()`만) | **금지** | |
 
 - 메시지는 사용자 화면에 그대로 나가므로 읽을 수 있는 문장으로 쓴다. SQL, 테이블명, 내부 번호는 넣지 않는다
-- 권한 위반은 `NotAllowedException`, DB 오류용 `DataAccessException`은 직접 만들지 않는다
+- 권한 위반은 `PermissionDeniedException`, DB 오류용 `DataAccessException`은 직접 만들지 않는다
 
 ### 4.4 Service
 

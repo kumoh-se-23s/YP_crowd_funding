@@ -2,11 +2,10 @@ package ypfunding.server.service;
 
 import ypfunding.common.dto.LikeDTO;
 import ypfunding.common.dto.ProjectDTO;
-import ypfunding.common.type.ApprovalStatus;
 import ypfunding.common.type.UserType;
 import ypfunding.server.auth.LoginUser;
 import ypfunding.server.exception.BusinessException;
-import ypfunding.server.exception.NotAllowedException;
+import ypfunding.server.exception.PermissionDeniedException;
 import ypfunding.server.persistence.TransactionManager;
 import ypfunding.server.persistence.dao.LikesDAO;
 import ypfunding.server.persistence.dao.ProjectsDAO;
@@ -52,7 +51,7 @@ public class LikeService extends Service{
 
     private static void requireSupporter(LoginUser user, String message) {
         if (user.userType() != UserType.SUPPORTER) {
-            throw new NotAllowedException(message);
+            throw new PermissionDeniedException(message);
         }
     }
 
