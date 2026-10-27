@@ -7,18 +7,18 @@ import ypfunding.server.exception.PermissionDeniedException;
 public final class UserUtils {
     private UserUtils() {}
 
-    public static void assertNotAdmin(LoginUser user) {
+    public static void assertAdmin(LoginUser user) {
         if (checkNotAdmin(user)) {
             throw new PermissionDeniedException(user + " is not admin");
         }
     }
-    public static void assertNotMaker(LoginUser user) {
+    public static void assertMaker(LoginUser user) {
         if (checkNotMaker(user)) {
             throw new PermissionDeniedException(user + " is not maker");
         }
     }
 
-    public static void assertNotSupporter(LoginUser user) {
+    public static void assertSupporter(LoginUser user) {
         if (checkNotSupporter(user)) {
             throw new PermissionDeniedException(user + " is not supporter");
         }

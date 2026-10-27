@@ -20,6 +20,7 @@ import ypfunding.server.persistence.dao.ProjectsDAO;
 import ypfunding.server.persistence.dao.ReviewsDAO;
 import ypfunding.server.persistence.dao.RewardsDAO;
 import ypfunding.server.util.FileUtil;
+import ypfunding.server.util.UserUtils;
 
 import javax.sql.rowset.serial.SerialBlob;
 import java.sql.Blob;
@@ -69,7 +70,7 @@ public class ProjectService extends Service {
             LoginUser loginUser,
             ProjectDTO projectDTO,
             List<Category> categories) {
-        requireMaker(loginUser);
+        UserUtils.assertMaker(loginUser);
         validateProjectFields(projectDTO);
         validateCategories(categories);
 
@@ -113,7 +114,7 @@ public class ProjectService extends Service {
             List<Category> categories,
             List<RewardDTO> rewards,
             Map<Integer, ImageDTO> rewardImagesByIndex) {
-        requireMaker(loginUser);
+        UserUtils.assertMaker(loginUser);
         validateProjectBundleInput(projectDTO, categories, rewards);
         Map<Integer, ImageDTO> sanitizedImages = sanitizeRewardImages(rewards.size(), rewardImagesByIndex);
 
@@ -156,7 +157,7 @@ public class ProjectService extends Service {
             List<Category> categories,
             List<RewardDTO> rewards,
             Map<Integer, ImageDTO> rewardImagesByIndex) {
-        requireMaker(loginUser);
+
         validateProjectIdPresent(projectDTO);
         validateProjectBundleInput(projectDTO, categories, rewards);
         Map<Integer, ImageDTO> sanitizedImages = sanitizeRewardImages(rewards.size(), rewardImagesByIndex);
@@ -166,7 +167,6 @@ public class ProjectService extends Service {
         transactionManager.execute(conn -> {
             ProjectDTO existing = findProjectOrThrow(conn, projectId);
             validateResubmitPermissionAndState(loginUser, existing);
-
             updateRejectedProjectToPending(conn, loginUser.userId(), projectDTO);
             deleteExistingProjectChildren(conn, projectId);
             insertCategories(conn, projectId, categories);
@@ -184,15 +184,13 @@ public class ProjectService extends Service {
      * @return 프로젝트 상세 정보 DTO
      */
     public ProjectDetailDTO getProjectDetail(LoginUser loginUser, long projectId) {
-        requireLoginUser(loginUser);
         validateProjectId(projectId);
 
         return transactionManager.execute(conn -> {
             ProjectDTO project = findProjectOrThrow(conn, projectId);
-            validateProjectViewPermission(loginUser, project);
+            validateProjectViewPermission(loginUser, project, false);
 
             List<RewardDTO> rewards = rewardsDAO.findByProjectId(conn, projectId);
-
             ProjectDetailDTO detailDTO = new ProjectDetailDTO();
             detailDTO.setProject(project);
             detailDTO.setCategories(findCategoryTypes(conn, projectId));
@@ -211,48 +209,23 @@ public class ProjectService extends Service {
      * @return 최신순 리뷰 DTO 목록
      */
     public List<ReviewDTO> getProjectReviews(LoginUser loginUser, long projectId) {
-        requireLoginUser(loginUser);
+
         validateProjectId(projectId);
 
         return transactionManager.execute(conn -> {
             ProjectDTO project = findProjectOrThrow(conn, projectId);
-            validateProjectViewPermission(loginUser, project);
+
+            validateProjectViewPermission(loginUser, project, true);
+
             return reviewsDAO.findAll(conn, projectId);
         });
-    }
-
-    /**
-     * 메이커 본인이 등록한 모든 프로젝트 목록을 최신순으로 조회
-     *
-     * @param loginUser 요청한 로그인 사용자 (MAKER만 허용)
-     * @return 본인이 등록한 프로젝트 목록
-     */
-    public List<ProjectDTO> getMyProjects(LoginUser loginUser) {
-        requireMaker(loginUser);
-        return transactionManager.execute(conn -> projectsDAO.findByUserId(conn, loginUser.userId()));
     }
 
     // =================================================================
     // 2. 권한 및 상태 검증 메서드 (Auth & State Validation)
     // =================================================================
 
-    private void requireLoginUser(LoginUser loginUser) {
-        if (loginUser == null) {
-            throw new PermissionDeniedException("로그인이 필요한 기능입니다.");
-        }
-    }
 
-    private void requireMaker(LoginUser loginUser) {
-        requireLoginUser(loginUser);
-        if (loginUser.userType() != UserType.MAKER) {
-            throw new PermissionDeniedException("메이커만 이용할 수 있는 기능입니다.");
-        }
-    }
-
-    private boolean isOwnerMaker(LoginUser loginUser, ProjectDTO project) {
-        return loginUser.userType() == UserType.MAKER
-                && Objects.equals(project.getUserId(), loginUser.userId());
-    }
 
 
 
@@ -260,11 +233,12 @@ public class ProjectService extends Service {
      * 프로젝트 열람 권한을 검증
      * 승인 전(PENDING, REJECTED) 프로젝트는 작성 메이커 본인 또는 관리자만 열람 가능
      */
-    private void validateProjectViewPermission(LoginUser loginUser, ProjectDTO project) {
-        if (project.getApprovalStatus() == ApprovalStatus.APPROVED) {
+    private void validateProjectViewPermission(LoginUser loginUser, ProjectDTO project, boolean adminRequired) {
+        if (project.getApprovalStatus() == ApprovalStatus.APPROVED || loginUser.userType() == UserType.ADMIN) {
             return;
         }
-        if (!isOwnerMaker(loginUser, project) && loginUser.userType() != UserType.ADMIN) {
+
+        if(adminRequired || project.getUserId() != loginUser.userId()){
             throw new PermissionDeniedException("승인되지 않은 프로젝트는 조회할 수 없습니다.");
         }
     }
@@ -273,7 +247,7 @@ public class ProjectService extends Service {
      * 반려 프로젝트 수정·재신청 시 본인 소유 여부와 REJECTED 상태를 검증
      */
     private void validateResubmitPermissionAndState(LoginUser loginUser, ProjectDTO existing) {
-        if (!isOwnerMaker(loginUser, existing)) {
+        if (loginUser.userId() != existing.getUserId()) {
             throw new PermissionDeniedException("본인이 등록한 프로젝트만 수정할 수 있습니다.");
         }
         if (existing.getApprovalStatus() != ApprovalStatus.REJECTED) {
