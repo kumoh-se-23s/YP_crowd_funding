@@ -37,7 +37,7 @@ public class AdminService extends Service{
     public List<UserDTO> getAllAdmins(LoginUser user){
 
         return transactionManager.execute(conn -> {
-            if(UserUtils.checkNotAdmin(conn, usersDAO, user)){
+            if(UserUtils.checkNotAdmin(user)){
                 NotificationUtils.sendNotification(new PermissionDeniedNotification());
                 return List.of();
             }
@@ -54,7 +54,7 @@ public class AdminService extends Service{
     public void approveFund(LoginUser user, long projectId){
 
         transactionManager.execute(conn -> {
-            if(UserUtils.checkNotAdmin(conn, usersDAO, user)){
+            if(UserUtils.checkNotAdmin(user)){
                 NotificationUtils.sendNotification(new PermissionDeniedNotification());
                 return null;
             }
@@ -77,7 +77,7 @@ public class AdminService extends Service{
     public void rejectFund(LoginUser user, long projectId, String reason){
 
         transactionManager.execute(conn -> {
-            if(UserUtils.checkNotAdmin(conn, usersDAO, user)){
+            if(UserUtils.checkNotAdmin(user)){
                 NotificationUtils.sendNotification(new PermissionDeniedNotification());
                 return null;
             }
