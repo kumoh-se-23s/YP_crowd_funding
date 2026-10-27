@@ -1,5 +1,6 @@
 package ypfunding.server.service;
 
+import ypfunding.server.util.UserUtils;
 import ypfunding.common.constant.DomainRules;
 import ypfunding.common.dto.ImageDTO;
 import ypfunding.common.dto.ProjectDTO;
@@ -41,7 +42,7 @@ public class RewardService extends Service{
     }
 
     // =================================================================
-    // 1. PUBLIC 비즈니스 메서드 — 리워드 생성·추가 (CREATE)
+    // 1. PUBLIC 비즈니스 메서드
     // =================================================================
 
     /**
@@ -63,7 +64,7 @@ public class RewardService extends Service{
             long projectId,
             List<RewardDTO> rewards,
             Map<Integer, ImageDTO> rewardImagesByIndex) {
-        requireMaker(loginUser);
+        UserUtils.assertMaker(loginUser);
         validateProjectId(projectId);
         validateRewardList(rewards);
         Map<Integer, ImageDTO> sanitizedImages = sanitizeRewardImages(rewards.size(), rewardImagesByIndex);
@@ -97,7 +98,7 @@ public class RewardService extends Service{
             long projectId,
             RewardDTO rewardDTO,
             ImageDTO imageDTO) {
-        requireMaker(loginUser);
+        UserUtils.assertMaker(loginUser);
         validateProjectId(projectId);
         validateSingleReward(rewardDTO);
         ImageDTO sanitizedImage = sanitizeSingleImage(imageDTO);
@@ -109,10 +110,6 @@ public class RewardService extends Service{
             return insertSingleRewardWithImage(conn, projectId, rewardDTO, sanitizedImage);
         });
     }
-
-    // =================================================================
-    // 2. PUBLIC 비즈니스 메서드
-    // =================================================================
 
     public List<RewardDTO> getRewardsByProject(LoginUser loginUser, long projectId) {
         requireLoginUser(loginUser);
@@ -157,12 +154,8 @@ public class RewardService extends Service{
         });
     }
 
-    // =================================================================
-    // 3. PUBLIC 비즈니스 메서드
-    // =================================================================
-
     public void updateReward(LoginUser loginUser, RewardDTO rewardDTO) {
-        requireMaker(loginUser);
+        UserUtils.assertMaker(loginUser);
         validateSingleReward(rewardDTO);
         validateRewardId(rewardDTO.getRewardId());
 
@@ -190,17 +183,6 @@ public class RewardService extends Service{
         }
     }
 
-    private void requireMaker(LoginUser loginUser) {
-        requireLoginUser(loginUser);
-        if (loginUser.userType() != UserType.MAKER) {
-            throw new PermissionDeniedException("메이커만 이용할 수 있는 기능입니다.");
-        }
-    }
-
-    private boolean isOwnerMaker(LoginUser loginUser, ProjectDTO project) {
-        return loginUser.userType() == UserType.MAKER
-                && Objects.equals(project.getUserId(), loginUser.userId());
-    }
 
     private void validateProjectId(Long projectId) {
         if (projectId == null || projectId <= 0) {
@@ -264,16 +246,16 @@ public class RewardService extends Service{
     }
 
     private void validateProjectViewPermission(LoginUser loginUser, ProjectDTO project) {
-        if (project.getApprovalStatus() == ApprovalStatus.APPROVED) {
+        if (project.getApprovalStatus() == ApprovalStatus.APPROVED || !UserUtils.checkNotAdmin(loginUser)) {
             return;
         }
-        if (!isOwnerMaker(loginUser, project) && loginUser.userType() != UserType.ADMIN) {
+        if (project.getUserId() != loginUser.userId()) {
             throw new PermissionDeniedException("승인되지 않은 프로젝트의 리워드는 조회할 수 없습니다.");
         }
     }
 
     private void validateRewardEditableState(LoginUser loginUser, ProjectDTO project) {
-        if (!isOwnerMaker(loginUser, project)) {
+        if (project.getUserId() != loginUser.userId()) {
             throw new PermissionDeniedException("본인이 등록한 프로젝트의 리워드만 추가하거나 수정할 수 있습니다.");
         }
         if (project.getApprovalStatus() == ApprovalStatus.APPROVED) {

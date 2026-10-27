@@ -61,10 +61,15 @@ public class ProjectService extends Service {
     // =================================================================
 
     /**
-     * 프로젝트 기본 정보와 카테고리(1~2개)만 먼저 등록한다.
-     * (11월 2일 DB 검사 2번 항목 test02RegisterProject 전용)
+     * [오버로딩 1] 프로젝트 기본 정보와 카테고리(1~2개)만 등록한다.
+     * (11월 2일 DB 검사 2번 항목 test02 전용
+     *
+     * @param loginUser  요청한 로그인 사용자 (MAKER만 허용)
+     * @param projectDTO 프로젝트 기본 정보
+     * @param categories 선택한 카테고리 목록 (1~2개)
+     * @return 생성된 프로젝트 ID
      */
-    public long registerProjectBasicInfo(
+    public long createProject(
             LoginUser loginUser,
             ProjectDTO projectDTO,
             List<Category> categories) {
@@ -137,6 +142,8 @@ public class ProjectService extends Service {
             ProjectDTO projectDTO,
             List<Category> categories,
             List<RewardDTO> rewards) {
+        UserUtils.assertMaker(loginUser);
+        validateProjectIdPresent(projectDTO);
         resubmitRejectedProject(loginUser, projectDTO, categories, rewards, Collections.emptyMap());
     }
 
@@ -223,16 +230,12 @@ public class ProjectService extends Service {
     // 2. 권한 및 상태 검증 메서드 (Auth & State Validation)
     // =================================================================
 
-
-
-
-
     /**
      * 프로젝트 열람 권한을 검증
      * 승인 전(PENDING, REJECTED) 프로젝트는 작성 메이커 본인 또는 관리자만 열람 가능
      */
     private void validateProjectViewPermission(LoginUser loginUser, ProjectDTO project, boolean adminRequired) {
-        if (project.getApprovalStatus() == ApprovalStatus.APPROVED || loginUser.userType() == UserType.ADMIN) {
+        if (project.getApprovalStatus() == ApprovalStatus.APPROVED || !UserUtils.checkNotAdmin(loginUser)) {
             return;
         }
 
