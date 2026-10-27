@@ -1,7 +1,6 @@
 package ypfunding.server.service;
 
 import ypfunding.common.dto.ProjectQueryDTO;
-import ypfunding.common.dto.UserDTO;
 import ypfunding.common.notifications.PermissionDeniedNotification;
 import ypfunding.common.type.ApprovalStatus;
 import ypfunding.common.type.ProjectFundingStatus;
@@ -20,18 +19,16 @@ import java.util.Set;
 
 public class ProjectQueryService extends Service {
 
-    private final UsersDAO usersDAO;
     private final ProjectQueryDAO projectQueryDAO;
 
-    public ProjectQueryService(TransactionManager transactionManager, UsersDAO usersDAO) {
+    public ProjectQueryService(TransactionManager transactionManager) {
         super(transactionManager);
-        this.usersDAO = usersDAO;
         this.projectQueryDAO = new ProjectQueryDAO();
     }
 
     public List<ProjectQueryDTO> getSelectedProjectWithStatus(LoginUser user, long projectId) {
         return transactionManager.execute(conn -> {
-            if (UserUtils.checkNotAdmin(conn, usersDAO, user)) {
+            if (UserUtils.checkNotAdmin(user)) {
                 NotificationUtils.sendNotification(new PermissionDeniedNotification());
                 return List.of();
             }
@@ -117,8 +114,8 @@ public class ProjectQueryService extends Service {
     private List<ProjectQueryDTO> getProjects(LoginUser user, ProjectQueryFunc func, UserType... permission) {
 
         return transactionManager.execute(conn -> {
-            UserDTO dto = usersDAO.getUserById(conn, user.userId());
-            if (dto == null || !Set.of(permission).contains(dto.getUserType())) {
+
+            if (!Set.of(permission).contains(user.userType())) {
                 NotificationUtils.sendNotification(new PermissionDeniedNotification());
                 return List.of();
             }

@@ -13,24 +13,21 @@ public final class UserUtils {
     /**
      * returns true if the user is not an admin.
      */
-    public static boolean checkNotAdmin(Connection conn, UsersDAO usersDAO, LoginUser user) throws SQLException {
-        UserDTO dto = usersDAO.getUserById(conn, user.userId());
-        return dto == null || dto.getUserType() != UserType.ADMIN;
+    public static boolean checkNotAdmin(LoginUser user) {
+        return user.userType() != UserType.ADMIN;
     }
 
     /**
      * returns true if the user is not a maker.
      */
-    public static boolean checkNotMaker(Connection conn, UsersDAO usersDAO, LoginUser user) throws SQLException {
-        UserDTO dto = usersDAO.getUserById(conn, user.userId());
-        return dto == null || dto.getUserType() != UserType.MAKER;
+    public static boolean checkNotMaker(LoginUser user) {
+        return user.userType() != UserType.MAKER;
     }
 
     /**
      * returns true if the user is not a supporter.
      */
-    public static boolean checkNotSupporter(Connection conn, UsersDAO usersDAO, LoginUser user) throws SQLException {
-        UserDTO dto = usersDAO.getUserById(conn, user.userId());
-        return dto == null || dto.getUserType() != UserType.SUPPORTER;
+    public static boolean checkNotSupporter(LoginUser user) {
+        return user.userType() != UserType.SUPPORTER;
     }
 }
