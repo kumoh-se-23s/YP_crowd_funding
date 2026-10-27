@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test;
 import ypfunding.common.type.UserType;
 import ypfunding.server.auth.LoginUser;
 import ypfunding.server.exception.BusinessException;
-import ypfunding.server.exception.NotAllowedException;
+import ypfunding.server.exception.PermissionDeniedException;
 import ypfunding.server.support.DbTestBase;
 import ypfunding.server.support.TestData;
 
@@ -85,7 +85,7 @@ class LikeServiceTest extends DbTestBase {
         long projectId = insertOngoingProject(makerId);
         LoginUser maker = new LoginUser(makerId, UserType.MAKER);
 
-        assertThrows(NotAllowedException.class,
+        assertThrows(PermissionDeniedException.class,
                 () -> context.getLikeService().toggle(maker, projectId));
         assertEquals(0, countLikes(projectId));
     }

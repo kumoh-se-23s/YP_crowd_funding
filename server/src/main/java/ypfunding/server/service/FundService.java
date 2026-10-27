@@ -2,11 +2,10 @@ package ypfunding.server.service;
 
 import ypfunding.common.constant.DomainRules;
 import ypfunding.common.dto.*;
-import ypfunding.common.type.ApprovalStatus;
 import ypfunding.common.type.UserType;
 import ypfunding.server.auth.LoginUser;
 import ypfunding.server.exception.BusinessException;
-import ypfunding.server.exception.NotAllowedException;
+import ypfunding.server.exception.PermissionDeniedException;
 import ypfunding.server.exception.SoldOutException;
 import ypfunding.server.persistence.TransactionManager;
 import ypfunding.server.persistence.dao.*;
@@ -96,7 +95,7 @@ public class FundService extends Service{
 
     private static void requireSupporter(LoginUser user, String message) {
         if (user.userType() != UserType.SUPPORTER) {
-            throw new NotAllowedException(message);
+            throw new PermissionDeniedException(message);
         }
     }
 
@@ -152,7 +151,7 @@ public class FundService extends Service{
             throw new BusinessException("존재하지 않는 후원입니다.");
         }
         if (fund.getUserId() != user.userId()) {
-            throw new NotAllowedException("본인의 후원만 취소할 수 있습니다.");
+            throw new PermissionDeniedException("본인의 후원만 취소할 수 있습니다.");
         }
         return fund;
     }

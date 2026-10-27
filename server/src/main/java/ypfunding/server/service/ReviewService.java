@@ -7,7 +7,7 @@ import ypfunding.common.type.ProjectFundingStatus;
 import ypfunding.common.type.UserType;
 import ypfunding.server.auth.LoginUser;
 import ypfunding.server.exception.BusinessException;
-import ypfunding.server.exception.NotAllowedException;
+import ypfunding.server.exception.PermissionDeniedException;
 import ypfunding.server.persistence.TransactionManager;
 import ypfunding.server.persistence.dao.FundQueryDAO;
 import ypfunding.server.persistence.dao.FundsDAO;
@@ -53,7 +53,7 @@ public class ReviewService extends Service{
     // ----- 트랜잭션 밖 검사 -----
     private static void requireSupporter(LoginUser user, String message) {
         if (user.userType() != UserType.SUPPORTER) {
-            throw new NotAllowedException(message);
+            throw new PermissionDeniedException(message);
         }
     }
 
@@ -72,7 +72,7 @@ public class ReviewService extends Service{
             throw new BusinessException("존재하지 않는 후원입니다.");
         }
         if (fund.getUserId() != user.userId()) {
-            throw new NotAllowedException("본인의 후원에만 리뷰를 작성할 수 있습니다.");
+            throw new PermissionDeniedException("본인의 후원에만 리뷰를 작성할 수 있습니다.");
         }
         return fund;
     }

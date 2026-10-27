@@ -8,7 +8,7 @@ import ypfunding.server.auth.LoginUser;
 import ypfunding.server.exception.BusinessException;
 import ypfunding.server.exception.DataAccessException;
 import ypfunding.server.exception.DuplicateReviewException;
-import ypfunding.server.exception.NotAllowedException;
+import ypfunding.server.exception.PermissionDeniedException;
 import ypfunding.server.support.Concurrent;
 import ypfunding.server.support.DbTestBase;
 import ypfunding.server.support.TestData;
@@ -144,7 +144,7 @@ public class ReviewServiceTest extends DbTestBase {
         Fixture f = setUpSuccessAndEnd();
         long otherId = tx.execute(conn -> TestData.insertUser(conn, "other", UserType.SUPPORTER, clock.now()));
 
-        assertThrows(NotAllowedException.class,
+        assertThrows(PermissionDeniedException.class,
                 () -> reviewService().writeReview(new LoginUser(otherId, UserType.SUPPORTER), f.fundId(), 5, "리뷰"));
         assertEquals(0, reviewCount(f.fundId()));
     }
@@ -179,7 +179,7 @@ public class ReviewServiceTest extends DbTestBase {
         Fixture f = setUpSuccessAndEnd();
         long makerId = tx.execute(conn -> TestData.insertUser(conn, "maker2", UserType.MAKER, clock.now()));
 
-        assertThrows(NotAllowedException.class,
+        assertThrows(PermissionDeniedException.class,
                 () -> reviewService().writeReview(new LoginUser(makerId, UserType.MAKER), f.fundId(), 5, "리뷰"));
     }
 }

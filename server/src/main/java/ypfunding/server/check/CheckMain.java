@@ -43,8 +43,8 @@ public class CheckMain {
 
     //실행 시 db 초기화 후 세팅
     private static void initDB(AppContext context) {
-        List<String> schema = loadStatemetns(SCHEMA_SQL);
-        List<String> seed = loadStatemetns(SEED_SQL);
+        List<String> schema = loadStatements(SCHEMA_SQL);
+        List<String> seed = loadStatements(SEED_SQL);
 
         context.getTransactionManager().execute(conn -> {
             try (Statement st = conn.createStatement()) {
@@ -60,8 +60,8 @@ public class CheckMain {
         System.out.println("initDB 동작 완료");
     }
 
-    //여기서만 쓰는 대충만든 sql리더
-    private static List<String> loadStatemetns(String resource) {
+    //여기서만 쓰는 임시 sql리더
+    private static List<String> loadStatements(String resource) {
         String text;
         try(InputStream in = CheckMain.class.getClassLoader().getResourceAsStream(resource)) {
             if (in == null)
