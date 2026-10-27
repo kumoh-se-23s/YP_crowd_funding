@@ -22,6 +22,7 @@ import ypfunding.server.persistence.dao.RewardsDAO;
 import ypfunding.server.util.FileUtil;
 
 import javax.sql.rowset.serial.SerialBlob;
+import java.sql.Blob;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -33,9 +34,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-public class ProjectService {
+public class ProjectService extends Service {
 
-    private final TransactionManager tx;
     private final ProjectsDAO projectsDAO;
     private final CategoryDAO categoryDAO;
     private final RewardsDAO rewardsDAO;
@@ -43,14 +43,13 @@ public class ProjectService {
     private final ReviewsDAO reviewsDAO;
 
     public ProjectService(
-            TransactionManager tx,
+            TransactionManager transactionManager,
             ProjectsDAO projectsDAO,
             CategoryDAO categoryDAO,
             RewardsDAO rewardsDAO,
             ImageDAO imageDAO,
             ReviewsDAO reviewsDAO) {
-        //Objects.requireNonNull -> 널 체크를 위한 메소드, 빠른 실패와 가독성 등 여러 부분에 있어 디버깅에 용이
-        this.tx = Objects.requireNonNull(tx, "transactionManager must not be null");
+        super(Objects.requireNonNull(transactionManager, "transactionManager must not be null"));
         this.projectsDAO = Objects.requireNonNull(projectsDAO, "projectsDAO must not be null");
         this.categoryDAO = Objects.requireNonNull(categoryDAO, "categoryDAO must not be null");
         this.rewardsDAO = Objects.requireNonNull(rewardsDAO, "rewardsDAO must not be null");
@@ -61,6 +60,25 @@ public class ProjectService {
     // =================================================================
     // 1. PUBLIC 비즈니스 메서드
     // =================================================================
+
+    /**
+     * 프로젝트 기본 정보와 카테고리(1~2개)만 먼저 등록한다.
+     * (11월 2일 DB 검사 2번 항목 test02RegisterProject 전용)
+     */
+    public long registerProjectBasicInfo(
+            LoginUser loginUser,
+            ProjectDTO projectDTO,
+            List<Category> categories) {
+        requireMaker(loginUser);
+        validateProjectFields(projectDTO);
+        validateCategories(categories);
+
+        return transactionManager.execute(conn -> {
+            long projectId = insertPendingProject(conn, loginUser.userId(), projectDTO);
+            insertCategories(conn, projectId, categories);
+            return projectId;
+        });
+    }
 
     /**
      * 프로젝트 기본 정보, 카테고리, 리워드를 한 번에 받아 단일 트랜잭션으로 신청
@@ -99,11 +117,8 @@ public class ProjectService {
         validateProjectBundleInput(projectDTO, categories, rewards);
         Map<Integer, ImageDTO> sanitizedImages = sanitizeRewardImages(rewards.size(), rewardImagesByIndex);
 
-        return tx.execute(conn -> {
-            ProjectDTO toInsert = buildNewPendingProject(loginUser.userId(), projectDTO);
-            projectsDAO.insert(conn, toInsert);
-            long projectId = toInsert.getProjectId();
-
+        return transactionManager.execute(conn -> {
+            long projectId = insertPendingProject(conn, loginUser.userId(), projectDTO);
             insertCategories(conn, projectId, categories);
             insertRewardsWithImages(conn, projectId, rewards, sanitizedImages);
             return projectId;
@@ -148,7 +163,7 @@ public class ProjectService {
 
         long projectId = projectDTO.getProjectId();
 
-        tx.execute(conn -> {
+        transactionManager.execute(conn -> {
             ProjectDTO existing = findProjectOrThrow(conn, projectId);
             validateResubmitPermissionAndState(loginUser, existing);
 
@@ -172,16 +187,19 @@ public class ProjectService {
         requireLoginUser(loginUser);
         validateProjectId(projectId);
 
-        return tx.execute(conn -> {
+        return transactionManager.execute(conn -> {
             ProjectDTO project = findProjectOrThrow(conn, projectId);
             validateProjectViewPermission(loginUser, project);
 
-            List<Category> categories = findCategoryTypes(conn, projectId);
             List<RewardDTO> rewards = rewardsDAO.findByProjectId(conn, projectId);
-            List<Long> rewardIdsWithImage = findRewardIdsWithImage(conn, rewards);
-            List<ReviewDTO> reviews = reviewsDAO.findAll(conn, projectId);
 
-            return assembleProjectDetail(project, categories, rewards, rewardIdsWithImage, reviews);
+            ProjectDetailDTO detailDTO = new ProjectDetailDTO();
+            detailDTO.setProject(project);
+            detailDTO.setCategories(findCategoryTypes(conn, projectId));
+            detailDTO.setRewards(rewards);
+            detailDTO.setRewardIdsWithImage(findRewardIdsWithImage(conn, rewards));
+            detailDTO.setReviews(reviewsDAO.findAll(conn, projectId));
+            return detailDTO;
         });
     }
 
@@ -196,7 +214,7 @@ public class ProjectService {
         requireLoginUser(loginUser);
         validateProjectId(projectId);
 
-        return tx.execute(conn -> {
+        return transactionManager.execute(conn -> {
             ProjectDTO project = findProjectOrThrow(conn, projectId);
             validateProjectViewPermission(loginUser, project);
             return reviewsDAO.findAll(conn, projectId);
@@ -211,7 +229,7 @@ public class ProjectService {
      */
     public List<ProjectDTO> getMyProjects(LoginUser loginUser) {
         requireMaker(loginUser);
-        return tx.execute(conn -> projectsDAO.findByUserId(conn, loginUser.userId()));
+        return transactionManager.execute(conn -> projectsDAO.findByUserId(conn, loginUser.userId()));
     }
 
     // =================================================================
@@ -231,6 +249,13 @@ public class ProjectService {
         }
     }
 
+    private boolean isOwnerMaker(LoginUser loginUser, ProjectDTO project) {
+        return loginUser.userType() == UserType.MAKER
+                && Objects.equals(project.getUserId(), loginUser.userId());
+    }
+
+
+
     /**
      * 프로젝트 열람 권한을 검증
      * 승인 전(PENDING, REJECTED) 프로젝트는 작성 메이커 본인 또는 관리자만 열람 가능
@@ -239,10 +264,7 @@ public class ProjectService {
         if (project.getApprovalStatus() == ApprovalStatus.APPROVED) {
             return;
         }
-        boolean isOwnerMaker = loginUser.userType() == UserType.MAKER
-                && Objects.equals(project.getUserId(), loginUser.userId());
-        boolean isAdmin = loginUser.userType() == UserType.ADMIN;
-        if (!isOwnerMaker && !isAdmin) {
+        if (!isOwnerMaker(loginUser, project) && loginUser.userType() != UserType.ADMIN) {
             throw new NotAllowedException("승인되지 않은 프로젝트는 조회할 수 없습니다.");
         }
     }
@@ -251,7 +273,7 @@ public class ProjectService {
      * 반려 프로젝트 수정·재신청 시 본인 소유 여부와 REJECTED 상태를 검증
      */
     private void validateResubmitPermissionAndState(LoginUser loginUser, ProjectDTO existing) {
-        if (!Objects.equals(existing.getUserId(), loginUser.userId())) {
+        if (!isOwnerMaker(loginUser, existing)) {
             throw new NotAllowedException("본인이 등록한 프로젝트만 수정할 수 있습니다.");
         }
         if (existing.getApprovalStatus() != ApprovalStatus.REJECTED) {
@@ -354,31 +376,38 @@ public class ProjectService {
         }
     }
 
+    private String validateAndExtractFileName(String rawPath) {
+        String fileName = FileUtil.extractFileName(rawPath);
+        if (fileName.isBlank() || fileName.equals(".") || fileName.equals("..")) {
+            throw new BusinessException("올바르지 않은 이미지 파일명입니다.");
+        }
+        if (fileName.length() > DomainRules.MAX_IMAGE_NAME_LENGTH) {
+            throw new BusinessException("이미지 파일명은 " + DomainRules.MAX_IMAGE_NAME_LENGTH + "자를 초과할 수 없습니다.");
+        }
+        return fileName;
+    }
+
+    private byte[] validateAndExtractImageBytes(Blob blob) {
+        if (blob == null) {
+            throw new BusinessException("이미지 데이터가 비어 있습니다.");
+        }
+        try {
+            long length = blob.length();
+            if (length <= 0) {
+                throw new BusinessException("이미지 데이터가 비어 있습니다.");
+            }
+            if (length > DomainRules.MAX_IMAGE_BYTES) {
+                throw new BusinessException("이미지 크기는 최대 " + (DomainRules.MAX_IMAGE_BYTES / (1024 * 1024)) + "MB를 초과할 수 없습니다.");
+            }
+            return blob.getBytes(1, (int) length);
+        } catch (SQLException e) {
+            throw new BusinessException("이미지 데이터를 읽는 중 오류가 발생했습니다.", e);
+        }
+    }
+
     // =================================================================
     // 4. 데이터 정제 및 DTO 조립 메서드 (Sanitization & Mapping)
     // =================================================================
-
-    private ProjectDTO buildNewPendingProject(long makerUserId, ProjectDTO input) {
-        ProjectDTO toInsert = new ProjectDTO();
-        toInsert.setUserId(makerUserId);
-        toInsert.setTitle(input.getTitle().trim());
-        toInsert.setDescription(input.getDescription().trim());
-        toInsert.setGoal(input.getGoal());
-        toInsert.setDuration(input.getDuration());
-        toInsert.setStartDate(null);
-        toInsert.setApprovalStatus(ApprovalStatus.PENDING);
-        return toInsert;
-    }
-
-    private RewardDTO buildRewardToInsert(long projectId, RewardDTO input) {
-        RewardDTO toInsert = new RewardDTO();
-        toInsert.setProjectId(projectId);
-        toInsert.setName(input.getName().trim());
-        toInsert.setPrice(input.getPrice());
-        toInsert.setDescription(input.getDescription().trim());
-        toInsert.setStock(input.getStock());
-        return toInsert;
-    }
 
     //List를 쓰면 순회를 돌아야해서 이미지 데이터의 접근 효율이 떨어짐
     //map을 쓰면 Integer(rewardId)로 바로 접근하여 이미지 데이터를 가질 수 있음
@@ -403,9 +432,16 @@ public class ProjectService {
 
     //정제된 형태의 이미지 DTO로 변환하는 역할
     private ImageDTO sanitizeSingleImage(ImageDTO raw) {
-        String cleanFileName = FileUtil.extractFileName(raw.getName());
-        byte[] imageBytes = FileUtil.extractAndValidateBytes(raw.getImageData());
+        if (raw == null) {
+            return null;
+        }
+        String cleanFileName = validateAndExtractFileName(raw.getName());
+        byte[] imageBytes = validateAndExtractImageBytes(raw.getImageData());
         String detectedMimeType = FileUtil.detectImageMimeType(imageBytes);
+
+        if (detectedMimeType == null) {
+            throw new BusinessException("지원하지 않는 이미지 형식입니다. (PNG, JPEG, GIF, WEBP, BMP만 허용)");
+        }
 
         try {
             ImageDTO cleanDto = new ImageDTO();
@@ -416,21 +452,6 @@ public class ProjectService {
         } catch (SQLException e) {
             throw new BusinessException("이미지 데이터 변환 중 오류가 발생했습니다.", e);
         }
-    }
-
-    private ProjectDetailDTO assembleProjectDetail(
-            ProjectDTO project,
-            List<Category> categories,
-            List<RewardDTO> rewards,
-            List<Long> rewardIdsWithImage,
-            List<ReviewDTO> reviews) {
-        ProjectDetailDTO detailDTO = new ProjectDetailDTO();
-        detailDTO.setProject(project);
-        detailDTO.setCategories(categories);
-        detailDTO.setRewards(rewards);
-        detailDTO.setRewardIdsWithImage(rewardIdsWithImage);
-        detailDTO.setReviews(reviews);
-        return detailDTO;
     }
 
     // =================================================================
@@ -445,16 +466,23 @@ public class ProjectService {
         return project;
     }
 
-    private void updateRejectedProjectToPending(Connection conn, long makerUserId, ProjectDTO input) throws SQLException {
-        ProjectDTO toUpdate = new ProjectDTO();
-        toUpdate.setProjectId(input.getProjectId());
-        toUpdate.setUserId(makerUserId);
-        toUpdate.setTitle(input.getTitle().trim());
-        toUpdate.setDescription(input.getDescription().trim());
-        toUpdate.setGoal(input.getGoal());
-        toUpdate.setDuration(input.getDuration());
+    private long insertPendingProject(Connection conn, long makerUserId, ProjectDTO projectDTO) throws SQLException {
+        projectDTO.setUserId(makerUserId);
+        projectDTO.setTitle(projectDTO.getTitle().trim());
+        projectDTO.setDescription(projectDTO.getDescription().trim());
+        projectDTO.setStartDate(null);
+        projectDTO.setApprovalStatus(ApprovalStatus.PENDING);
 
-        int updatedRows = projectsDAO.resubmitRejectedProjectUpdate(conn, toUpdate);
+        projectsDAO.insert(conn, projectDTO);
+        return projectDTO.getProjectId();
+    }
+
+    private void updateRejectedProjectToPending(Connection conn, long makerUserId, ProjectDTO projectDTO) throws SQLException {
+        projectDTO.setUserId(makerUserId);
+        projectDTO.setTitle(projectDTO.getTitle().trim());
+        projectDTO.setDescription(projectDTO.getDescription().trim());
+
+        int updatedRows = projectsDAO.resubmitRejectedProjectUpdate(conn, projectDTO);
         if (updatedRows == 0) {
             throw new BusinessException("프로젝트 상태가 변경되어 재신청할 수 없습니다.");
         }
@@ -489,12 +517,16 @@ public class ProjectService {
             List<RewardDTO> rewards,
             Map<Integer, ImageDTO> sanitizedImages) throws SQLException {
         for (int i = 0; i < rewards.size(); i++) {
-            RewardDTO rewardToInsert = buildRewardToInsert(projectId, rewards.get(i));
-            rewardsDAO.insert(conn, rewardToInsert);
+            RewardDTO reward = rewards.get(i);
+            reward.setProjectId(projectId);
+            reward.setName(reward.getName().trim());
+            reward.setDescription(reward.getDescription().trim());
+
+            rewardsDAO.insert(conn, reward);
 
             ImageDTO imageDTO = sanitizedImages.get(i);
             if (imageDTO != null) {
-                imageDTO.setRewardId(rewardToInsert.getRewardId());
+                imageDTO.setRewardId(reward.getRewardId());
                 imageDAO.insert(conn, imageDTO);
             }
         }

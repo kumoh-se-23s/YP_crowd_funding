@@ -1,5 +1,6 @@
 package ypfunding.server.service;
 
+import ypfunding.common.constant.DomainRules;
 import ypfunding.common.dto.ImageDTO;
 import ypfunding.common.dto.ProjectDTO;
 import ypfunding.common.dto.RewardDTO;
@@ -12,100 +13,145 @@ import ypfunding.server.persistence.TransactionManager;
 import ypfunding.server.persistence.dao.ImageDAO;
 import ypfunding.server.persistence.dao.ProjectsDAO;
 import ypfunding.server.persistence.dao.RewardsDAO;
+import ypfunding.server.util.FileUtil;
 
+import javax.sql.rowset.serial.SerialBlob;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
-public class RewardService {
+/**
+ * 리워드 등록·추가·수정 및 리워드 이미지 조회를 담당하는 서비스 (B 역할).
+ * 모든 public 메서드는 첫 인자로 LoginUser를 받아 접근 권한과 프로젝트 상태를 검증한다.
+ */
+public class RewardService extends Service{
 
-    private final TransactionManager tx;
     private final ProjectsDAO projectsDAO;
     private final RewardsDAO rewardsDAO;
     private final ImageDAO imageDAO;
 
     public RewardService(
-            TransactionManager tx,
+            TransactionManager transactionManager,
             ProjectsDAO projectsDAO,
             RewardsDAO rewardsDAO,
             ImageDAO imageDAO) {
-        this.tx = Objects.requireNonNull(tx, "transactionManager must not be null.");
+        super(Objects.requireNonNull(transactionManager, "transactionManager must not be null."));
         this.projectsDAO = Objects.requireNonNull(projectsDAO, "projectsDAO must not be null.");
         this.rewardsDAO = Objects.requireNonNull(rewardsDAO, "rewardsDAO must not be null.");
         this.imageDAO = Objects.requireNonNull(imageDAO, "imageDAO must not be null.");
     }
 
     // =================================================================
-    // 1. PUBLIC 비즈니스 메서드
+    // 1. PUBLIC 비즈니스 메서드 — 리워드 생성·추가 (CREATE)
     // =================================================================
 
     /**
-     * 특정 프로젝트에 속한 리워드 목록을 조회
-     *
-     * @param loginUser 요청한 로그인 사용자
-     * @param projectId 조회할 프로젝트 ID
-     * @return 리워드 DTO 목록 (STOCK이 null이면 무제한, 0이면 품절)
+     * 특정 프로젝트 아래에 리워드 목록(최소 2개)을 일괄 등록한다 (이미지 없는 버전).
+     * (11월 2일 DB 검사 3번 항목 test03RegisterReward 전용)
      */
+    public void createRewards(
+            LoginUser loginUser,
+            long projectId,
+            List<RewardDTO> rewards) {
+        createRewards(loginUser, projectId, rewards, Collections.emptyMap());
+    }
+
+    /**
+     * 특정 프로젝트 아래에 리워드 목록(최소 2개)과 선택적 이미지를 일괄 등록한다.
+     */
+    public void createRewards(
+            LoginUser loginUser,
+            long projectId,
+            List<RewardDTO> rewards,
+            Map<Integer, ImageDTO> rewardImagesByIndex) {
+        requireMaker(loginUser);
+        validateProjectId(projectId);
+        validateRewardList(rewards);
+        Map<Integer, ImageDTO> sanitizedImages = sanitizeRewardImages(rewards.size(), rewardImagesByIndex);
+
+        transactionManager.execute(conn -> {
+            ProjectDTO project = findProjectOrThrow(conn, projectId);
+            validateRewardEditableState(loginUser, project);
+
+            for (int i = 0; i < rewards.size(); i++) {
+                insertSingleRewardWithImage(conn, projectId, rewards.get(i), sanitizedImages.get(i));
+            }
+            return null;
+        });
+    }
+
+    /**
+     * 특정 프로젝트 아래에 단일 리워드 1개를 추가 등록한다 (이미지 없는 버전).
+     */
+    public long createReward(
+            LoginUser loginUser,
+            long projectId,
+            RewardDTO rewardDTO) {
+        return createReward(loginUser, projectId, rewardDTO, null);
+    }
+
+    /**
+     * 특정 프로젝트 아래에 단일 리워드 1개와 선택적 이미지를 추가 등록한다.
+     */
+    public long createReward(
+            LoginUser loginUser,
+            long projectId,
+            RewardDTO rewardDTO,
+            ImageDTO imageDTO) {
+        requireMaker(loginUser);
+        validateProjectId(projectId);
+        validateSingleReward(rewardDTO);
+        ImageDTO sanitizedImage = sanitizeSingleImage(imageDTO);
+
+        return transactionManager.execute(conn -> {
+            ProjectDTO project = findProjectOrThrow(conn, projectId);
+            validateRewardEditableState(loginUser, project);
+
+            return insertSingleRewardWithImage(conn, projectId, rewardDTO, sanitizedImage);
+        });
+    }
+
+    // =================================================================
+    // 2. PUBLIC 비즈니스 메서드
+    // =================================================================
+
     public List<RewardDTO> getRewardsByProject(LoginUser loginUser, long projectId) {
         requireLoginUser(loginUser);
         validateProjectId(projectId);
 
-        return tx.execute(conn -> {
+        return transactionManager.execute(conn -> {
             validateProjectViewAccess(conn, loginUser, projectId);
             return rewardsDAO.findByProjectId(conn, projectId);
         });
     }
 
-    /**
-     * 특정 리워드의 상세 정보를 단건 조회
-     *
-     * @param loginUser 요청한 로그인 사용자
-     * @param rewardId  조회할 리워드 ID
-     * @return 리워드 DTO
-     */
     public RewardDTO getReward(LoginUser loginUser, long rewardId) {
         requireLoginUser(loginUser);
         validateRewardId(rewardId);
 
-        return tx.execute(conn -> {
+        return transactionManager.execute(conn -> {
             RewardDTO reward = findRewardOrThrow(conn, rewardId);
             validateProjectViewAccess(conn, loginUser, reward.getProjectId());
             return reward;
         });
     }
 
-    /**
-     * 특정 리워드의 이미지 메타데이터(파일명, MIME 타입)만 가볍게 조회 (IMAGE_DATA BLOB 제외).
-     *
-     * @param loginUser 요청한 로그인 사용자
-     * @param rewardId  리워드 ID
-     * @return IMAGE_DATA가 비어있는 ImageDTO (이미지가 없으면 null)
-     */
     public ImageDTO getRewardImageMetadata(LoginUser loginUser, long rewardId) {
         requireLoginUser(loginUser);
         validateRewardId(rewardId);
 
-        return tx.execute(conn -> {
+        return transactionManager.execute(conn -> {
             RewardDTO reward = findRewardOrThrow(conn, rewardId);
             validateProjectViewAccess(conn, loginUser, reward.getProjectId());
             return imageDAO.findMetadataByRewardId(conn, rewardId);
         });
     }
 
-    /**
-     * 특정 리워드에 첨부된 이미지 전체(IMAGE_DATA BLOB 포함)를 조회
-     * 반환된 ImageDTO의 imageData는 SerialBlob으로 감싸져 있어 트랜잭션 종료 후에도 바이트를 읽을 수 있음
-     *
-     * @param loginUser 요청한 로그인 사용자
-     * @param rewardId  리워드 ID
-     * @return 이미지 데이터가 담긴 ImageDTO (이미지가 없으면 null)
-     */
     public ImageDTO getRewardImage(LoginUser loginUser, long rewardId) {
         requireLoginUser(loginUser);
         validateRewardId(rewardId);
 
-        return tx.execute(conn -> {
+        return transactionManager.execute(conn -> {
             RewardDTO reward = findRewardOrThrow(conn, rewardId);
             validateProjectViewAccess(conn, loginUser, reward.getProjectId());
             return imageDAO.findByRewardId(conn, rewardId);
@@ -113,13 +159,48 @@ public class RewardService {
     }
 
     // =================================================================
-    // 2. 권한 및 입력값 검증 메서드 (Validation)
+    // 3. PUBLIC 비즈니스 메서드
+    // =================================================================
+
+    public void updateReward(LoginUser loginUser, RewardDTO rewardDTO) {
+        requireMaker(loginUser);
+        validateSingleReward(rewardDTO);
+        validateRewardId(rewardDTO.getRewardId());
+
+        transactionManager.execute(conn -> {
+            RewardDTO existingReward = findRewardOrThrow(conn, rewardDTO.getRewardId());
+            ProjectDTO project = findProjectOrThrow(conn, existingReward.getProjectId());
+            validateRewardEditableState(loginUser, project);
+
+            rewardDTO.setProjectId(existingReward.getProjectId());
+            rewardDTO.setName(rewardDTO.getName().trim());
+            rewardDTO.setDescription(rewardDTO.getDescription().trim());
+
+            rewardsDAO.update(conn, rewardDTO);
+            return null;
+        });
+    }
+
+    // =================================================================
+    // 4. 권한 및 입력값 검증 메서드 (Validation)
     // =================================================================
 
     private void requireLoginUser(LoginUser loginUser) {
         if (loginUser == null) {
             throw new NotAllowedException("로그인이 필요한 기능입니다.");
         }
+    }
+
+    private void requireMaker(LoginUser loginUser) {
+        requireLoginUser(loginUser);
+        if (loginUser.userType() != UserType.MAKER) {
+            throw new NotAllowedException("메이커만 이용할 수 있는 기능입니다.");
+        }
+    }
+
+    private boolean isOwnerMaker(LoginUser loginUser, ProjectDTO project) {
+        return loginUser.userType() == UserType.MAKER
+                && Objects.equals(project.getUserId(), loginUser.userId());
     }
 
     private void validateProjectId(Long projectId) {
@@ -134,21 +215,150 @@ public class RewardService {
         }
     }
 
+    private void validateRewardList(List<RewardDTO> rewards) {
+        if (rewards == null || rewards.size() < DomainRules.MIN_REWARDS_PER_PROJECT) {
+            throw new BusinessException("리워드는 최소 " + DomainRules.MIN_REWARDS_PER_PROJECT + "개 이상 등록해야 합니다.");
+        }
+        for (RewardDTO reward : rewards) {
+            validateSingleReward(reward);
+        }
+    }
+
+    private Map<Integer, ImageDTO> sanitizeRewardImages(int rewardCount, Map<Integer, ImageDTO> rawImages) {
+        if (rawImages == null || rawImages.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        Map<Integer, ImageDTO> sanitized = new HashMap<>();
+        for (Map.Entry<Integer, ImageDTO> entry : rawImages.entrySet()) {
+            Integer index = entry.getKey();
+            ImageDTO raw = entry.getValue();
+            if (raw == null) {
+                continue;
+            }
+            if (index == null || index < 0 || index >= rewardCount) {
+                throw new BusinessException("유효하지 않은 리워드 인덱스에 이미지가 지정되었습니다: " + index);
+            }
+            sanitized.put(index, sanitizeSingleImage(raw));
+        }
+        return sanitized;
+    }
+
+    private void validateSingleReward(RewardDTO reward) {
+        if (reward == null) {
+            throw new BusinessException("리워드 정보가 비어 있습니다.");
+        }
+        if (reward.getName() == null || reward.getName().isBlank()) {
+            throw new BusinessException("리워드 이름을 입력해 주세요.");
+        }
+        if (reward.getName().trim().length() > DomainRules.MAX_REWARD_NAME_LENGTH) {
+            throw new BusinessException("리워드 이름은 " + DomainRules.MAX_REWARD_NAME_LENGTH + "자를 초과할 수 없습니다.");
+        }
+        if (reward.getPrice() == null || reward.getPrice() <= 0) {
+            throw new BusinessException("리워드 가격은 1원 이상이어야 합니다.");
+        }
+        if (reward.getDescription() == null || reward.getDescription().isBlank()) {
+            throw new BusinessException("리워드 설명을 입력해 주세요.");
+        }
+        if (reward.getStock() != null && reward.getStock() < 0) {
+            throw new BusinessException("리워드 재고 수량은 0 이상이어야 합니다. (무제한은 null)");
+        }
+    }
+
     private void validateProjectViewPermission(LoginUser loginUser, ProjectDTO project) {
         if (project.getApprovalStatus() == ApprovalStatus.APPROVED) {
             return;
         }
-        boolean isOwnerMaker = loginUser.userType() == UserType.MAKER
-                && Objects.equals(project.getUserId(), loginUser.userId());
-        boolean isAdmin = loginUser.userType() == UserType.ADMIN;
-        if (!isOwnerMaker && !isAdmin) {
+        if (!isOwnerMaker(loginUser, project) && loginUser.userType() != UserType.ADMIN) {
             throw new NotAllowedException("승인되지 않은 프로젝트의 리워드는 조회할 수 없습니다.");
         }
     }
 
+    private void validateRewardEditableState(LoginUser loginUser, ProjectDTO project) {
+        if (!isOwnerMaker(loginUser, project)) {
+            throw new NotAllowedException("본인이 등록한 프로젝트의 리워드만 추가하거나 수정할 수 있습니다.");
+        }
+        if (project.getApprovalStatus() == ApprovalStatus.APPROVED) {
+            throw new BusinessException("승인된(APPROVED) 프로젝트의 리워드는 추가하거나 수정할 수 없습니다.");
+        }
+    }
+
+    /**
+     * 단일 이미지 DTO를 검증·정제
+     */
+    private ImageDTO sanitizeSingleImage(ImageDTO raw) {
+        if (raw == null) {
+            return null;
+        }
+        String cleanFileName = validateAndExtractFileName(raw.getName());
+        byte[] imageBytes = validateAndExtractImageBytes(raw.getImageData());
+        String detectedMimeType = FileUtil.detectImageMimeType(imageBytes);
+
+        if (detectedMimeType == null) {
+            throw new BusinessException("지원하지 않는 이미지 형식입니다. (PNG, JPEG, GIF, WEBP, BMP만 허용)");
+        }
+
+        try {
+            ImageDTO cleanDto = new ImageDTO();
+            cleanDto.setName(cleanFileName);
+            cleanDto.setType(detectedMimeType);
+            cleanDto.setImageData(new SerialBlob(imageBytes));
+            return cleanDto;
+        } catch (SQLException e) {
+            throw new BusinessException("이미지 데이터 변환 중 오류가 발생했습니다.", e);
+        }
+    }
+
+    private String validateAndExtractFileName(String rawPath) {
+        String fileName = FileUtil.extractFileName(rawPath);
+        if (fileName.isBlank() || fileName.equals(".") || fileName.equals("..")) {
+            throw new BusinessException("올바르지 않은 이미지 파일명입니다.");
+        }
+        if (fileName.length() > DomainRules.MAX_IMAGE_NAME_LENGTH) {
+            throw new BusinessException("이미지 파일명은 " + DomainRules.MAX_IMAGE_NAME_LENGTH + "자를 초과할 수 없습니다.");
+        }
+        return fileName;
+    }
+
+    private byte[] validateAndExtractImageBytes( java.sql.Blob blob) {
+        if (blob == null) {
+            throw new BusinessException("이미지 데이터가 비어 있습니다.");
+        }
+        try {
+            long length = blob.length();
+            if (length <= 0) {
+                throw new BusinessException("이미지 데이터가 비어 있습니다.");
+            }
+            if (length > DomainRules.MAX_IMAGE_BYTES) {
+                throw new BusinessException("이미지 크기는 최대 " + (DomainRules.MAX_IMAGE_BYTES / (1024 * 1024)) + "MB를 초과할 수 없습니다.");
+            }
+            return blob.getBytes(1, (int) length);
+        } catch (SQLException e) {
+            throw new BusinessException("이미지 데이터를 읽는 중 오류가 발생했습니다.", e);
+        }
+    }
+
     // =================================================================
-    // 3. 트랜잭션 내부 DB 조회 헬퍼 (Persistence Helpers)
+    // 5. 트랜잭션 내부 DB 작업 헬퍼 (Persistence Helpers)
     // =================================================================
+
+    private long insertSingleRewardWithImage(
+            Connection conn,
+            long projectId,
+            RewardDTO reward,
+            ImageDTO sanitizedImage) throws SQLException {
+        reward.setProjectId(projectId);
+        reward.setName(reward.getName().trim());
+        reward.setDescription(reward.getDescription().trim());
+
+        rewardsDAO.insert(conn, reward);
+        long rewardId = reward.getRewardId();
+
+        if (sanitizedImage != null) {
+            sanitizedImage.setRewardId(rewardId);
+            imageDAO.insert(conn, sanitizedImage);
+        }
+        return rewardId;
+    }
 
     private RewardDTO findRewardOrThrow(Connection conn, long rewardId) throws SQLException {
         RewardDTO reward = rewardsDAO.findById(conn, rewardId);
@@ -158,11 +368,16 @@ public class RewardService {
         return reward;
     }
 
-    private void validateProjectViewAccess(Connection conn, LoginUser loginUser, long projectId) throws SQLException {
+    private ProjectDTO findProjectOrThrow(Connection conn, long projectId) throws SQLException {
         ProjectDTO project = projectsDAO.findById(conn, projectId);
         if (project == null) {
             throw new BusinessException("소속 프로젝트를 찾을 수 없습니다.");
         }
+        return project;
+    }
+
+    private void validateProjectViewAccess(Connection conn, LoginUser loginUser, long projectId) throws SQLException {
+        ProjectDTO project = findProjectOrThrow(conn, projectId);
         validateProjectViewPermission(loginUser, project);
     }
 }

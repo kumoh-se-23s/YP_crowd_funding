@@ -26,6 +26,8 @@ public class AppContext implements AutoCloseable {
     private final UsersDAO usersDAO;
     private final LikesDAO likesDAO;
     private final ProjectsDAO projectsDAO;
+    private final CategoryDAO categoryDAO;
+    private final ImageDAO imageDAO;
     private final RejectDAO rejectsDAO;
     private final FundsDAO fundsDAO;
     private final CanceledFundsDAO canceledFundsDAO;
@@ -45,6 +47,10 @@ public class AppContext implements AutoCloseable {
     private final MakerService makerService;
     @Getter
     private final SupporterService supporterService;
+    @Getter
+    private final ProjectService projectService;
+    @Getter
+    private final RewardService rewardService;
     @Getter
     private final LikeService likeService;
     @Getter
@@ -72,6 +78,8 @@ public class AppContext implements AutoCloseable {
             this.usersDAO = new UsersDAO();
             this.likesDAO = new LikesDAO();
             this.projectsDAO = new ProjectsDAO();
+            this.categoryDAO = new CategoryDAO();
+            this.imageDAO = new ImageDAO();
             this.rejectsDAO = new RejectDAO();
             this.fundsDAO = new FundsDAO();
             this.canceledFundsDAO = new CanceledFundsDAO();
@@ -82,6 +90,8 @@ public class AppContext implements AutoCloseable {
             this.userService = new UserService(transactionManager, usersDAO);
             this.adminService = new AdminService(transactionManager, usersDAO, projectsDAO, rejectsDAO);
             this.makerService = new MakerService(transactionManager, usersDAO);
+            this.projectService = new ProjectService(transactionManager, projectsDAO, categoryDAO, rewardsDAO, imageDAO, reviewsDAO);
+            this.rewardService = new RewardService(transactionManager, projectsDAO, rewardsDAO, imageDAO);
             this.supporterService = new SupporterService(transactionManager, usersDAO);
             this.likeService = new LikeService(transactionManager, likesDAO, projectsDAO, clock);
             this.fundService = new FundService(transactionManager, fundsDAO, canceledFundsDAO, rewardsDAO, projectsDAO, fundQueryDAO, clock);
