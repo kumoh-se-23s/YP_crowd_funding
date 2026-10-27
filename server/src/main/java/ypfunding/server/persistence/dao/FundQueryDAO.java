@@ -1,6 +1,7 @@
 package ypfunding.server.persistence.dao;
 
 import ypfunding.common.dto.FundQueryDTO;
+import ypfunding.common.dto.ProjectFunderDTO;
 import ypfunding.common.type.ProjectFundingStatus;
 
 import java.sql.Connection;
@@ -154,5 +155,44 @@ public class FundQueryDAO extends DAO{
                 return rs.next() ? ProjectFundingStatus.valueOf(rs.getString(Columns.STATUS.toString())) : null;
             }
         }
+    }
+
+    //메이커가 자신의 프로젝트에 후원한 후원자 목록 조회
+    public List<ProjectFunderDTO> findFundersByProject(Connection conn, long projectId) throws SQLException {
+        final String FUNDERS_SQL = """
+                SELECT f.fund_id,
+                       u.login_id,
+                       u.name,
+                       r.name AS reward_name,
+                       f.quantity,
+                       r.price * f.quantity AS amount,
+                       f.date
+                FROM funds f
+                JOIN users   u ON u.user_id   = f.user_id
+                JOIN rewards r ON r.reward_id = f.reward_id
+                WHERE f.project_id = ?
+                ORDER BY f.date DESC
+                """;
+
+        List<ProjectFunderDTO> result = new ArrayList<>();
+
+        try (PreparedStatement psmt = conn.prepareStatement(FUNDERS_SQL)) {
+            psmt.setLong(1, projectId);
+
+            try (ResultSet rs = psmt.executeQuery()) {
+                while (rs.next()) {
+                    ProjectFunderDTO dto = new ProjectFunderDTO();
+                    dto.setFundId(rs.getLong(FundsDAO.Columns.FUND_ID.toString()));
+                    dto.setLoginId(rs.getString(UsersDAO.Columns.LOGIN_ID.toString()));
+                    dto.setName(rs.getString(UsersDAO.Columns.NAME.toString()));
+                    dto.setRewardName(rs.getString(Columns.REWARD_NAME.toString()));
+                    dto.setQuantity(rs.getLong(FundsDAO.Columns.QUANTITY.toString()));
+                    dto.setAmount(rs.getLong(Columns.AMOUNT.toString()));
+                    dto.setDate(rs.getObject(FundsDAO.Columns.DATE.toString(), LocalDateTime.class));
+                    result.add(dto);
+                }
+            }
+        }
+        return result;
     }
 }
