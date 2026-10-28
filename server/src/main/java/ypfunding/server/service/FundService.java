@@ -91,6 +91,24 @@ public class FundService extends Service{
         });
     }
 
+    //메이커가 자신의 프로젝트에 후원한 후원자 목록 조회
+    public List<ProjectFunderDTO> getProjectFunders(LoginUser user, long projectId) {
+        if (user.userType() != UserType.MAKER) {
+            throw new PermissionDeniedException("메이커만 후원자 목록을 볼 수 있습니다.");
+        }
+
+        return transactionManager.execute(conn -> {
+            ProjectDTO project = projectsDAO.findById(conn, projectId);
+            if (project == null) {
+                throw new BusinessException("존재하지 않는 프로젝트입니다.");
+            }
+            if (project.getUserId() != user.userId()) {
+                throw new PermissionDeniedException("본인 프로젝트의 후원자만 볼 수 있습니다.");
+            }
+            return fundQueryDAO.findFundersByProject(conn, projectId);
+        });
+    }
+
     // ----- 트랜잭션 밖 검사 -----
 
     private static void requireSupporter(LoginUser user, String message) {

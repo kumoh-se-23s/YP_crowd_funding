@@ -150,11 +150,7 @@ public class ImageDAO extends DAO {
         dto.setRewardId(rs.getLong(Columns.REWARD_ID.name));
         dto.setName(rs.getString(Columns.NAME.name));
         dto.setType(rs.getString(Columns.TYPE.name));
-
-        byte[] bytes = rs.getBytes(Columns.IMAGE_DATA.name);
-        if (bytes != null) {
-            dto.setImageData(new SerialBlob(bytes));
-        }
+        dto.setImageData(rs.getBytes(Columns.IMAGE_DATA.name)); // SerialBlob 없이 byte[] 그대로 저장!
         return dto;
     }
 

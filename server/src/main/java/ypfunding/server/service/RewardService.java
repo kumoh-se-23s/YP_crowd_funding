@@ -1,5 +1,6 @@
 package ypfunding.server.service;
 
+import ypfunding.server.util.UserUtils;
 import ypfunding.common.constant.DomainRules;
 import ypfunding.common.dto.ImageDTO;
 import ypfunding.common.dto.ProjectDTO;
@@ -15,7 +16,6 @@ import ypfunding.server.persistence.dao.ProjectsDAO;
 import ypfunding.server.persistence.dao.RewardsDAO;
 import ypfunding.server.util.FileUtil;
 
-import javax.sql.rowset.serial.SerialBlob;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.*;
@@ -42,7 +42,7 @@ public class RewardService extends Service{
     }
 
     // =================================================================
-    // 1. PUBLIC 비즈니스 메서드 — 리워드 생성·추가 (CREATE)
+    // 1. PUBLIC 비즈니스 메서드
     // =================================================================
 
     /**
@@ -64,7 +64,7 @@ public class RewardService extends Service{
             long projectId,
             List<RewardDTO> rewards,
             Map<Integer, ImageDTO> rewardImagesByIndex) {
-        requireMaker(loginUser);
+        UserUtils.assertMaker(loginUser);
         validateProjectId(projectId);
         validateRewardList(rewards);
         Map<Integer, ImageDTO> sanitizedImages = sanitizeRewardImages(rewards.size(), rewardImagesByIndex);
@@ -98,7 +98,7 @@ public class RewardService extends Service{
             long projectId,
             RewardDTO rewardDTO,
             ImageDTO imageDTO) {
-        requireMaker(loginUser);
+        UserUtils.assertMaker(loginUser);
         validateProjectId(projectId);
         validateSingleReward(rewardDTO);
         ImageDTO sanitizedImage = sanitizeSingleImage(imageDTO);
@@ -110,10 +110,6 @@ public class RewardService extends Service{
             return insertSingleRewardWithImage(conn, projectId, rewardDTO, sanitizedImage);
         });
     }
-
-    // =================================================================
-    // 2. PUBLIC 비즈니스 메서드
-    // =================================================================
 
     public List<RewardDTO> getRewardsByProject(LoginUser loginUser, long projectId) {
         requireLoginUser(loginUser);
@@ -158,12 +154,8 @@ public class RewardService extends Service{
         });
     }
 
-    // =================================================================
-    // 3. PUBLIC 비즈니스 메서드
-    // =================================================================
-
     public void updateReward(LoginUser loginUser, RewardDTO rewardDTO) {
-        requireMaker(loginUser);
+        UserUtils.assertMaker(loginUser);
         validateSingleReward(rewardDTO);
         validateRewardId(rewardDTO.getRewardId());
 
@@ -191,17 +183,6 @@ public class RewardService extends Service{
         }
     }
 
-    private void requireMaker(LoginUser loginUser) {
-        requireLoginUser(loginUser);
-        if (loginUser.userType() != UserType.MAKER) {
-            throw new PermissionDeniedException("메이커만 이용할 수 있는 기능입니다.");
-        }
-    }
-
-    private boolean isOwnerMaker(LoginUser loginUser, ProjectDTO project) {
-        return loginUser.userType() == UserType.MAKER
-                && Objects.equals(project.getUserId(), loginUser.userId());
-    }
 
     private void validateProjectId(Long projectId) {
         if (projectId == null || projectId <= 0) {
@@ -265,16 +246,16 @@ public class RewardService extends Service{
     }
 
     private void validateProjectViewPermission(LoginUser loginUser, ProjectDTO project) {
-        if (project.getApprovalStatus() == ApprovalStatus.APPROVED) {
+        if (project.getApprovalStatus() == ApprovalStatus.APPROVED || !UserUtils.checkNotAdmin(loginUser)) {
             return;
         }
-        if (!isOwnerMaker(loginUser, project) && loginUser.userType() != UserType.ADMIN) {
+        if (project.getUserId() != loginUser.userId()) {
             throw new PermissionDeniedException("승인되지 않은 프로젝트의 리워드는 조회할 수 없습니다.");
         }
     }
 
     private void validateRewardEditableState(LoginUser loginUser, ProjectDTO project) {
-        if (!isOwnerMaker(loginUser, project)) {
+        if (project.getUserId() != loginUser.userId()) {
             throw new PermissionDeniedException("본인이 등록한 프로젝트의 리워드만 추가하거나 수정할 수 있습니다.");
         }
         if (project.getApprovalStatus() == ApprovalStatus.APPROVED) {
@@ -297,15 +278,11 @@ public class RewardService extends Service{
             throw new BusinessException("지원하지 않는 이미지 형식입니다. (PNG, JPEG, GIF, WEBP, BMP만 허용)");
         }
 
-        try {
-            ImageDTO cleanDto = new ImageDTO();
-            cleanDto.setName(cleanFileName);
-            cleanDto.setType(detectedMimeType);
-            cleanDto.setImageData(new SerialBlob(imageBytes));
-            return cleanDto;
-        } catch (SQLException e) {
-            throw new BusinessException("이미지 데이터 변환 중 오류가 발생했습니다.", e);
-        }
+        ImageDTO cleanDto = new ImageDTO();
+        cleanDto.setName(cleanFileName);
+        cleanDto.setType(detectedMimeType);
+        cleanDto.setImageData(imageBytes); // SerialBlob 없이 순수 byte[] 그대로 세팅!
+        return cleanDto;
     }
 
     private String validateAndExtractFileName(String rawPath) {
@@ -319,22 +296,14 @@ public class RewardService extends Service{
         return fileName;
     }
 
-    private byte[] validateAndExtractImageBytes( java.sql.Blob blob) {
-        if (blob == null) {
+    private byte[] validateAndExtractImageBytes(byte[] bytes) {
+        if (bytes == null || bytes.length == 0) {
             throw new BusinessException("이미지 데이터가 비어 있습니다.");
         }
-        try {
-            long length = blob.length();
-            if (length <= 0) {
-                throw new BusinessException("이미지 데이터가 비어 있습니다.");
-            }
-            if (length > DomainRules.MAX_IMAGE_BYTES) {
-                throw new BusinessException("이미지 크기는 최대 " + (DomainRules.MAX_IMAGE_BYTES / (1024 * 1024)) + "MB를 초과할 수 없습니다.");
-            }
-            return blob.getBytes(1, (int) length);
-        } catch (SQLException e) {
-            throw new BusinessException("이미지 데이터를 읽는 중 오류가 발생했습니다.", e);
+        if (bytes.length > DomainRules.MAX_IMAGE_BYTES) {
+            throw new BusinessException("이미지 크기는 최대 " + (DomainRules.MAX_IMAGE_BYTES / (1024 * 1024)) + "MB를 초과할 수 없습니다.");
         }
+        return bytes;
     }
 
     // =================================================================
