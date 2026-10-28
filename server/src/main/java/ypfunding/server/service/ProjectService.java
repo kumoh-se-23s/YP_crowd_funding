@@ -9,7 +9,6 @@ import ypfunding.common.dto.ReviewDTO;
 import ypfunding.common.dto.RewardDTO;
 import ypfunding.common.type.ApprovalStatus;
 import ypfunding.common.type.Category;
-import ypfunding.common.type.UserType;
 import ypfunding.server.auth.LoginUser;
 import ypfunding.server.exception.BusinessException;
 import ypfunding.server.exception.PermissionDeniedException;
