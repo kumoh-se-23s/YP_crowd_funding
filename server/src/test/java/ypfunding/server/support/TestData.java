@@ -123,11 +123,11 @@ public final class TestData {
      * @param conn      커넥션
      * @param projectId 소속 프로젝트
      * @param price     1개당 가격
-     * @param stock     잔여 수량. null = 무제한, 0 = 품절
+     * @param stock     총 제공 수량. 0 = 무제한 (남은 수량 = stock - 후원 수량 합계)
      * @return 생성된 reward_id
      * @throws SQLException DB 오류
      */
-    public static long insertReward(Connection conn, long projectId, int price, Integer stock) throws SQLException {
+    public static long insertReward(Connection conn, long projectId, int price, int stock) throws SQLException {
         String sql = """
                 INSERT INTO rewards (project_id, name, price, description, stock)
                 VALUES (?, ?, ?, ?, ?)
@@ -137,7 +137,7 @@ public final class TestData {
             ps.setString(2, "테스트 리워드");
             ps.setInt(3, price);
             ps.setString(4, "테스트 리워드 설명");
-            ps.setObject(5, stock);       // null이면 NULL(무제한). setInt를 쓰면 null을 넣을 수 없다
+            ps.setInt(5, stock);          // stock은 NOT NULL. 무제한도 NULL이 아니라 0으로 넣는다
             ps.executeUpdate();
             return generatedId(ps);
         }

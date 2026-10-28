@@ -9,9 +9,11 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.sql.Statement;
+import ypfunding.server.exception.DataAccessException;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -51,17 +53,26 @@ class TestInfraTest extends DbTestBase {
     }
 
     @Test
-    @DisplayName("무제한 리워드는 stock이 NULL로 저장된다")
-    void unlimitedRewardIsNull() {
+    @DisplayName("무제한 리워드는 stock이 0으로 저장된다")
+    void unlimitedRewardIsZero() {
         long rewardId = insertSample();
-        Integer stock = tx.execute(conn -> {
-            try (ResultSet rs = conn.createStatement().executeQuery(
-                    "SELECT stock FROM rewards WHERE reward_id = " + rewardId)) {
-                rs.next();
-                return rs.getObject("stock", Integer.class);
+        long stock = tx.execute(conn -> TestData.getStock(conn, rewardId));
+        assertEquals(0L, stock);
+    }
+
+    @Test
+    @DisplayName("stock에 NULL을 넣으면 DB가 거부한다 (stock은 NOT NULL)")
+    void nullStockIsRejected() {
+        long rewardId = insertSample();   // 프로젝트를 만들기 위해 사용. 이 리워드 자체는 쓰지 않는다
+        assertThrows(DataAccessException.class, () -> tx.execute(conn -> {
+            try (Statement st = conn.createStatement()) {
+                return st.executeUpdate("""
+                        INSERT INTO rewards (project_id, name, price, description, stock)
+                        SELECT project_id, '널 리워드', 1000, '설명', NULL
+                        FROM rewards WHERE reward_id = %d
+                        """.formatted(rewardId));
             }
-        });
-        assertNull(stock);
+        }));
     }
 
     @Test
@@ -107,7 +118,7 @@ class TestInfraTest extends DbTestBase {
         return tx.execute(conn -> {
             long makerId = TestData.insertUser(conn, "maker1", UserType.MAKER, clock.now());
             long projectId = TestData.insertApprovedProject(conn, makerId, 100_000, 30, clock.now());
-            return TestData.insertReward(conn, projectId, 10_000, null);
+            return TestData.insertReward(conn, projectId, 10_000, 0);
         });
     }
 

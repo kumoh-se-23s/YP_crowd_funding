@@ -92,7 +92,7 @@ CREATE TABLE category (
 
 -- ---------------------------------------------------------------------
 -- 4. rewards : 리워드
---    stock(잔여 수량)이 NULL이면 무제한을 의미
+--    stock(잔여 수량)이 0이면 무제한을 의미
 --    후원 금액은 따로 저장하지 않고 price x 수량으로 계산: 때문에 승인된 프로젝트의 리워드는 가격을 바꾸면 안 됨
 -- ---------------------------------------------------------------------
 CREATE TABLE rewards (
@@ -101,7 +101,7 @@ CREATE TABLE rewards (
     name         VARCHAR(50)  NOT NULL,
     price        INT          NOT NULL,                         -- 1개당 후원 금액
     description  TEXT         NOT NULL,                         -- 제공 내용
-    stock        INT          NULL,                             -- 잔여 수량 (NULL = 무제한)
+    stock        INT          NOT NULL,                             -- 잔여 수량 (NULL = 무제한)
 
     PRIMARY KEY (reward_id),
 
