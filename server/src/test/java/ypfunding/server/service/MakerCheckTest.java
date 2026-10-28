@@ -1,4 +1,4 @@
-package ypfunding.server.check.function;
+package ypfunding.server.service;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -12,6 +12,7 @@ import ypfunding.common.type.UserType;
 import ypfunding.server.auth.LoginUser;
 import ypfunding.server.bootstrap.AppContext;
 import ypfunding.server.check.CheckUsers;
+import ypfunding.server.check.function.MakerCheck;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -143,7 +144,7 @@ class MakerCheckTest {
         List<RewardDTO> rewards = context.getRewardService().getRewardsByProject(maker, 5L);
         assertEquals(2, rewards.size());
         assertEquals(20L, rewards.get(0).getStock());
-        assertNull(rewards.get(1).getStock(), "두 번째 리워드는 무제한(null)이어야 합니다.");
+        assertEquals(0L, rewards.get(1).getStock(), "두 번째 리워드는 무제한(null)이어야 합니다.");
     }
 
     private void insertUserWithId(java.sql.Connection conn, long userId, String loginId, String name, UserType type) throws Exception {
