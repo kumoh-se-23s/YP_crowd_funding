@@ -71,4 +71,9 @@ INSERT INTO rewards (project_id, name, price, description, stock) VALUES
 -- ---------------------------------------------------------------------
 -- 5. 후원·취소·좋아요·리뷰 (C, D 취합)
 -- 1번 펀딩 현황용 후원, 9번 리뷰용(마감·성공 프로젝트에 supporter1 후원, 리뷰는 비움)
+-- 성공: 프로젝트 2의 리워드 3 50000 × 2 >= 목표 100000
+-- 실패: 프로젝트 4의 리워드 7 15000 × 1 < 목표 5000000
 -- ---------------------------------------------------------------------
+INSERT INTO funds (user_id, project_id, reward_id, quantity, date) VALUES
+    (4, 2, 3, 2, NOW() - INTERVAL 15 DAY),
+    (4, 4, 7, 1, NOW() - INTERVAL 20 DAY);

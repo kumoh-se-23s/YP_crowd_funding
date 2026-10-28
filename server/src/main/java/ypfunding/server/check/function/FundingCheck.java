@@ -21,13 +21,14 @@ public class FundingCheck extends CheckBase {
     //마감, 실패 프로젝트에 supporter1이 seed로 해둔 후원
     private static final long REVIEW_FAILED_FUND_ID = 2L;
     private static final int REVIEW_STAR = 5;
-    private static final String REVIEW_CONTENT = "가격이 저렴하고 품질이 좋아요";
+    private static final String REVIEW_CONTENT = "맛과 향이 좋아요";
 
     //제공 가능 수량
-    //진행 중 프로젝트의 stock 3 리워드. supporter1, supporter2 모두 이 프로젝트에 후원 없음
+    //진행 중 프로젝트의 stock 1 리워드. supporter1, supporter2 모두 이 프로젝트에 후원 없음
+    //5번 리워드 재고로 확인할 예정
     private static final long STOCK_REWARD_ID = 5L;
-    private static final int ENOUGH_QUANTITY = 2;
-    private static final int SHORTAGE_QUANTITY = 2;
+    private static final int ENOUGH_QUANTITY = 1;
+    private static final int SHORTAGE_QUANTITY = 1;
 
     public FundingCheck(AppContext context, CheckUsers users) {
         super(context, users);
@@ -52,7 +53,9 @@ public class FundingCheck extends CheckBase {
         fundService.applyFund(supporter, APPLY_OTHER_REWARD_ID, DUPLICATE_QUANTITY);
     }
 
-    // [실행 후] 리뷰 목록
+    // [실행 전] supporter1 후원의 프로젝트 상태 확인 (fund 1 = SUCCESS, fund 2 = FAILED여야 함)
+    //SELECT f.fund_id, p.title, p.goal, (SELECT COALESCE(SUM(r2.price * f2.quantity), 0) FROM funds f2 JOIN rewards r2 ON r2.reward_id = f2.reward_id WHERE f2.project_id = p.project_id) AS total, CASE WHEN p.end_date > NOW() THEN 'ONGOING' WHEN (SELECT COALESCE(SUM(r2.price * f2.quantity), 0) FROM funds f2 JOIN rewards r2 ON r2.reward_id = f2.reward_id WHERE f2.project_id = p.project_id) >= p.goal THEN 'SUCCESS' ELSE 'FAILED' END AS status FROM funds f JOIN users u ON u.user_id = f.user_id JOIN projects p ON p.project_id = f.project_id WHERE u.login_id = 'supporter1';
+    // [실행 후] 리뷰 목록 (성공 프로젝트 후원에만 리뷰가 있어야 함)
     //SELECT u.login_id, p.title, r.name AS reward_name, rv.star, rv.content, rv.date FROM reviews rv JOIN funds f ON f.fund_id = rv.fund_id JOIN users u ON u.user_id = f.user_id JOIN projects p ON p.project_id = f.project_id JOIN rewards r ON r.reward_id = f.reward_id ORDER BY rv.date DESC;
     public void test09RegisterReview() {
         LoginUser supporter = users.supporter();
@@ -65,7 +68,7 @@ public class FundingCheck extends CheckBase {
         reviewService.writeReview(supporter, REVIEW_FAILED_FUND_ID, REVIEW_STAR, REVIEW_CONTENT);
     }
 
-    // [실행 전·후] 리워드 남은 수량 (3 → 1, 실패 후에도 1)
+    // [실행 전·후] 리워드 남은 수량 (1 → 0)
     //SELECT r.reward_id, r.name, r.stock, r.stock - (SELECT COALESCE(SUM(f.quantity), 0) FROM funds f WHERE f.reward_id = r.reward_id) AS remaining FROM rewards r WHERE r.reward_id = 5;
     // [실행 후] 후원 기록 (supporter1 행만 있고 supporter2 행은 없어야 함)
     //SELECT f.fund_id, u.login_id, f.reward_id, f.quantity, f.date FROM funds f JOIN users u ON u.user_id = f.user_id WHERE f.reward_id = 5 ORDER BY f.date;
