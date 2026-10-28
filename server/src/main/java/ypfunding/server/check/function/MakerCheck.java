@@ -44,7 +44,7 @@ public class MakerCheck extends CheckBase {
     private static final String TEST03_REWARD2_NAME = "[얼리버드] 기본 단품 구성 (무제한)";
     private static final long TEST03_REWARD2_PRICE = 69_000L;
     private static final String TEST03_REWARD2_DESC = "본품 1개 + 기본 파우치";
-    private static final Long TEST03_REWARD2_STOCK = null;
+    private static final Long TEST03_REWARD2_STOCK = 0L;
 
     public MakerCheck(AppContext context, CheckUsers users) {
         super(context, users);

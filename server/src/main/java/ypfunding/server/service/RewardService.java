@@ -239,8 +239,8 @@ public class RewardService extends Service{
         if (reward.getDescription() == null || reward.getDescription().isBlank()) {
             throw new BusinessException("리워드 설명을 입력해 주세요.");
         }
-        if (reward.getStock() != null && reward.getStock() < 0) {
-            throw new BusinessException("리워드 재고 수량은 0 이상이어야 합니다. (무제한은 null)");
+        if (reward.getStock() == null || reward.getStock() < 0) {
+            throw new BusinessException("리워드 재고 수량은 0 이상이어야 합니다. (0은 무제한)");
         }
     }
 
