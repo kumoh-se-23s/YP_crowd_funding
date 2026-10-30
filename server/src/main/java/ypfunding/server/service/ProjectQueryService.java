@@ -3,6 +3,7 @@ package ypfunding.server.service;
 import ypfunding.common.dto.ProjectQueryDTO;
 import ypfunding.common.notifications.PermissionDeniedNotification;
 import ypfunding.common.type.ApprovalStatus;
+import ypfunding.common.type.Category;
 import ypfunding.common.type.ProjectFundingStatus;
 import ypfunding.common.type.UserType;
 import ypfunding.server.auth.LoginUser;
@@ -36,6 +37,16 @@ public class ProjectQueryService extends Service {
         });
     }
     /**
+     * Admin-only function.
+     * @param user requested user
+     * @param sorter filters status. if empty, use default sorting (ID).
+     * @return result projects
+     */
+    public List<ProjectQueryDTO> getAllProjects(LoginUser user, SimpleOrderBySelector... sorter) {
+        return getProjects(user, e -> projectQueryDAO.getAllProjects(e, sorter), UserType.ADMIN);
+    }
+
+    /**
      * Everyone can call this function.
      * @param user requested user
      * @return result projects sorted by most recent
@@ -51,6 +62,28 @@ public class ProjectQueryService extends Service {
      */
     public List<ProjectQueryDTO> getAllActiveProjects(LoginUser user, SimpleOrderBySelector... sorter) {
         return getProjects(user, e -> projectQueryDAO.getActiveProjects(e, sorter), UserType.values());
+    }
+
+    /**
+     * Everyone can call this function.
+     * @param user requested user
+     * @param category filters category. cannot be null.
+     * @param sorter filters status. if empty, use default sorting (ID).
+     * @return result projects
+     */
+    public List<ProjectQueryDTO> filterEndedProjects(LoginUser user, Category category, SimpleOrderBySelector... sorter) {
+        return getProjects(user, e -> projectQueryDAO.getFilteredEndedProjects(e, category, sorter), UserType.values());
+    }
+
+    /**
+     * Everyone can call this function.
+     * @param user requested user
+     * @param category filters category. cannot be null.
+     * @param sorter filters status. if empty, use default sorting (ID).
+     * @return result projects
+     */
+    public List<ProjectQueryDTO> filterActiveProjects(LoginUser user, Category category, SimpleOrderBySelector... sorter) {
+        return getProjects(user, e -> projectQueryDAO.getFilteredActiveProjects(e, category, sorter), UserType.values());
     }
 
     /**

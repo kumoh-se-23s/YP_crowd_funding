@@ -50,6 +50,8 @@ public class AppContext implements AutoCloseable {
     @Getter
     private final ProjectService projectService;
     @Getter
+    private final ProjectQueryService projectQueryService;
+    @Getter
     private final RewardService rewardService;
     @Getter
     private final LikeService likeService;
@@ -91,6 +93,7 @@ public class AppContext implements AutoCloseable {
             this.adminService = new AdminService(transactionManager, usersDAO, projectsDAO, rejectsDAO);
             this.makerService = new MakerService(transactionManager, usersDAO);
             this.projectService = new ProjectService(transactionManager, projectsDAO, categoryDAO, rewardsDAO, imageDAO, reviewsDAO);
+            this.projectQueryService = new ProjectQueryService(transactionManager);
             this.rewardService = new RewardService(transactionManager, projectsDAO, rewardsDAO, imageDAO);
             this.supporterService = new SupporterService(transactionManager, usersDAO);
             this.likeService = new LikeService(transactionManager, likesDAO, projectsDAO, clock);

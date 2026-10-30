@@ -2,18 +2,17 @@ package ypfunding.server.persistence.dao;
 
 import ypfunding.common.dto.ProjectQueryDTO;
 import ypfunding.common.type.ApprovalStatus;
+import ypfunding.common.type.Category;
 import ypfunding.common.type.ProjectFundingStatus;
 import ypfunding.common.util.DateTimeUtil;
 import ypfunding.server.persistence.dao.dynamicsql.builder.SQLSelect;
 import ypfunding.server.persistence.dao.dynamicsql.col.*;
 import ypfunding.server.persistence.dao.dynamicsql.condition.BasicCondition;
+import ypfunding.server.persistence.dao.dynamicsql.condition.Condition;
 import ypfunding.server.persistence.dao.dynamicsql.op.ArithmeticConditionOperator;
 import ypfunding.server.persistence.dao.dynamicsql.op.ArithmeticOperator;
 import ypfunding.server.persistence.dao.dynamicsql.op.SetConditionOperator;
-import ypfunding.server.persistence.dao.dynamicsql.table.DirectReferenceTable;
-import ypfunding.server.persistence.dao.dynamicsql.table.JoinType;
-import ypfunding.server.persistence.dao.dynamicsql.table.JoinedTable;
-import ypfunding.server.persistence.dao.dynamicsql.table.PredefinedReferenceTable;
+import ypfunding.server.persistence.dao.dynamicsql.table.*;
 import ypfunding.server.persistence.dao.dynamicsql.token.*;
 
 import java.sql.Connection;
@@ -102,10 +101,21 @@ public class ProjectQueryDAO extends DAO {
         ).groupBy(FundsDAO.Columns.REWARD_ID);
     }
 
+    private static class ProjectStatusTableReference {
+        public DirectReferenceTable projectsTable;
+        public PredefinedReferenceTable cteProjectsWithStatus;
+    }
 
     private SQLSelect createProjectStatusSQLBuilder() {
+        return createProjectStatusSQLBuilder(new ProjectStatusTableReference());
+    }
+
+    private SQLSelect createProjectStatusSQLBuilder(
+            ProjectStatusTableReference tableReferences
+    ) {
 
         DirectReferenceTable projectsTable = new DirectReferenceTable(Tables.PROJECTS);
+
         DirectReferenceTable rewardsTable = new DirectReferenceTable(Tables.REWARDS);
         DirectReferenceTable cteProjects = new DirectReferenceTable(Tables.PROJECTS);
 
@@ -189,6 +199,9 @@ public class ProjectQueryDAO extends DAO {
                         )
                 ).groupBy(new TableRefColumnToken(cteProjects, ProjectsDAO.Columns.PROJECT_ID))
         );
+
+        tableReferences.projectsTable = projectsTable;
+        tableReferences.cteProjectsWithStatus = cteProjectsWithStatus;
         return new SQLSelect(new ColumnSelector[]{
                 new ColumnFromTokenSelector(ProjectsDAO.Columns.PROJECT_ID, new TableRefColumnToken(projectsTable, ProjectsDAO.Columns.PROJECT_ID)),
                 new ColumnFromTokenSelector(ProjectsDAO.Columns.USER_ID, new TableRefColumnToken(projectsTable, ProjectsDAO.Columns.USER_ID)),
@@ -215,6 +228,43 @@ public class ProjectQueryDAO extends DAO {
         ), cteRewardStatus, cteProjectsWithStatus);
     }
 
+    private SQLSelect createCategoryFilteredProjectStatusSQLBuilder(Category category) {
+        ProjectStatusTableReference reference = new ProjectStatusTableReference();
+        SQLSelect select = createProjectStatusSQLBuilder(reference);
+        DirectReferenceTable categoryTable = new DirectReferenceTable(Tables.CATEGORY);
+        DirectReferenceTable projectsTable = reference.projectsTable;
+        PredefinedReferenceTable cteProjectsWithStatus = reference.cteProjectsWithStatus;
+
+        return new SQLSelect(
+                new ColumnSelector[]{
+                        new ColumnFromTokenSelector(ProjectsDAO.Columns.PROJECT_ID, new TableRefColumnToken(projectsTable, ProjectsDAO.Columns.PROJECT_ID)),
+                        new ColumnFromTokenSelector(ProjectsDAO.Columns.USER_ID, new TableRefColumnToken(projectsTable, ProjectsDAO.Columns.USER_ID)),
+                        new ColumnFromTokenSelector(ProjectsDAO.Columns.TITLE, new TableRefColumnToken(projectsTable, ProjectsDAO.Columns.TITLE)),
+                        new ColumnFromTokenSelector(ProjectsDAO.Columns.DESCRIPTION, new TableRefColumnToken(projectsTable, ProjectsDAO.Columns.DESCRIPTION)),
+                        new ColumnFromTokenSelector(ProjectsDAO.Columns.GOAL, new TableRefColumnToken(projectsTable, ProjectsDAO.Columns.GOAL)),
+                        new ColumnFromTokenSelector(ProjectsDAO.Columns.DURATION, new TableRefColumnToken(projectsTable, ProjectsDAO.Columns.DURATION)),
+                        new ColumnFromTokenSelector(ProjectsDAO.Columns.START_DATE, new TableRefColumnToken(projectsTable, ProjectsDAO.Columns.START_DATE)),
+                        new ColumnFromTokenSelector(ProjectsDAO.Columns.END_DATE, new TableRefColumnToken(projectsTable, ProjectsDAO.Columns.END_DATE)),
+                        new ColumnFromTokenSelector(ProjectsDAO.Columns.APPROVAL_STATUS, new TableRefColumnToken(projectsTable, ProjectsDAO.Columns.APPROVAL_STATUS)),
+                        new ColumnFromTokenSelector(Columns.SUPPORTER_COUNT, new TableRefColumnToken(cteProjectsWithStatus, Columns.SUPPORTER_COUNT)),
+                        new ColumnFromTokenSelector(Columns.PROJECT_SOLD_PRICE, new TableRefColumnToken(cteProjectsWithStatus, Columns.PROJECT_SOLD_PRICE)),
+                        new ColumnFromTokenSelector(Columns.PROJECT_FUND_PROGRESS, new TableRefColumnToken(cteProjectsWithStatus, Columns.PROJECT_FUND_PROGRESS)),
+                        new ColumnFromTokenSelector(Columns.PROJECT_FUND_STATUS, new TableRefColumnToken(cteProjectsWithStatus, Columns.PROJECT_FUND_STATUS)),
+                },
+                new JoinedTable(new InlineViewReferenceTable(select), JoinType.LEFT, categoryTable,
+                        Condition.and(new BasicCondition(
+                                        new TableRefColumnToken(categoryTable, CategoryDAO.Columns.PROJECT_ID),
+                                        ArithmeticConditionOperator.EQ,
+                                        new TableRefColumnToken(projectsTable, ProjectsDAO.Columns.PROJECT_ID)
+                                ), new BasicCondition(
+                                        new TableRefColumnToken(categoryTable, CategoryDAO.Columns.CATEGORY_NAME),
+                                        ArithmeticConditionOperator.EQ,
+                                        new UserValueToken(category.toString())
+                                )
+                        ))
+        );
+    }
+
     // =================================================================
     // 2. READ SECTION
     // =================================================================
@@ -239,6 +289,22 @@ public class ProjectQueryDAO extends DAO {
 
     public List<ProjectQueryDTO> getActiveProjectsForName(Connection conn, String projectName, SimpleOrderBySelector... sorter) throws SQLException {
         return queryActiveProjects(conn, projectName, sorter);
+    }
+
+    public final List<ProjectQueryDTO> getFilteredActiveProjects(Connection conn, Category category, SimpleOrderBySelector... sorter) throws SQLException {
+        return getFilteredActiveProjectsForName(conn, "", category, sorter);
+    }
+
+    public List<ProjectQueryDTO> getFilteredActiveProjectsForName(Connection conn, String projectName, Category category, SimpleOrderBySelector... sorter) throws SQLException {
+        return queryFilteredActiveProjects(conn, projectName, category, sorter);
+    }
+
+    public final List<ProjectQueryDTO> getFilteredEndedProjects(Connection conn, Category category, SimpleOrderBySelector... sorter) throws SQLException {
+        return getFilteredEndedProjectsForName(conn, "", category, sorter);
+    }
+
+    public List<ProjectQueryDTO> getFilteredEndedProjectsForName(Connection conn, String projectName, Category category, SimpleOrderBySelector... sorter) throws SQLException {
+        return queryFilteredEndedProjects(conn, projectName, category, sorter);
     }
 
     public final List<ProjectQueryDTO> getFailedProjects(Connection conn, SimpleOrderBySelector... sorter) throws SQLException {
@@ -347,6 +413,34 @@ public class ProjectQueryDAO extends DAO {
     }
 
 
+    private List<ProjectQueryDTO> queryFilteredActiveProjects(Connection conn, String projectName, Category category, OrderBySelector... sorter) throws SQLException {
+        List<ProjectQueryDTO> result = new ArrayList<>();
+        try (ResultSet rs = createCategoryFilteredProjectStatusSQLBuilder(category)
+                .addCondition(createProjectApprovalStatusCondition(ApprovalStatus.APPROVED))
+                .addCondition(createEndedCondition(false))
+                .addCondition(createTitlePatternCondition(projectName))
+                .orderBy(sorter)
+                .execute(conn)) {
+            while (rs.next()) {
+                result.add(toDTO(rs));
+            }
+        }
+        return result;
+    }
+    private List<ProjectQueryDTO> queryFilteredEndedProjects(Connection conn, String projectName, Category category, OrderBySelector... sorter) throws SQLException {
+        List<ProjectQueryDTO> result = new ArrayList<>();
+        try (ResultSet rs = createCategoryFilteredProjectStatusSQLBuilder(category)
+                .addCondition(createProjectApprovalStatusCondition(ApprovalStatus.APPROVED))
+                .addCondition(createEndedCondition(true))
+                .addCondition(createTitlePatternCondition(projectName))
+                .orderBy(sorter)
+                .execute(conn)) {
+            while (rs.next()) {
+                result.add(toDTO(rs));
+            }
+        }
+        return result;
+    }
     private List<ProjectQueryDTO> queryEndedProjects(Connection conn, String projectName, OrderBySelector... sorter) throws SQLException {
         List<ProjectQueryDTO> result = new ArrayList<>();
         try (ResultSet rs = createProjectStatusSQLBuilder()
@@ -397,9 +491,9 @@ public class ProjectQueryDAO extends DAO {
         List<ProjectQueryDTO> result = new ArrayList<>();
         SQLSelect select = createProjectStatusSQLBuilder().addCondition(createTitlePatternCondition(projectName));
 
-        if(approvalStatus != null)
+        if (approvalStatus != null)
             select.addCondition(createProjectApprovalStatusCondition(approvalStatus));
-        if(fundingStatus != null)
+        if (fundingStatus != null)
             select.addCondition(createProjectFundingStatusCondition(fundingStatus));
 
         try (ResultSet rs = select

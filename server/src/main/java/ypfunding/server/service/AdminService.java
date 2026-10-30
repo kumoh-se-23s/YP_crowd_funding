@@ -13,7 +13,6 @@ import ypfunding.server.persistence.dao.UsersDAO;
 import ypfunding.server.util.NotificationUtils;
 import ypfunding.server.util.UserUtils;
 
-import java.util.Collections;
 import java.util.List;
 
 public class AdminService extends Service{
@@ -51,7 +50,7 @@ public class AdminService extends Service{
      * @param user requested user
      * @param projectId project ID
      */
-    public void approveFund(LoginUser user, long projectId){
+    public void approveProject(LoginUser user, long projectId){
 
         transactionManager.execute(conn -> {
             if(UserUtils.checkNotAdmin(user)){
