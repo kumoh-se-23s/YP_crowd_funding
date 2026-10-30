@@ -1,5 +1,6 @@
 package ypfunding.server.service;
 
+import ypfunding.common.dto.FundDTO;
 import ypfunding.common.dto.ProjectQueryDTO;
 import ypfunding.common.notifications.PermissionDeniedNotification;
 import ypfunding.common.type.ApprovalStatus;
@@ -54,6 +55,18 @@ public class ProjectQueryService extends Service {
     public List<ProjectQueryDTO> getAllActiveProjectsRecent(LoginUser user) {
         return getAllActiveProjects(user, new SimpleOrderBySelector(ProjectsDAO.Columns.START_DATE, false));
     }
+
+    /**
+     * Everyone can call this function.
+     * @param user requested user
+     * @param projectId project Id.
+     * @param sorter filters status. if empty, use default sorting (ID).
+     * @return result projects
+     */
+    public List<FundDTO> getSupportStatus(LoginUser user, long projectId, SimpleOrderBySelector... sorter) {
+        return getProjects(user, e -> projectQueryDAO.getSupportStatus(e, projectId, sorter), UserType.values());
+    }
+
     /**
      * Everyone can call this function.
      * @param user requested user
@@ -144,7 +157,7 @@ public class ProjectQueryService extends Service {
     }
 
 
-    private List<ProjectQueryDTO> getProjects(LoginUser user, ProjectQueryFunc func, UserType... permission) {
+    private <T> List<T> getProjects(LoginUser user, ProjectQueryFunc<T> func, UserType... permission) {
 
         return transactionManager.execute(conn -> {
 
@@ -157,9 +170,9 @@ public class ProjectQueryService extends Service {
         });
     }
 
-    private interface ProjectQueryFunc {
+    private interface ProjectQueryFunc<T> {
 
-        List<ProjectQueryDTO> apply(Connection connection) throws SQLException;
+        List<T> apply(Connection connection) throws SQLException;
     }
 
 }

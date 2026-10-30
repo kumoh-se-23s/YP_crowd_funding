@@ -10,8 +10,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 
-public class FundsDAO extends DAO{
-    public enum Columns implements ColumnsEnum{
+public class FundsDAO extends DAO {
+
+    public enum Columns implements ColumnsEnum {
         FUND_ID("fund_id"),
         USER_ID("user_id"),
         PROJECT_ID("project_id"),
@@ -20,7 +21,8 @@ public class FundsDAO extends DAO{
         DATE("date");
 
         private final String name;
-        Columns(String name){
+
+        Columns(String name) {
             this.name = name;
         }
 
@@ -30,13 +32,17 @@ public class FundsDAO extends DAO{
         }
     }
 
-    public void fillDataFromResultSet(FundDTO dto, ResultSet rs)throws SQLException{
+
+
+    public static FundDTO toDTO(ResultSet rs) throws SQLException {
+        FundDTO dto = new FundDTO();
         dto.setFundId(rs.getLong(Columns.FUND_ID.toString()));
         dto.setUserId(rs.getLong(Columns.USER_ID.toString()));
         dto.setProjectId(rs.getLong(Columns.PROJECT_ID.toString()));
         dto.setRewardId(rs.getLong(Columns.REWARD_ID.toString()));
         dto.setQuantity(rs.getLong(Columns.QUANTITY.toString()));
         dto.setDate(rs.getObject(Columns.DATE.toString(), LocalDateTime.class));
+        return dto;
     }
 
     // =================================================================
@@ -56,8 +62,8 @@ public class FundsDAO extends DAO{
             psmt.setObject(5, fundDTO.getDate());
 
             psmt.executeUpdate();
-        }catch (SQLException e){
-            if(e.getErrorCode() == 1062) throw new DuplicateFundException(e);
+        } catch (SQLException e) {
+            if (e.getErrorCode() == 1062) throw new DuplicateFundException(e);
             throw e;
         }
     }
@@ -75,9 +81,7 @@ public class FundsDAO extends DAO{
 
             try (ResultSet rs = psmt.executeQuery()) {
                 if (rs.next()) {
-                    FundDTO dto = new FundDTO();
-                    fillDataFromResultSet(dto, rs);
-                    return dto;
+                    return toDTO(rs);
                 }
                 return null;
             }
@@ -111,7 +115,7 @@ public class FundsDAO extends DAO{
     public int delete(Connection conn, long fundId) throws SQLException {
         final String DELETE_SQL = "DELETE FROM funds WHERE fund_id = ?";
 
-        try ( PreparedStatement psmt = conn.prepareStatement(DELETE_SQL)) {
+        try (PreparedStatement psmt = conn.prepareStatement(DELETE_SQL)) {
             psmt.setLong(1, fundId);
 
             return psmt.executeUpdate();

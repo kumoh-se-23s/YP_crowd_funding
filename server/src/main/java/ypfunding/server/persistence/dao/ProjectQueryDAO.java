@@ -1,5 +1,6 @@
 package ypfunding.server.persistence.dao;
 
+import ypfunding.common.dto.FundDTO;
 import ypfunding.common.dto.ProjectQueryDTO;
 import ypfunding.common.type.ApprovalStatus;
 import ypfunding.common.type.Category;
@@ -331,6 +332,10 @@ public class ProjectQueryDAO extends DAO {
         return queryPendingProjects(conn, projectName, sorter);
     }
 
+    public final List<FundDTO> getSupportStatus(Connection conn, long projectId, SimpleOrderBySelector... sorter) throws SQLException {
+        return querySupportStatus(conn, projectId, sorter);
+    }
+
     public final List<ProjectQueryDTO> getAllProjects(Connection conn, SimpleOrderBySelector... sorter) throws SQLException {
         return getAllProjectsForName(conn, "", sorter);
     }
@@ -412,6 +417,22 @@ public class ProjectQueryDAO extends DAO {
         return result;
     }
 
+    private List<FundDTO> querySupportStatus(Connection connection, long projectId, OrderBySelector... sorter) throws SQLException {
+        List<FundDTO> result = new ArrayList<>();
+        try (ResultSet rs = SQLSelect.allColumns(Tables.FUNDS)
+                .addCondition(new BasicCondition(
+                        new ColumnValueToken(FundsDAO.Columns.PROJECT_ID),
+                        ArithmeticConditionOperator.EQ,
+                        new UserValueToken(projectId)
+                ))
+                .orderBy(sorter)
+                .execute(connection)) {
+            while (rs.next()) {
+                result.add(FundsDAO.toDTO(rs));
+            }
+        }
+        return result;
+    }
 
     private List<ProjectQueryDTO> queryFilteredActiveProjects(Connection conn, String projectName, Category category, OrderBySelector... sorter) throws SQLException {
         List<ProjectQueryDTO> result = new ArrayList<>();
@@ -427,6 +448,7 @@ public class ProjectQueryDAO extends DAO {
         }
         return result;
     }
+
     private List<ProjectQueryDTO> queryFilteredEndedProjects(Connection conn, String projectName, Category category, OrderBySelector... sorter) throws SQLException {
         List<ProjectQueryDTO> result = new ArrayList<>();
         try (ResultSet rs = createCategoryFilteredProjectStatusSQLBuilder(category)
@@ -441,6 +463,7 @@ public class ProjectQueryDAO extends DAO {
         }
         return result;
     }
+
     private List<ProjectQueryDTO> queryEndedProjects(Connection conn, String projectName, OrderBySelector... sorter) throws SQLException {
         List<ProjectQueryDTO> result = new ArrayList<>();
         try (ResultSet rs = createProjectStatusSQLBuilder()
