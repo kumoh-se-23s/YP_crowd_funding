@@ -109,7 +109,7 @@ public class ProjectQueryDAO extends DAO {
     }
 
     private SQLSelect createProjectStatusSQLBuilder() {
-        return createProjectStatusSQLBuilder(new ProjectStatusTableReference());
+        return createProjectStatusSQLBuilder(new ProjectStatusTableReference(), true);
     }
 
     private SQLSelect createProjectStatusSQLBuilder(
