@@ -104,6 +104,7 @@ public class ProjectQueryDAO extends DAO {
 
     private static class ProjectStatusTableReference {
         public DirectReferenceTable projectsTable;
+        public PredefinedReferenceTable cteRewardStatus;
         public PredefinedReferenceTable cteProjectsWithStatus;
     }
 
@@ -112,7 +113,8 @@ public class ProjectQueryDAO extends DAO {
     }
 
     private SQLSelect createProjectStatusSQLBuilder(
-            ProjectStatusTableReference tableReferences
+            ProjectStatusTableReference tableReferences,
+            boolean useCte
     ) {
 
         DirectReferenceTable projectsTable = new DirectReferenceTable(Tables.PROJECTS);
@@ -202,7 +204,19 @@ public class ProjectQueryDAO extends DAO {
         );
 
         tableReferences.projectsTable = projectsTable;
+        tableReferences.cteRewardStatus = cteRewardStatus;
         tableReferences.cteProjectsWithStatus = cteProjectsWithStatus;
+
+        PredefinedReferenceTable[] cte;
+
+        if (useCte) {
+            cte = new PredefinedReferenceTable[]{
+                    cteRewardStatus, cteProjectsWithStatus
+            };
+        } else {
+            cte = new PredefinedReferenceTable[0];
+        }
+
         return new SQLSelect(new ColumnSelector[]{
                 new ColumnFromTokenSelector(ProjectsDAO.Columns.PROJECT_ID, new TableRefColumnToken(projectsTable, ProjectsDAO.Columns.PROJECT_ID)),
                 new ColumnFromTokenSelector(ProjectsDAO.Columns.USER_ID, new TableRefColumnToken(projectsTable, ProjectsDAO.Columns.USER_ID)),
@@ -226,14 +240,15 @@ public class ProjectQueryDAO extends DAO {
                         ArithmeticConditionOperator.EQ,
                         new TableRefColumnToken(rewardsTable, RewardsDAO.Columns.PROJECT_ID)
                 )
-        ), cteRewardStatus, cteProjectsWithStatus);
+        ), cte);
     }
 
     private SQLSelect createCategoryFilteredProjectStatusSQLBuilder(Category category) {
         ProjectStatusTableReference reference = new ProjectStatusTableReference();
-        SQLSelect select = createProjectStatusSQLBuilder(reference);
+        SQLSelect select = createProjectStatusSQLBuilder(reference, false);
         DirectReferenceTable categoryTable = new DirectReferenceTable(Tables.CATEGORY);
         DirectReferenceTable projectsTable = reference.projectsTable;
+        PredefinedReferenceTable cteRewardStatus = reference.cteRewardStatus;
         PredefinedReferenceTable cteProjectsWithStatus = reference.cteProjectsWithStatus;
 
         return new SQLSelect(
@@ -262,7 +277,7 @@ public class ProjectQueryDAO extends DAO {
                                         ArithmeticConditionOperator.EQ,
                                         new UserValueToken(category.toString())
                                 )
-                        ))
+                        )), cteRewardStatus, cteProjectsWithStatus
         );
     }
 
