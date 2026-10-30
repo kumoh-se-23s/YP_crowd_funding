@@ -30,8 +30,11 @@ public final class JoinedTable extends ReferenceTable{
     @Override
     public String toString() {
 
-        String lhsStr = noParenthesesRequired(lhs) ? lhs.toString() : ("(" + lhs + ")");
-        String rhsStr = noParenthesesRequired(rhs) ? rhs.toString() : ("(" + rhs + ")");
+        String lhsTableStr = lhs instanceof PredefinedReferenceTable t ? t.getVarName() : lhs.toString();
+        String rhsTableStr = rhs instanceof PredefinedReferenceTable t ? t.getVarName() : rhs.toString();
+
+        String lhsStr = noParenthesesRequired(lhs) ? lhsTableStr : ("(" + lhsTableStr + ")");
+        String rhsStr = noParenthesesRequired(rhs) ? rhsTableStr : ("(" + rhsTableStr + ")");
 
         return "(" + lhsStr + " " + type + " " + rhsStr + " on " + joinCondition + ")";
     }
