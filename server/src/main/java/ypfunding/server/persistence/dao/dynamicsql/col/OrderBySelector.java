@@ -17,7 +17,7 @@ public abstract sealed class OrderBySelector permits GenericOrderBySelector, Sim
     @Override
     @NonNull
     public String toString() {
-        return " order by " + getTarget() + (ascending ? " asc" : " desc");
+        return getTarget() + (ascending ? " asc" : " desc");
     }
 
     public List<Object> getUserParameters() {

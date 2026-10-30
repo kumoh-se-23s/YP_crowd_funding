@@ -62,11 +62,11 @@ public final class SQLSelect extends SQLBuilder<ResultSet> {
     public String toString() {
         String cteStr = predefined.length == 0 ? "" : PredefinedReferenceTable.makeQuery(predefined) + "\n";
         String whereStr = conditions.isEmpty() ? "" : "where " + Condition.and(conditions) + "\n";
-        String groupByStr = (groupByColumns == null ? "" : "group by " + Arrays.stream(groupByColumns).map(ColumnSelector::toString).collect(Collectors.joining(", ")));
+        String groupByStr = (groupByColumns == null ? "" : "group by " + Arrays.stream(groupByColumns).map(ColumnSelector::toString).collect(Collectors.joining(", "))) + "\n";
+        String orderByStr = orderBySelectors.isEmpty() ? "" : "order by " + orderBySelectors.stream().map(OrderBySelector::toString).collect(Collectors.joining(", "));
         return cteStr + "select " + (columnSelectors.length == 0 ? "*" : ColumnSelector.buildSelectColumnParentheses(columnSelectors)) +
                "\nfrom " +
-               referenceTable + "\n" + whereStr +
-               orderBySelectors.stream().map(OrderBySelector::toString).collect(Collectors.joining(", ")) + "\n" + groupByStr;
+               referenceTable + "\n" + whereStr + groupByStr + orderByStr;
     }
 
     public SQLSelect orderBy(OrderBySelector token) {
