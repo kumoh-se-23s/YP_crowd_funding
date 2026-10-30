@@ -52,8 +52,8 @@ public class ProjectQueryService extends Service {
      * @param user requested user
      * @return result projects sorted by most recent
      */
-    public List<ProjectQueryDTO> getAllActiveProjectsRecent(LoginUser user) {
-        return getAllActiveProjects(user, new SimpleOrderBySelector(ProjectsDAO.Columns.START_DATE, false));
+    public List<ProjectQueryDTO> getAllActiveOrEndedProjectsRecent(LoginUser user) {
+        return getAllActiveOrEndedProjects(user, new SimpleOrderBySelector(ProjectsDAO.Columns.START_DATE, false));
     }
 
     /**
@@ -73,8 +73,8 @@ public class ProjectQueryService extends Service {
      * @param sorter filters status. if empty, use default sorting (ID).
      * @return result projects
      */
-    public List<ProjectQueryDTO> getAllActiveProjects(LoginUser user, SimpleOrderBySelector... sorter) {
-        return getProjects(user, e -> projectQueryDAO.getActiveProjects(e, sorter), UserType.values());
+    public List<ProjectQueryDTO> getAllActiveOrEndedProjects(LoginUser user, SimpleOrderBySelector... sorter) {
+        return getProjects(user, e -> projectQueryDAO.getActiveOrEndedProjects(e, sorter), UserType.values());
     }
 
     /**

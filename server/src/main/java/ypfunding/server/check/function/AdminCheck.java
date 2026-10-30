@@ -4,7 +4,6 @@ import ypfunding.common.type.Category;
 import ypfunding.server.check.CheckBase;
 import ypfunding.server.bootstrap.AppContext;
 import ypfunding.server.check.CheckUsers;
-import ypfunding.server.persistence.dao.dynamicsql.col.SimpleOrderBySelector;
 
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -33,7 +32,7 @@ public class AdminCheck extends CheckBase {
 
     public void test06ViewProjects() {
         System.out.println("========= TEST 06 ========");
-        System.out.println(context.getProjectQueryService().getAllActiveProjectsRecent(users.supporter()).stream().map(Object::toString)
+        System.out.println(context.getProjectQueryService().getAllActiveOrEndedProjectsRecent(users.supporter()).stream().map(Object::toString)
                 .collect(Collectors.joining("\n")));
     }
 

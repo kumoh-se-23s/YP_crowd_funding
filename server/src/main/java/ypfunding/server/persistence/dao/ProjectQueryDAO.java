@@ -330,7 +330,13 @@ public class ProjectQueryDAO extends DAO {
         }
         return result;
     }
+    public final List<ProjectQueryDTO> getActiveOrEndedProjects(Connection conn, SimpleOrderBySelector... sorter) throws SQLException {
+        return getActiveOrEndedProjectsForName(conn, "", sorter);
+    }
 
+    public List<ProjectQueryDTO> getActiveOrEndedProjectsForName(Connection conn, String projectName, SimpleOrderBySelector... sorter) throws SQLException {
+        return queryActiveOrEndedProjects(conn, projectName, sorter);
+    }
     public final List<ProjectQueryDTO> getActiveProjects(Connection conn, SimpleOrderBySelector... sorter) throws SQLException {
         return getActiveProjectsForName(conn, "", sorter);
     }
@@ -413,6 +419,20 @@ public class ProjectQueryDAO extends DAO {
 
     public List<ProjectQueryDTO> getEndedProjectsForName(Connection conn, String projectName, SimpleOrderBySelector... sorter) throws SQLException {
         return queryEndedProjects(conn, projectName, sorter);
+    }
+
+    private List<ProjectQueryDTO> queryActiveOrEndedProjects(Connection conn, String projectName, OrderBySelector... sorter) throws SQLException {
+        List<ProjectQueryDTO> result = new ArrayList<>();
+        try (ResultSet rs = createProjectStatusSQLBuilder()
+                .addCondition(createProjectApprovalStatusCondition(ApprovalStatus.APPROVED))
+                .addCondition(createTitlePatternCondition(projectName))
+                .orderBy(sorter)
+                .execute(conn)) {
+            while (rs.next()) {
+                result.add(toDTO(rs));
+            }
+        }
+        return result;
     }
 
     private List<ProjectQueryDTO> queryActiveProjects(Connection conn, String projectName, OrderBySelector... sorter) throws SQLException {
