@@ -15,6 +15,17 @@ import java.util.List;
 public class MakerCheck extends CheckBase {
 
     // =================================================================
+    // 연계 시연 시 수정 필요한 변수
+    // =================================================================
+
+    // [03번 시연용] 리워드 등록 대상 프로젝트 PK
+    // 빠른 테스트를 위해 이미 등록된 거 기준으로 갈 생각이긴한데 2 -> 3 이어지게 하려면
+    // DB까서 프로젝트 코드 확인하고 시연전에 바꿔줘야함
+    private static final long TEST03_TARGET_PROJECT_ID = 5L;
+
+
+
+    // =================================================================
     // 시연용 상수 정의 (최상단 분리 — seed.sql 변동 시 여기만 수정)
     // =================================================================
 
@@ -28,11 +39,6 @@ public class MakerCheck extends CheckBase {
             Category.TECH_HOME_APPLIANCES,
             Category.HOME_LIVING
     );
-
-    // [03번 시연용] 리워드 등록 대상 프로젝트 PK
-    // 빠른 테스트를 위해 이미 등록된 거 기준으로 갈 생각이긴한데 2 -> 3 이어지게 하려면
-    // DB까서 프로젝트 코드 확인하고 시연전에 바꿔줘야함
-    private static final long TEST03_TARGET_PROJECT_ID = 5L;
 
     // [03번 시연용] 리워드 1 (수량 제한 리워드)
     private static final String TEST03_REWARD1_NAME = "[슈퍼얼리버드] 한정판 풀패키지";
@@ -80,7 +86,7 @@ public class MakerCheck extends CheckBase {
     /*
      * [03번 시연]
      *
-     * -- 1) 대상 프로젝트에 등록된 리워드 확인 쿼리(한정 수량 20 및 무제한 NULL 확인)
+     * -- 1) 대상 프로젝트에 등록된 리워드 확인 쿼리(한정 수량 20 및 무제한 0 확인)
      * SELECT r.reward_id, r.project_id, p.title, p.approval_status, r.name, r.price, r.description, r.stock
      *   FROM rewards r
      *   JOIN projects p ON r.project_id = p.project_id
