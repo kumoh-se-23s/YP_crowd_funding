@@ -27,6 +27,6 @@ public final class BasicCondition extends Condition {
     public String toString() {
         String lhsStr = noParenthesesRequired(lhs) ? lhs.toString() : ("(" + lhs + ")");
         String rhsStr = noParenthesesRequired(rhs) ? rhs.toString() : ("(" + rhs + ")");
-        return lhsStr + operator + rhsStr;
+        return lhsStr + " " + operator + " " + rhsStr;
     }
 }
