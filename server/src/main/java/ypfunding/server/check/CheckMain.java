@@ -24,14 +24,14 @@ public class CheckMain {
             AdminCheck admin = new AdminCheck(context, users);
             FundingCheck funding = new FundingCheck(context, users);
             try {
-//                initDB(context);
-//                admin.test01ViewFundingStatus();
+                initDB(context);
+                admin.test01ViewFundingStatus();
 //                maker.test02RegisterProject();
 //                maker.test03RegisterReward();
 //                admin.test04ApproveProject();
 //                auth.test05UpdateProfile();
-//                admin.test06ViewProjects();
-//                admin.test07FilterProjects();
+                admin.test06ViewProjects();
+                admin.test07FilterProjects();
 //                funding.test08ApplyReward();
 //                funding.test09RegisterReview();
 //                funding.test10ConcurrencyControl();

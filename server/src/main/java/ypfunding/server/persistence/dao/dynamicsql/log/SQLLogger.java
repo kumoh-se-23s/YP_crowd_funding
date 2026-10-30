@@ -25,6 +25,6 @@ public class SQLLogger {
 
     public static void logQuery(SQLBuilder<?> sqlBuilder) {
         String params = sqlBuilder.getUserParameters().stream().map(Object::toString).collect(Collectors.joining(", "));
-        System.out.printf("SQL Query Executed - %s\n\tparameters : %s\n", getQuery(sqlBuilder), params.isBlank() ? "[ NO PARAMETERS ]" : params);
+//        System.out.printf("SQL Query Executed - %s\n\tparameters : %s\n", getQuery(sqlBuilder), params.isBlank() ? "[ NO PARAMETERS ]" : params);
     }
 }

@@ -2,6 +2,7 @@ package ypfunding.common.dto;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 import ypfunding.common.type.ApprovalStatus;
 import ypfunding.common.type.ProjectFundingStatus;
 
@@ -9,6 +10,7 @@ import java.time.LocalDateTime;
 
 @Getter
 @Setter
+@ToString
 public class ProjectQueryDTO {
     private Long projectId;
     private Long userId;
