@@ -20,7 +20,7 @@ public class SQLLogger {
         System.out.printf("%s | %s | %s \n", DateTimeUtil.now(), severity, str);
     }
     public static String getQuery(SQLBuilder<?> sqlBuilder){
-        return PredefinedReferenceTable.makeQuery(sqlBuilder.getPredefined()) + "\n" + sqlBuilder;
+        return sqlBuilder.toString();
     }
 
     public static void logQuery(SQLBuilder<?> sqlBuilder) {

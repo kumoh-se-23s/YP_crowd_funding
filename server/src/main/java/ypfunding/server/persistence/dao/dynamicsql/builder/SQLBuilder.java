@@ -23,7 +23,7 @@ public abstract sealed class SQLBuilder<T> permits
 
     protected SQLBuilder(PredefinedReferenceTable... predefined) {
         this.predefined = predefined;
-        userParameters.addAll(Arrays.stream(predefined).map(PredefinedReferenceTable::getUserParameters).flatMap(List::stream).toList());
+        userParameters.addAll(Arrays.stream(predefined).map(PredefinedReferenceTable::getDefinitionParameters).flatMap(List::stream).toList());
     }
 
     protected void addConditionImpl(Condition condition) {

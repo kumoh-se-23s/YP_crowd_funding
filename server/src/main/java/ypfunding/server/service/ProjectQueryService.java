@@ -64,7 +64,7 @@ public class ProjectQueryService extends Service {
      * @return result projects
      */
     public List<FundDTO> getSupportStatus(LoginUser user, long projectId, SimpleOrderBySelector... sorter) {
-        return getProjects(user, e -> projectQueryDAO.getSupportStatus(e, projectId, sorter), UserType.values());
+        return getProjects(user, e -> projectQueryDAO.getSupportStatus(e, projectId, sorter), UserType.MAKER);
     }
 
     /**

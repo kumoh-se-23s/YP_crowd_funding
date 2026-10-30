@@ -32,7 +32,8 @@ public class ProjectQueryDAO extends DAO {
         SUPPORTER_COUNT("supporter_count"),
         REWARD_SOLD_STOCK("reward_sold_stock"),
         REWARD_SOLD_PRICE("reward_sold_price"),
-        REWARD_REMAINING_STOCK("remaining_stock");
+        REWARD_REMAINING_STOCK("remaining_stock"),
+        REWARD_FUND_COUNT("reward_fund_count");
 
         private final String name;
 
@@ -59,33 +60,46 @@ public class ProjectQueryDAO extends DAO {
                         new ColumnFromTokenSelector(
                                 RewardsDAO.Columns.REWARD_ID,
                                 new TableRefColumnToken(cteRewards, RewardsDAO.Columns.REWARD_ID)),
+                        // [추가] __prt8이 project_id로 조인하므로 필요
+                        new ColumnFromTokenSelector(
+                                RewardsDAO.Columns.PROJECT_ID,
+                                new TableRefColumnToken(cteRewards, RewardsDAO.Columns.PROJECT_ID)),
+                        // [수정] 남은 수량 = stock - 신청 수량. 무제한(stock 0)은 0 그대로 (0 = 무제한 규칙)
                         new ColumnFromTokenSelector(
                                 Columns.REWARD_REMAINING_STOCK,
-                                new ValueExpressionToken(
-                                        new TableRefColumnToken(cteRewards, RewardsDAO.Columns.STOCK),
-                                        ArithmeticOperator.SUB,
-                                        new BuiltinFunctionToken(
-                                                BuiltinFunctions.SUM,
-                                                new TableRefColumnToken(cteFunds, FundsDAO.Columns.QUANTITY)
+                                new BuiltinFunctionToken(
+                                        BuiltinFunctions.IF,
+                                        new ValueConditionToken(new BasicCondition(
+                                                new TableRefColumnToken(cteRewards, RewardsDAO.Columns.STOCK),
+                                                ArithmeticConditionOperator.EQ,
+                                                new UserValueToken(0))),
+                                        new UserValueToken(0),
+                                        new ValueExpressionToken(
+                                                new TableRefColumnToken(cteRewards, RewardsDAO.Columns.STOCK),
+                                                ArithmeticOperator.SUB,
+                                                soldQuantity(cteFunds)
                                         )
                                 )
                         ),
+                        // [수정] 후원 0건이면 NULL 대신 0
                         new ColumnFromTokenSelector(
                                 Columns.REWARD_SOLD_STOCK,
-                                new BuiltinFunctionToken(
-                                        BuiltinFunctions.SUM,
-                                        new TableRefColumnToken(cteFunds, FundsDAO.Columns.QUANTITY)
-                                )
+                                soldQuantity(cteFunds)
                         ),
                         new ColumnFromTokenSelector(
                                 Columns.REWARD_SOLD_PRICE,
                                 new ValueExpressionToken(
-                                        new BuiltinFunctionToken(
-                                                BuiltinFunctions.SUM,
-                                                new TableRefColumnToken(cteFunds, FundsDAO.Columns.QUANTITY)
-                                        ),
+                                        soldQuantity(cteFunds),
                                         ArithmeticOperator.MUL,
                                         new TableRefColumnToken(cteRewards, RewardsDAO.Columns.PRICE)
+                                )
+                        ),
+                        // [추가] 리워드별 후원 건수 (후원 없는 리워드는 0)
+                        new ColumnFromTokenSelector(
+                                Columns.REWARD_FUND_COUNT,
+                                new BuiltinFunctionToken(
+                                        BuiltinFunctions.COUNT,
+                                        new TableRefColumnToken(cteFunds, FundsDAO.Columns.FUND_ID)
                                 )
                         )
                 },
@@ -100,6 +114,14 @@ public class ProjectQueryDAO extends DAO {
                         )
                 )
         ).groupBy(FundsDAO.Columns.REWARD_ID);
+    }
+
+    private static ValueToken soldQuantity(DirectReferenceTable funds) {
+        return new BuiltinFunctionToken(
+                BuiltinFunctions.IFNULL,
+                new BuiltinFunctionToken(BuiltinFunctions.SUM, new TableRefColumnToken(funds, FundsDAO.Columns.QUANTITY)),
+                new UserValueToken(0)
+        );
     }
 
     private static class ProjectStatusTableReference {
@@ -119,7 +141,6 @@ public class ProjectQueryDAO extends DAO {
 
         DirectReferenceTable projectsTable = new DirectReferenceTable(Tables.PROJECTS);
 
-        DirectReferenceTable rewardsTable = new DirectReferenceTable(Tables.REWARDS);
         DirectReferenceTable cteProjects = new DirectReferenceTable(Tables.PROJECTS);
 
         PredefinedReferenceTable cteRewardStatus = new PredefinedReferenceTable(createRewardStatusSQLBuilder());
@@ -142,7 +163,7 @@ public class ProjectQueryDAO extends DAO {
                         new ColumnSelector[]{
                                 new ColumnFromTokenSelector(
                                         ProjectsDAO.Columns.PROJECT_ID,
-                                        new TableRefColumnToken(projectsTable, ProjectsDAO.Columns.PROJECT_ID)),
+                                        new TableRefColumnToken(cteProjects, ProjectsDAO.Columns.PROJECT_ID)),
                                 new ColumnFromTokenSelector(
                                         Columns.PROJECT_SOLD_PRICE,
                                         new BuiltinFunctionToken(BuiltinFunctions.SUM,
@@ -155,9 +176,12 @@ public class ProjectQueryDAO extends DAO {
                                 ),
                                 new ColumnFromTokenSelector(
                                         Columns.SUPPORTER_COUNT,
-                                        new BuiltinFunctionToken(
-                                                BuiltinFunctions.COUNT,
-                                                new WildcardValueToken()
+                                        new BuiltinFunctionToken(BuiltinFunctions.SUM,
+                                                new BuiltinFunctionToken(
+                                                        BuiltinFunctions.IFNULL,
+                                                        new TableRefColumnToken(cteRewardStatus, Columns.REWARD_FUND_COUNT),
+                                                        new UserValueToken(0)
+                                                )
                                         )
                                 ),
                                 new ColumnFromTokenSelector(
@@ -183,10 +207,10 @@ public class ProjectQueryDAO extends DAO {
                                                                         new UserValueToken(1)
                                                                 )
                                                         ),
-                                                        new UserValueToken(ProjectFundingStatus.SUCCESS),
-                                                        new UserValueToken(ProjectFundingStatus.FAILED)
+                                                        new UserValueToken(ProjectFundingStatus.SUCCESS.name()),
+                                                        new UserValueToken(ProjectFundingStatus.FAILED.name())
                                                 ),
-                                                new UserValueToken(ProjectFundingStatus.ONGOING)
+                                                new UserValueToken(ProjectFundingStatus.ONGOING.name())
                                         )
                                 )
                         },
@@ -231,21 +255,29 @@ public class ProjectQueryDAO extends DAO {
                 new ColumnFromTokenSelector(Columns.PROJECT_SOLD_PRICE, new TableRefColumnToken(cteProjectsWithStatus, Columns.PROJECT_SOLD_PRICE)),
                 new ColumnFromTokenSelector(Columns.PROJECT_FUND_PROGRESS, new TableRefColumnToken(cteProjectsWithStatus, Columns.PROJECT_FUND_PROGRESS)),
                 new ColumnFromTokenSelector(Columns.PROJECT_FUND_STATUS, new TableRefColumnToken(cteProjectsWithStatus, Columns.PROJECT_FUND_STATUS)),
-        }, new JoinedTable(
+        }, joinProjectsWithStatus(projectsTable, cteProjectsWithStatus), cte);
+    }
+
+    /**
+     * [추가] projects LEFT JOIN 프로젝트 현황 CTE ON project_id
+     */
+    private static JoinedTable joinProjectsWithStatus(DirectReferenceTable projectsTable, PredefinedReferenceTable cteProjectsWithStatus) {
+        return new JoinedTable(
                 projectsTable,
                 JoinType.LEFT,
-                rewardsTable,
+                cteProjectsWithStatus,
                 new BasicCondition(
                         new TableRefColumnToken(projectsTable, ProjectsDAO.Columns.PROJECT_ID),
                         ArithmeticConditionOperator.EQ,
-                        new TableRefColumnToken(rewardsTable, RewardsDAO.Columns.PROJECT_ID)
+                        new TableRefColumnToken(cteProjectsWithStatus, ProjectsDAO.Columns.PROJECT_ID)
                 )
-        ), cte);
+        );
+
     }
 
     private SQLSelect createCategoryFilteredProjectStatusSQLBuilder(Category category) {
         ProjectStatusTableReference reference = new ProjectStatusTableReference();
-        SQLSelect select = createProjectStatusSQLBuilder(reference, false);
+        createProjectStatusSQLBuilder(reference, false);
         DirectReferenceTable categoryTable = new DirectReferenceTable(Tables.CATEGORY);
         DirectReferenceTable projectsTable = reference.projectsTable;
         PredefinedReferenceTable cteRewardStatus = reference.cteRewardStatus;
@@ -267,7 +299,7 @@ public class ProjectQueryDAO extends DAO {
                         new ColumnFromTokenSelector(Columns.PROJECT_FUND_PROGRESS, new TableRefColumnToken(cteProjectsWithStatus, Columns.PROJECT_FUND_PROGRESS)),
                         new ColumnFromTokenSelector(Columns.PROJECT_FUND_STATUS, new TableRefColumnToken(cteProjectsWithStatus, Columns.PROJECT_FUND_STATUS)),
                 },
-                new JoinedTable(new InlineViewReferenceTable(select), JoinType.LEFT, categoryTable,
+                new JoinedTable(joinProjectsWithStatus(projectsTable, cteProjectsWithStatus), JoinType.INNER, categoryTable,
                         Condition.and(new BasicCondition(
                                         new TableRefColumnToken(categoryTable, CategoryDAO.Columns.PROJECT_ID),
                                         ArithmeticConditionOperator.EQ,
@@ -368,7 +400,7 @@ public class ProjectQueryDAO extends DAO {
     }
 
     public final List<ProjectQueryDTO> getRejectedProjects(Connection conn, SimpleOrderBySelector... sorter) throws SQLException {
-        return getActiveProjectsForName(conn, "", sorter);
+        return getRejectedProjectsForName(conn, "", sorter);
     }
 
     public List<ProjectQueryDTO> getRejectedProjectsForName(Connection conn, String projectName, SimpleOrderBySelector... sorter) throws SQLException {
@@ -376,7 +408,7 @@ public class ProjectQueryDAO extends DAO {
     }
 
     public final List<ProjectQueryDTO> getEndedProjects(Connection conn, SimpleOrderBySelector... sorter) throws SQLException {
-        return getActiveProjectsForName(conn, "", sorter);
+        return getEndedProjectsForName(conn, "", sorter);
     }
 
     public List<ProjectQueryDTO> getEndedProjectsForName(Connection conn, String projectName, SimpleOrderBySelector... sorter) throws SQLException {
@@ -568,7 +600,7 @@ public class ProjectQueryDAO extends DAO {
         return new BasicCondition(
                 new ColumnValueToken(ProjectsDAO.Columns.APPROVAL_STATUS),
                 ArithmeticConditionOperator.EQ,
-                new UserValueToken(approvalStatus)
+                new UserValueToken(approvalStatus.name())
         );
     }
 
@@ -577,7 +609,7 @@ public class ProjectQueryDAO extends DAO {
         return new BasicCondition(
                 new ColumnValueToken(Columns.PROJECT_FUND_STATUS),
                 ArithmeticConditionOperator.EQ,
-                new UserValueToken(fundingStatus)
+                new UserValueToken(fundingStatus.name())
         );
     }
 

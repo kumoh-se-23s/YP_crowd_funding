@@ -24,7 +24,8 @@ public final class JoinedTable extends ReferenceTable{
 
 
     private boolean noParenthesesRequired(ReferenceTable table){
-        return table instanceof DirectReferenceTable || table instanceof PredefinedReferenceTable;
+        return table instanceof DirectReferenceTable || table instanceof PredefinedReferenceTable
+               || table instanceof InlineViewReferenceTable;
     }
 
     @Override
