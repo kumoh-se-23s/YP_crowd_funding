@@ -21,6 +21,6 @@ public class ProjectQueryDTO {
     private ApprovalStatus approvalStatus;
     private Long supporterCount;
     private Long soldPrice;
-    private Long fundProgress;
+    private Double fundProgress;
     private ProjectFundingStatus projectFundingStatus;
 }

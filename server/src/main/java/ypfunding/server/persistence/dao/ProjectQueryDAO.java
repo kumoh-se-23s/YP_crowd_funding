@@ -651,7 +651,7 @@ public class ProjectQueryDAO extends DAO {
         dto.setEndDate(rs.getObject(ProjectsDAO.Columns.END_DATE.toString(), LocalDateTime.class));
         dto.setSupporterCount(rs.getLong(Columns.SUPPORTER_COUNT.toString()));
         dto.setSoldPrice(rs.getLong(Columns.PROJECT_SOLD_PRICE.toString()));
-        dto.setFundProgress(rs.getLong(Columns.PROJECT_FUND_PROGRESS.toString()));
+        dto.setFundProgress(rs.getDouble(Columns.PROJECT_FUND_PROGRESS.toString()) * 100);
         dto.setProjectFundingStatus(ProjectFundingStatus.valueOf(rs.getString(Columns.PROJECT_FUND_STATUS.toString())));
         return dto;
     }
