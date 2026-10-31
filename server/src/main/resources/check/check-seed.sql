@@ -76,4 +76,6 @@ INSERT INTO rewards (project_id, name, price, description, stock) VALUES
 -- ---------------------------------------------------------------------
 INSERT INTO funds (user_id, project_id, reward_id, quantity, date) VALUES
     (4, 2, 3, 2, NOW() - INTERVAL 15 DAY),
-    (4, 4, 7, 1, NOW() - INTERVAL 20 DAY);
+    (4, 4, 7, 1, NOW() - INTERVAL 20 DAY),
+    (5, 1, 1, 1, NOW() - INTERVAL 3 DAY),
+    (5, 2, 4, 1, NOW() - INTERVAL 12 DAY);
