@@ -18,6 +18,8 @@ public class DomainRules {
     public static final int MIN_REWARDS_PER_PROJECT = 2;
 
     //펀딩--------------------------------
+    //리워드 무한 재고
+    public static final int UNLIMITED_STOCK = 0;
     //구매 리워드 최소 수량 ( = ck_funds_quantity)
     public static final int MIN_FUND_QUANTITY = 1;
     //구매 리워드 최대 수량
