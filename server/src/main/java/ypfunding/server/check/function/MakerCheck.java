@@ -1,7 +1,7 @@
 package ypfunding.server.check.function;
 
-import ypfunding.common.dto.ProjectDTO;
-import ypfunding.common.dto.RewardDTO;
+import ypfunding.common.dto.*;
+import ypfunding.common.type.ApprovalStatus;
 import ypfunding.common.type.Category;
 import ypfunding.server.auth.LoginUser;
 import ypfunding.server.bootstrap.AppContext;
@@ -54,6 +54,27 @@ public class MakerCheck extends CheckBase {
 
     public MakerCheck(AppContext context, CheckUsers users) {
         super(context, users);
+    }
+
+
+    public void test01ViewFundingStatus() {
+        final String DIVIDER = "-".repeat(60);
+        List<FundingStatusDTO> statuses = context.getFundingStatusService().getMyFundingStatuses(users.maker());
+
+        if (statuses.isEmpty()) {
+            System.out.println("등록한 프로젝트가 없습니다.");
+            return;
+        }
+
+        int no = 1;
+        for (FundingStatusDTO status : statuses) {
+            if (no > 1) {
+                System.out.println(DIVIDER);
+            }
+            printProjectSummary(no++, status.getProject());
+            printRewards(status.getRewards());
+            printSupporters(status.getSupporters());
+        }
     }
 
     /*
@@ -114,5 +135,67 @@ public class MakerCheck extends CheckBase {
                 TEST03_TARGET_PROJECT_ID,
                 List.of(limitedReward, unlimitedReward)
         );
+    }
+
+    //1번 출력용 helper--------------------------------------------------------------------------------------
+    // 프로젝트 이름 [상태] / 목표 금액 / 총 펀딩 금액(달성률)
+    private void printProjectSummary(int no, ProjectQueryDTO project) {
+        System.out.printf("%d. %s [%s]%n", no, project.getTitle(), statusLabel(project));
+        System.out.printf("   - 목표 금액    : %s%n", won(project.getGoal()));
+        System.out.printf("   - 총 펀딩 금액 : %s (%.1f%%)%n", won(project.getSoldPrice()), project.getFundProgress());
+    }
+
+    // 리워드 이름 | 총 수량 | 신청 수량 | 남은 수량
+    private void printRewards(List<RewardStatusDTO> rewards) {
+        System.out.println();
+        System.out.println("   [리워드 목록]");
+        if (rewards.isEmpty()) {
+            System.out.println("   (없음)");
+            return;
+        }
+
+        int no = 1;
+        for (RewardStatusDTO reward : rewards) {
+            System.out.printf("   %d. %s | 총 수량 %s | 신청됨 %d개 | 남음 %s%n",
+                    no++,
+                    reward.getName(),
+                    reward.isUnlimited() ? "무제한" : reward.getStock(),
+                    reward.getAppliedQuantity(),
+                    reward.isUnlimited() ? "무제한" : reward.getRemainingQuantity());
+        }
+    }
+
+    // 서포터 이름 | 리워드 이름 | 구매 개수 | 금액 | 배송지
+    private void printSupporters(List<FundingSupporterDTO> supporters) {
+        System.out.println();
+        System.out.println("   [후원자 목록]");
+        if (supporters.isEmpty()) {
+            System.out.println("   (없음)");
+            return;
+        }
+
+        int no = 1;
+        for (FundingSupporterDTO supporter : supporters) {
+            System.out.printf("   %d. %s | %s | %d개 | %s | 배송지: %s%n",
+                    no++,
+                    supporter.getName(),
+                    supporter.getRewardName(),
+                    supporter.getQuantity(),
+                    won(supporter.getAmount()),
+                    supporter.getAddress());
+        }
+    }
+
+    // 승인 전이면 승인 상태(신청/반려), 승인됐으면 펀딩 상태(진행 중/펀딩 성공/펀딩 실패)
+    private static String statusLabel(ProjectQueryDTO project) {
+        if (project.getApprovalStatus() != ApprovalStatus.APPROVED) {
+            return project.getApprovalStatus().getDisplayName();
+        }
+        return project.getProjectFundingStatus().getDisplayName();
+    }
+
+    // 100000 -> "100,000원"
+    private static String won(long amount) {
+        return String.format("%,d원", amount);
     }
 }
