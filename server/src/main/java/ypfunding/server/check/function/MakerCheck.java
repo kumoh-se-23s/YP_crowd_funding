@@ -156,7 +156,7 @@ public class MakerCheck extends CheckBase {
 
         int no = 1;
         for (RewardStatusDTO reward : rewards) {
-            System.out.printf("   %d. %s | 총 수량 %s | 신청됨 %d개 | 남음 %s%n",
+            System.out.printf("   %d. %s | 총 수량 %s | 신청 %d | 잔여 %s%n",
                     no++,
                     reward.getName(),
                     reward.isUnlimited() ? "무제한" : reward.getStock(),

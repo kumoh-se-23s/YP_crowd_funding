@@ -1,5 +1,9 @@
 -- 1번
---
+-- maker1 프로젝트별 총 펀딩 금액 / 달성률 / 상태 + 리워드별 총 수량 / 신청 수량 / 잔여 수량 (stock 0 = 무제한)
+SELECT p.project_id, p.title, p.approval_status, p.goal, t.total, ROUND(t.total / p.goal * 100, 1) AS progress, CASE WHEN p.approval_status <> 'APPROVED' THEN p.approval_status WHEN p.end_date > NOW() THEN 'ONGOING' WHEN t.total >= p.goal THEN 'SUCCESS' ELSE 'FAILED' END AS status, r.name AS reward_name, IF(r.stock = 0, '무제한', r.stock) AS stock, (SELECT COALESCE(SUM(f.quantity), 0) FROM funds f WHERE f.reward_id = r.reward_id) AS applied, IF(r.stock = 0, '무제한', r.stock - (SELECT COALESCE(SUM(f.quantity), 0) FROM funds f WHERE f.reward_id = r.reward_id)) AS remaining FROM projects p JOIN users mu ON mu.user_id = p.user_id JOIN (SELECT p2.project_id, COALESCE(SUM(r2.price * f2.quantity), 0) AS total FROM projects p2 LEFT JOIN funds f2 ON f2.project_id = p2.project_id LEFT JOIN rewards r2 ON r2.reward_id = f2.reward_id GROUP BY p2.project_id) t ON t.project_id = p.project_id LEFT JOIN rewards r ON r.project_id = p.project_id WHERE mu.login_id = 'maker1' ORDER BY p.project_id, r.reward_id;
+-- maker1 프로젝트의 서포터 및 배송지
+SELECT p.project_id, p.title, su.name AS supporter, r.name AS reward_name, f.quantity, r.price * f.quantity AS amount, su.address FROM funds f JOIN projects p ON p.project_id = f.project_id JOIN users mu ON mu.user_id = p.user_id JOIN users su ON su.user_id = f.user_id JOIN rewards r ON r.reward_id = f.reward_id WHERE mu.login_id = 'maker1' ORDER BY p.project_id, f.date DESC, f.fund_id DESC;
+
 
 -- 2번
 -- 등록된 프로젝트 정보
@@ -13,17 +17,21 @@ SELECT r.reward_id, r.project_id, p.title, p.approval_status, r.name, r.price, r
 
 
 -- 4번
---
+-- 승인 대상(6번) 프로젝트 상태, 실행 전후로 함께 실행 (대상 바꾸면 pk 수정)
+SELECT p.project_id, p.title, u.login_id AS maker, p.approval_status, p.duration, p.start_date, p.end_date FROM projects p JOIN users u ON u.user_id = p.user_id WHERE p.project_id = 6;
 
 -- 5번
 -- 정보 변경 대상 유저 정보 확인
 SELECT user_id, login_id, name, address, password, salt FROM users WHERE login_id = 'profileSupporter';
 
 -- 6번
---
+-- 승인된 프로젝트 전체 (진행 중 + 마감, 최신순) 기한 / 달성률 / 상태
+SELECT p.project_id, p.title, p.start_date, p.end_date, ROUND(t.total / p.goal * 100, 1) AS progress, CASE WHEN p.end_date > NOW() THEN 'ONGOING' WHEN t.total >= p.goal THEN 'SUCCESS' ELSE 'FAILED' END AS status FROM projects p JOIN (SELECT p2.project_id, COALESCE(SUM(r2.price * f2.quantity), 0) AS total FROM projects p2 LEFT JOIN funds f2 ON f2.project_id = p2.project_id LEFT JOIN rewards r2 ON r2.reward_id = f2.reward_id GROUP BY p2.project_id) t ON t.project_id = p.project_id WHERE p.approval_status = 'APPROVED' ORDER BY p.start_date DESC;
+
 
 -- 7번
---
+-- 필터 대상 카테고리의 승인된 프로젝트 전체와 상태 (진행 중 / 마감 필터 결과를 이 표와 비교), 카테고리 바꾸면 IN 안도 수정
+SELECT c.category_name, p.project_id, p.title, p.end_date, ROUND(t.total / p.goal * 100, 1) AS progress, CASE WHEN p.end_date > NOW() THEN 'ONGOING' WHEN t.total >= p.goal THEN 'SUCCESS' ELSE 'FAILED' END AS status FROM projects p JOIN category c ON c.project_id = p.project_id JOIN (SELECT p2.project_id, COALESCE(SUM(r2.price * f2.quantity), 0) AS total FROM projects p2 LEFT JOIN funds f2 ON f2.project_id = p2.project_id LEFT JOIN rewards r2 ON r2.reward_id = f2.reward_id GROUP BY p2.project_id) t ON t.project_id = p.project_id WHERE p.approval_status = 'APPROVED' AND c.category_name IN ('TECH_HOME_APPLIANCES', 'SOCIAL') ORDER BY c.category_name, p.project_id;
 
 -- 8번
 -- 이하 실행 전 메소드 구조 통해 성공 실패 시도 및 결과 보여주기

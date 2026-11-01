@@ -25,16 +25,16 @@ public class CheckMain {
             FundingCheck funding = new FundingCheck(context, users);
             try {
                 initDB(context);
-                admin.test01ViewFundingStatus();
-//                maker.test02RegisterProject();
-//                maker.test03RegisterReward();
-//                admin.test04ApproveProject();
-//                auth.test05UpdateProfile();
-                admin.test06ViewProjects();
-                admin.test07FilterProjects();
-//                funding.test08ApplyReward();
-//                funding.test09RegisterReview();
-//                funding.test10ConcurrencyControl();
+//                maker.test01ViewFundingStatus(); //프로젝트별 펀딩 현황 보기
+//                maker.test02RegisterProject(); //프로젝트 기본 정보 등록
+//                maker.test03RegisterReward(); //리워드 등록 및 프로젝트 신청
+//                admin.test04ApproveProject(); //프로젝트 등록 승인
+//                auth.test05UpdateProfile(); //개인정보 수정
+//                admin.test06ViewProjects(); //프로젝트 보기
+//                admin.test07FilterProjects(); //프로젝트 필터링
+//                funding.test08ApplyReward(); //리워드 신청
+//                funding.test09RegisterReview(); //리뷰 및 별점 등록
+//                funding.test10ConcurrencyControl(); //제공 가능 수량 관련
             } catch (BusinessException e) {
                 System.out.println("업무 규칙에 의해 처리 중단: " + e.getMessage());
             }
