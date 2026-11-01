@@ -31,6 +31,6 @@ public class AdminCheck extends CheckBase {
     public void test07FilterProjects() {
         System.out.println("========= TEST 07 ========");
         System.out.println(context.getProjectQueryService().filterActiveProjects(users.supporter(), Category.TECH_HOME_APPLIANCES).stream().map(Objects::toString).collect(Collectors.joining("\n")));
-        System.out.println(context.getProjectQueryService().filterActiveProjects(users.supporter(), Category.SOCIAL).stream().map(Objects::toString).collect(Collectors.joining("\n")));
+        System.out.println(context.getProjectQueryService().filterEndedProjects(users.supporter(), Category.SOCIAL).stream().map(Objects::toString).collect(Collectors.joining("\n")));
     }
 }
