@@ -13,7 +13,9 @@ public class Main {
         // Minimal example for client
         // TODO
         try(ClientNetworkConnector connector = new ClientTCPConnector()){
+            System.out.println("Connecting...");
             connector.start();
+            System.out.println("Connected!");
             System.out.println("[ Enter the message here ]");
             connector.pause(e -> {
                 if(e.isBlank()) return;

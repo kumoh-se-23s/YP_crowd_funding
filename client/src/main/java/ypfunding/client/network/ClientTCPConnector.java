@@ -50,9 +50,22 @@ public class ClientTCPConnector implements ClientNetworkConnector {
         }
     }
 
-    public void start() {
+    public synchronized void start() {
         if (started.compareAndSet(false, true)) {
             new Thread(this::loop, "client-io").start();
+        }
+
+        long start = System.currentTimeMillis();
+        while(!dstSocket.isConnected()){
+            try {
+                wait(NetworkConstants.TIMEOUT_MS);
+                if(start + NetworkConstants.TIMEOUT_MS <= System.currentTimeMillis()){
+                    throw new IllegalStateException("Connection timeout");
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException(e);
+            }
         }
     }
 
@@ -72,6 +85,9 @@ public class ClientTCPConnector implements ClientNetworkConnector {
 
                     if (key.isConnectable()) {
                         if (dstSocket.finishConnect()) connection.onConnected();
+                        synchronized (this) {
+                            notifyAll();
+                        }
                         continue;
                     }
                     if (key.isValid() && key.isWritable()) connection.onWritable();
