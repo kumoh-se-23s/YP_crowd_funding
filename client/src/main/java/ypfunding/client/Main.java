@@ -25,12 +25,12 @@ public class Main {
 
                 try {
                     pkt = connector.sendAndWaitReply(pkt, MessagePacket.class);
+                    pkt.setMessage(e);
+                    System.out.println("Response : " + pkt.getMessage());
                 } catch (TimeoutException ex) {
                     LogUtil.log("Timeout : " + ex.getMessage());
                 }
 
-                pkt.setMessage(e);
-                System.out.println("Response : " + pkt.getMessage());
             });
         }catch (IOException e){
             LogUtil.log("Error : " + e.getMessage());

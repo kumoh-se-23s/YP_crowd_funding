@@ -14,6 +14,12 @@ public class LoginPacket implements Packet {
     String password;
 
     @Override
+    public PacketType getType() {
+        //TODO
+        return PacketType.RESPONSE;
+    }
+
+    @Override
     public void decode(ByteBuffer in) {
         int idLength = in.getInt();
         byte[] idRaw = new byte[idLength];

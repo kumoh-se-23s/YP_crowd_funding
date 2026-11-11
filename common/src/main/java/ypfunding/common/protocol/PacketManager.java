@@ -2,6 +2,7 @@ package ypfunding.common.protocol;
 
 import ypfunding.common.constant.NetworkConstants;
 import ypfunding.common.protocol.packets.Packet;
+import ypfunding.common.protocol.packets.PacketType;
 import ypfunding.common.protocol.packets.Packets;
 
 import java.io.IOException;
@@ -38,16 +39,18 @@ public class PacketManager {
 
     public static ByteBuffer mux(Packet packet) throws IOException {
         ByteBuffer out = ByteBuffer.allocate(NetworkConstants.MAX_BUFFER_SIZE);
+        out.put((byte) packet.getType().ordinal()); //request type
+        out.put((byte) PKT_TO_REQUESTS_MAP.get(packet.getClass()).ordinal()); //request code
         out.putShort((short) 0); //length of packet
-        out.putShort((short) PKT_TO_REQUESTS_MAP.get(packet.getClass()).ordinal()); //request number
+        int size0 = out.position();
         packet.encode(out);
-        int size = out.position();
+        int size1 = out.position();
 
-        if (size > Short.MAX_VALUE) {
-            throw new IOException("Packet too large: " + size);
+        if (size1 > Short.MAX_VALUE) {
+            throw new IOException("Packet too large: " + size1);
         }
 
-        out.putShort(0, (short) size);
+        out.putShort(2, (short) (size1 - size0));
         out.flip();
         return out;
     }
@@ -59,28 +62,24 @@ public class PacketManager {
             return null;
         }
         int position = buffer.position();
-        int packetLen = Short.toUnsignedInt(buffer.getShort());
 
-        if (packetLen < headerSize) {
-            throw new IllegalStateException("Invalid packet length: " + packetLen);
-        }
+        int packetType = Byte.toUnsignedInt(buffer.get());
+        int packetCode = Byte.toUnsignedInt(buffer.get());
+        int payloadLen = Short.toUnsignedInt(buffer.getShort());
 
-        int messageType = Short.toUnsignedInt(buffer.getShort());
-
-        if (messageType >= ALL_PACKETS.length) {
-            throw new IllegalStateException("Invalid request number: " + messageType);
-        }
-
-        int payloadSize = packetLen - headerSize;
-
-        if (buffer.remaining() < payloadSize) {
+        if (buffer.remaining() < payloadLen) {
             buffer.position(position);
             return null;
         }
 
-        byte[] payloadBuf = new byte[payloadSize];
+        if (packetCode >= ALL_PACKETS.length) {
+            throw new IllegalStateException("Invalid request number: " + packetCode);
+        }
+
+
+        byte[] payloadBuf = new byte[payloadLen];
         buffer.get(payloadBuf);
-        return new RawPacketTemp(messageType, ALL_PACKETS[messageType].getPacketClass(), ByteBuffer.wrap(payloadBuf));
+        return new RawPacketTemp(PacketType.values()[packetType], packetCode, ALL_PACKETS[packetCode].getPacketClass(), ByteBuffer.wrap(payloadBuf));
     }
 
     @SuppressWarnings("unchecked")

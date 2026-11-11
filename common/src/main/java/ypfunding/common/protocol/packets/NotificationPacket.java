@@ -13,6 +13,12 @@ public class NotificationPacket implements Packet {
     private CompleteNotification notification;
 
     @Override
+    public PacketType getType() {
+        //TODO
+        return PacketType.RESPONSE;
+    }
+
+    @Override
     public void decode(ByteBuffer in) {
         notification.setType(NotificationType.values()[in.getInt()]);
         byte[] raw = new byte[in.getInt()];

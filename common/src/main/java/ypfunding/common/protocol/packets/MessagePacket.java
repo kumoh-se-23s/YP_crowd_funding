@@ -14,6 +14,12 @@ public class MessagePacket implements Packet{
 
 
     @Override
+    public PacketType getType() {
+        //TODO
+        return PacketType.RESPONSE;
+    }
+
+    @Override
     public void decode(ByteBuffer in) {
         byte[] raw = new byte[in.getInt()];
         in.get(raw);

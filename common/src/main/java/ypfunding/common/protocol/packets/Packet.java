@@ -5,7 +5,7 @@ import java.nio.ByteBuffer;
 
 public interface Packet {
 
-
+    PacketType getType();
 
     void decode(ByteBuffer in) throws IOException;
 
