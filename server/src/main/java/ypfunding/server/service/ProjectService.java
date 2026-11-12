@@ -1,7 +1,6 @@
 package ypfunding.server.service;
 
 import ypfunding.common.constant.DomainRules;
-import ypfunding.common.dto.CategoryDTO;
 import ypfunding.common.dto.ImageDTO;
 import ypfunding.common.dto.ProjectDTO;
 import ypfunding.common.dto.ProjectDetailDTO;
@@ -13,7 +12,6 @@ import ypfunding.server.auth.LoginUser;
 import ypfunding.server.exception.BusinessException;
 import ypfunding.server.exception.PermissionDeniedException;
 import ypfunding.server.persistence.TransactionManager;
-import ypfunding.server.persistence.dao.CategoryDAO;
 import ypfunding.server.persistence.dao.ImageDAO;
 import ypfunding.server.persistence.dao.ProjectsDAO;
 import ypfunding.server.persistence.dao.ReviewsDAO;
@@ -35,7 +33,6 @@ import java.util.Set;
 public class ProjectService extends Service {
 
     private final ProjectsDAO projectsDAO;
-    private final CategoryDAO categoryDAO;
     private final RewardsDAO rewardsDAO;
     private final ImageDAO imageDAO;
     private final ReviewsDAO reviewsDAO;
@@ -43,13 +40,11 @@ public class ProjectService extends Service {
     public ProjectService(
             TransactionManager transactionManager,
             ProjectsDAO projectsDAO,
-            CategoryDAO categoryDAO,
             RewardsDAO rewardsDAO,
             ImageDAO imageDAO,
             ReviewsDAO reviewsDAO) {
         super(Objects.requireNonNull(transactionManager, "transactionManager must not be null"));
         this.projectsDAO = Objects.requireNonNull(projectsDAO, "projectsDAO must not be null");
-        this.categoryDAO = Objects.requireNonNull(categoryDAO, "categoryDAO must not be null");
         this.rewardsDAO = Objects.requireNonNull(rewardsDAO, "rewardsDAO must not be null");
         this.imageDAO = Objects.requireNonNull(imageDAO, "imageDAO must not be null");
         this.reviewsDAO = Objects.requireNonNull(reviewsDAO, "reviewsDAO must not be null");
@@ -65,22 +60,15 @@ public class ProjectService extends Service {
      *
      * @param loginUser  요청한 로그인 사용자 (MAKER만 허용)
      * @param projectDTO 프로젝트 기본 정보
-     * @param categories 선택한 카테고리 목록 (1~2개)
      * @return 생성된 프로젝트 ID
      */
-    public long createProject(
-            LoginUser loginUser,
-            ProjectDTO projectDTO,
-            List<Category> categories) {
+    public long createProject(LoginUser loginUser, ProjectDTO projectDTO) {
         UserUtils.assertMaker(loginUser);
         validateProjectFields(projectDTO);
-        validateCategories(categories);
 
-        return transactionManager.execute(conn -> {
-            long projectId = insertPendingProject(conn, loginUser.userId(), projectDTO);
-            insertCategories(conn, projectId, categories);
-            return projectId;
-        });
+        return transactionManager.execute(conn ->
+            insertPendingProject(conn, loginUser.userId(), projectDTO)
+        );
     }
 
     /**
@@ -88,41 +76,32 @@ public class ProjectService extends Service {
      *
      * @param loginUser  요청한 로그인 사용자 (MAKER만 허용)
      * @param projectDTO 프로젝트 기본 정보
-     * @param categories 선택한 카테고리 목록
      * @param rewards    등록할 리워드 목록 (최소 2개)
+     * @param representativeImage 등록할 이미지(대표 이미지)
      * @return 생성된 프로젝트 ID
      */
-    public long createProject(
-            LoginUser loginUser,
-            ProjectDTO projectDTO,
-            List<Category> categories,
-            List<RewardDTO> rewards) {
-        return createProject(loginUser, projectDTO, categories, rewards, Collections.emptyMap());
+    public long createProject(LoginUser loginUser, ProjectDTO projectDTO, List<RewardDTO> rewards, ImageDTO representativeImage) {
+        Map<Integer, ImageDTO> imageMap = (representativeImage != null)
+                ? Map.of(0, representativeImage)
+                : Collections.emptyMap();
+        return createProject(loginUser, projectDTO, rewards, imageMap);
     }
-
     /**
      * 프로젝트 기본 정보, 카테고리, 리워드 및 선택적 이미지를 한 트랜잭션으로 저장하고 즉시 PENDING 상태로 신청
      *
      * @param loginUser           요청한 로그인 사용자 (MAKER만 허용)
      * @param projectDTO          프로젝트 기본 정보
-     * @param categories          프로젝트 카테고리 목록
      * @param rewards             프로젝트 리워드 목록 (최소 2개)
      * @param rewardImagesByIndex 리워드 인덱스(0부터 시작)별 선택적 이미지 맵
      * @return 생성된 프로젝트 ID
      */
-    public long createProject(
-            LoginUser loginUser,
-            ProjectDTO projectDTO,
-            List<Category> categories,
-            List<RewardDTO> rewards,
-            Map<Integer, ImageDTO> rewardImagesByIndex) {
+    public long createProject(LoginUser loginUser, ProjectDTO projectDTO, List<RewardDTO> rewards, Map<Integer, ImageDTO> rewardImagesByIndex) {
         UserUtils.assertMaker(loginUser);
-        validateProjectBundleInput(projectDTO, categories, rewards);
+        validateProjectBundleInput(projectDTO, rewards);
         Map<Integer, ImageDTO> sanitizedImages = sanitizeRewardImages(rewards.size(), rewardImagesByIndex);
 
         return transactionManager.execute(conn -> {
             long projectId = insertPendingProject(conn, loginUser.userId(), projectDTO);
-            insertCategories(conn, projectId, categories);
             insertRewardsWithImages(conn, projectId, rewards, sanitizedImages);
             return projectId;
         });
@@ -133,17 +112,13 @@ public class ProjectService extends Service {
      *
      * @param loginUser  요청한 로그인 사용자 (본인 소유 MAKER만 허용)
      * @param projectDTO 수정할 프로젝트 기본 정보 (projectId 필수)
-     * @param categories 교체할 카테고리 목록
      * @param rewards    교체할 리워드 목록 (최소 2개)
      */
-    public void resubmitRejectedProject(
-            LoginUser loginUser,
-            ProjectDTO projectDTO,
-            List<Category> categories,
-            List<RewardDTO> rewards) {
-        UserUtils.assertMaker(loginUser);
-        validateProjectIdPresent(projectDTO);
-        resubmitRejectedProject(loginUser, projectDTO, categories, rewards, Collections.emptyMap());
+    public void resubmitRejectedProject(LoginUser loginUser, ProjectDTO projectDTO, List<RewardDTO> rewards, ImageDTO representativeImage) {
+        Map<Integer, ImageDTO> imageMap = (representativeImage != null)
+                ? Map.of(0, representativeImage)
+                : Collections.emptyMap();
+        resubmitRejectedProject(loginUser, projectDTO, rewards, imageMap);
     }
 
     /**
@@ -151,19 +126,13 @@ public class ProjectService extends Service {
      *
      * @param loginUser           요청한 로그인 사용자 (본인 소유 MAKER만 허용)
      * @param projectDTO          수정할 프로젝트 정보 (projectId 필수)
-     * @param categories          새로 설정할 카테고리 목록
      * @param rewards             새로 설정할 리워드 목록 (최소 2개)
      * @param rewardImagesByIndex 리워드 인덱스별 선택적 이미지 맵
      */
-    public void resubmitRejectedProject(
-            LoginUser loginUser,
-            ProjectDTO projectDTO,
-            List<Category> categories,
-            List<RewardDTO> rewards,
-            Map<Integer, ImageDTO> rewardImagesByIndex) {
-
+    public void resubmitRejectedProject(LoginUser loginUser, ProjectDTO projectDTO, List<RewardDTO> rewards, Map<Integer, ImageDTO> rewardImagesByIndex) {
+        UserUtils.assertMaker(loginUser);
         validateProjectIdPresent(projectDTO);
-        validateProjectBundleInput(projectDTO, categories, rewards);
+        validateProjectBundleInput(projectDTO, rewards);
         Map<Integer, ImageDTO> sanitizedImages = sanitizeRewardImages(rewards.size(), rewardImagesByIndex);
 
         long projectId = projectDTO.getProjectId();
@@ -173,7 +142,6 @@ public class ProjectService extends Service {
             validateResubmitPermissionAndState(loginUser, existing);
             updateRejectedProjectToPending(conn, loginUser.userId(), projectDTO);
             deleteExistingProjectChildren(conn, projectId);
-            insertCategories(conn, projectId, categories);
             insertRewardsWithImages(conn, projectId, rewards, sanitizedImages);
             return null;
         });
@@ -197,7 +165,6 @@ public class ProjectService extends Service {
             List<RewardDTO> rewards = rewardsDAO.findByProjectId(conn, projectId);
             ProjectDetailDTO detailDTO = new ProjectDetailDTO();
             detailDTO.setProject(project);
-            detailDTO.setCategories(findCategoryTypes(conn, projectId));
             detailDTO.setRewards(rewards);
             detailDTO.setRewardIdsWithImage(findRewardIdsWithImage(conn, rewards));
             detailDTO.setReviews(reviewsDAO.findAll(conn, projectId));
@@ -273,10 +240,8 @@ public class ProjectService extends Service {
 
     private void validateProjectBundleInput(
             ProjectDTO projectDTO,
-            List<Category> categories,
             List<RewardDTO> rewards) {
         validateProjectFields(projectDTO);
-        validateCategories(categories);
         validateRewards(rewards);
     }
 
@@ -298,6 +263,9 @@ public class ProjectService extends Service {
         }
         if (projectDTO.getDuration() == null || projectDTO.getDuration() <= 0) {
             throw new BusinessException("펀딩 기간(일)은 1일 이상이어야 합니다.");
+        }
+        if (projectDTO.getCategoryName() == null) {
+            throw new BusinessException("프로젝트 카테고리를 선택해 주세요.");
         }
     }
 
@@ -461,16 +429,6 @@ public class ProjectService extends Service {
             imageDAO.deleteByRewardId(conn, reward.getRewardId());
         }
         rewardsDAO.deleteByProjectId(conn, projectId);
-        categoryDAO.deleteByProjectId(conn, projectId);
-    }
-
-    private void insertCategories(Connection conn, long projectId, List<Category> categories) throws SQLException {
-        for (Category category : categories) {
-            CategoryDTO categoryDTO = new CategoryDTO();
-            categoryDTO.setProjectId(projectId);
-            categoryDTO.setCategoryName(category);
-            categoryDAO.insert(conn, categoryDTO);
-        }
     }
 
     private void insertRewardsWithImages(
@@ -493,16 +451,6 @@ public class ProjectService extends Service {
             }
         }
     }
-
-    private List<Category> findCategoryTypes(Connection conn, long projectId) throws SQLException {
-        List<CategoryDTO> categoryDTOs = categoryDAO.findByProjectId(conn, projectId);
-        List<Category> categories = new ArrayList<>(categoryDTOs.size());
-        for (CategoryDTO dto : categoryDTOs) {
-            categories.add(dto.getCategoryName());
-        }
-        return categories;
-    }
-
     private List<Long> findRewardIdsWithImage(Connection conn, List<RewardDTO> rewards) throws SQLException {
         List<Long> rewardIdsWithImage = new ArrayList<>();
         for (RewardDTO reward : rewards) {

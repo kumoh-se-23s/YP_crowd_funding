@@ -16,9 +16,10 @@ public class ProjectDetailDTO {
     // 프로젝트 기본 정보 (제목, 설명, 목표 금액, 기간, 시작일, 종료일, 승인 상태 등)
     private ProjectDTO project;
 
-    //프로젝트 카테고리 목록 (1~2개)
-    private List<Category> categories;
-
+    //프로젝트 카테고리 목록 (1개)
+    public Category getCategoryName() {
+        return project != null ? project.getCategoryName() : null;
+    }
     // 프로젝트 리워드 목록 (STOCK이 null이면 무제한, 0이면 품절)
     private List<RewardDTO> rewards;
 

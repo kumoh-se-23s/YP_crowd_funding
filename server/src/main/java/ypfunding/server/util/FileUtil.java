@@ -1,11 +1,9 @@
 package ypfunding.server.util;
 
-import ypfunding.common.constant.DomainRules;
-import ypfunding.server.exception.BusinessException;
-
-import java.sql.Blob;
-import java.sql.SQLException;
-
+import ypfunding.common.dto.ImageDTO;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 public final class FileUtil {
 
     private FileUtil() {
@@ -101,4 +99,37 @@ public final class FileUtil {
                 && bytes[0] == 'B'
                 && bytes[1] == 'M';
     }
+
+    /**
+     * 두 디렉토리 경로가 서로 다른 로컬 디렉토리인지 확인한다. (동일 경로면 false)
+     */
+    public static boolean isDifferentDirectory(Path sourceDir, Path targetDir) {
+        if (sourceDir == null || targetDir == null) {
+            return false;
+        }
+        return !sourceDir.toAbsolutePath().normalize().equals(targetDir.toAbsolutePath().normalize());
+    }
+
+    /**
+     * 원본 로컬 파일 경로에서 이미지를 읽어 업로드용 ImageDTO로 생성한다.
+     */
+    public static ImageDTO readImageFromFile(Path sourceFilePath) throws IOException {
+        byte[] bytes = Files.readAllBytes(sourceFilePath);
+        ImageDTO dto = new ImageDTO();
+        dto.setName(extractFileName(sourceFilePath.toString()));
+        dto.setType(detectImageMimeType(bytes));
+        dto.setImageData(bytes);
+        return dto;
+    }
+
+    /**
+     * 다운로드받은 ImageDTO를 지정된 로컬 디렉토리(targetDir)에 파일로 저장하고 저장된 파일 경로를 반환한다.
+     */
+    public static Path saveImageToDirectory(ImageDTO imageDTO, Path targetDir) throws IOException {
+        Files.createDirectories(targetDir);
+        String safeFileName = extractFileName(imageDTO.getName());
+        Path savedFilePath = targetDir.resolve(safeFileName);
+        return Files.write(savedFilePath, imageDTO.getImageData());
+    }
+
 }

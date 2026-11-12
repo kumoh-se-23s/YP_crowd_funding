@@ -2,6 +2,7 @@ package ypfunding.server.persistence.dao;
 
 import ypfunding.common.dto.ProjectDTO;
 import ypfunding.common.type.ApprovalStatus;
+import ypfunding.common.type.Category;
 import ypfunding.common.util.DateTimeUtil;
 import ypfunding.server.persistence.dao.dynamicsql.builder.SQLDelete;
 import ypfunding.server.persistence.dao.dynamicsql.builder.SQLInsert;
@@ -28,6 +29,7 @@ public class ProjectsDAO extends DAO {
         USER_ID("user_id"),
         TITLE("title"),
         DESCRIPTION("description"),
+        CATEGORY_NAME("category_name"),
         GOAL("goal"),
         DURATION("duration"),
         START_DATE("start_date"),
@@ -56,6 +58,7 @@ public class ProjectsDAO extends DAO {
                 .addTarget(Columns.USER_ID, projectDTO.getUserId())
                 .addTarget(Columns.TITLE, projectDTO.getTitle())
                 .addTarget(Columns.DESCRIPTION, projectDTO.getDescription())
+                .addTarget(Columns.CATEGORY_NAME, projectDTO.getCategoryName().name())
                 .addTarget(Columns.GOAL, projectDTO.getGoal())
                 .addTarget(Columns.DURATION, projectDTO.getDuration())
                 .addTarget(Columns.APPROVAL_STATUS, projectDTO.getApprovalStatus() != null
@@ -145,10 +148,11 @@ public class ProjectsDAO extends DAO {
         List<ProjectDTO> result = new ArrayList<>();
 
         try (ResultSet rs = SQLSelect.allColumns(new DirectReferenceTable(Tables.PROJECTS))
-                .addCondition(new BasicCondition(new ColumnValueToken(Columns.USER_ID), ArithmeticConditionOperator.EQ, new UserValueToken(userID)))
-                .addCondition(new BasicCondition(new ColumnValueToken(Columns.APPROVAL_STATUS), ArithmeticConditionOperator.EQ, new UserValueToken(ApprovalStatus.PENDING)))
+                .addCondition(Condition.and(
+                        new BasicCondition(new ColumnValueToken(Columns.USER_ID), ArithmeticConditionOperator.EQ, new UserValueToken(userID)),
+                        new BasicCondition(new ColumnValueToken(Columns.APPROVAL_STATUS), ArithmeticConditionOperator.EQ, new UserValueToken(ApprovalStatus.PENDING.name()))
+                ))
                 .execute(conn)) {
-
             while (rs.next()) {
                 result.add(toDTO(rs));
             }
@@ -185,6 +189,7 @@ public class ProjectsDAO extends DAO {
         dto.setUserId(rs.getLong(Columns.USER_ID.name));
         dto.setTitle(rs.getString(Columns.TITLE.name));
         dto.setDescription(rs.getString(Columns.DESCRIPTION.name));
+        dto.setCategoryName(Category.valueOf(rs.getString(Columns.CATEGORY_NAME.name)));
         dto.setGoal(rs.getLong(Columns.GOAL.name));
         dto.setDuration(rs.getInt(Columns.DURATION.name));
         dto.setApprovalStatus(ApprovalStatus.valueOf(rs.getString(Columns.APPROVAL_STATUS.name)));
@@ -203,6 +208,7 @@ public class ProjectsDAO extends DAO {
         return new SQLUpdate(new DirectReferenceTable(Tables.PROJECTS), new UpdateSelector[]{
                 new UpdateSelector(Columns.TITLE, new UserValueToken(projectDTO.getTitle())),
                 new UpdateSelector(Columns.DESCRIPTION, new UserValueToken(projectDTO.getDescription())),
+                new UpdateSelector(Columns.CATEGORY_NAME, new UserValueToken(projectDTO.getCategoryName().name())),
                 new UpdateSelector(Columns.GOAL, new UserValueToken(projectDTO.getGoal())),
                 new UpdateSelector(Columns.DURATION, new UserValueToken(projectDTO.getDuration())),
                 new UpdateSelector(Columns.APPROVAL_STATUS, new UserValueToken(ApprovalStatus.PENDING.name()))

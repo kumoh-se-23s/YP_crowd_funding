@@ -51,8 +51,12 @@ public class RewardService extends Service{
     public void createRewards(
             LoginUser loginUser,
             long projectId,
-            List<RewardDTO> rewards) {
-        createRewards(loginUser, projectId, rewards, Collections.emptyMap());
+            List<RewardDTO> rewards,
+            ImageDTO representativeImage) {
+        if (representativeImage == null) {
+            throw new BusinessException("대표 이미지 1개를 함께 등록해야 합니다.");
+        }
+        createRewards(loginUser, projectId, rewards, Map.of(0, representativeImage));
     }
 
     /**
@@ -151,6 +155,30 @@ public class RewardService extends Service{
             validateProjectViewAccess(conn, loginUser, reward.getProjectId());
             return imageDAO.findByRewardId(conn, rewardId);
         });
+    }
+    /**
+     * 최종 구현 요구사항 2 수정 내용
+     * 특정 리워드에 등록된 이미지를 조회하여 원본 디렉토리(sourceDir)와
+     * 다른 로컬 디렉토리(targetDir)에 다운로드(파일 저장)하고 저장된 파일 경로를 반환한다.
+     */
+
+    public java.nio.file.Path downloadRewardImageToDirectory(
+            LoginUser loginUser,
+            long rewardId,
+            java.nio.file.Path sourceDir,
+            java.nio.file.Path targetDir) {
+        if (!FileUtil.isDifferentDirectory(sourceDir, targetDir)) {
+            throw new BusinessException("원본 이미지와 다른 로컬 디렉토리에만 다운로드할 수 있습니다.");
+        }
+        ImageDTO imageDTO = getRewardImage(loginUser, rewardId);
+        if (imageDTO == null || imageDTO.getImageData() == null) {
+            throw new BusinessException("해당 리워드에 등록된 이미지가 없습니다.");
+        }
+        try {
+            return FileUtil.saveImageToDirectory(imageDTO, targetDir);
+        } catch (java.io.IOException e) {
+            throw new BusinessException("이미지를 로컬 디렉토리에 다운로드하는 중 오류가 발생했습니다.", e);
+        }
     }
 
     public void updateReward(LoginUser loginUser, RewardDTO rewardDTO) {
