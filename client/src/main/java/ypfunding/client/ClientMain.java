@@ -20,6 +20,7 @@ public class ClientMain {
             AuthCliView authView = new AuthCliView(context);
             ProjectDetailCliView detailView = new ProjectDetailCliView(context);
             MakerCliView makerView = new MakerCliView(context, authView, detailView);
+            AdminCliView adminView = new AdminCliView(context, detailView);
 
             boolean running = true;
             while (running) {
@@ -30,7 +31,7 @@ public class ClientMain {
                     if (role == UserType.MAKER) {
                         makerView.showMainMenu();
                     } else if (role == UserType.ADMIN) {
-                        // admin CLI
+                        adminView.showMainMenu();
                     } else if (role == UserType.SUPPORTER) {
                         // supporter CLI
                     }
