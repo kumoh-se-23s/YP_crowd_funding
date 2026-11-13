@@ -1,4 +1,4 @@
 package ypfunding.client.util;
 
-public class ConsolIO {
+public class ConsoleIO {
 }
