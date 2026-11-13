@@ -77,7 +77,7 @@ public final class ConsoleIO {
     public static int readIntInRange(String prompt, int min, int max) {
         while (true) {
             int value = readInt(prompt);
-            if (value >= min && value <= max) {
+            if (min <= value && value <= max) {
                 return value;
             }
             printlnError(String.format("%d ~ %d 사이의 번호를 입력해 주세요.", min, max));
@@ -196,33 +196,23 @@ public final class ConsoleIO {
     }
 
     /**
-     * 구분선(60자 '=')을 출력한다.
+     * 구분선(60자 '=')을 출력
      */
     public static void printDoubleLine() {
         System.out.println("============================================================");
     }
 
     /**
-     * 구분선(60자 '-')을 출력한다.
+     * 구분선(60자 '-')을 출력
      */
     public static void printSingleLine() {
         System.out.println("------------------------------------------------------------");
     }
 
-    /**
-     * 성공/완료 메시지를 출력한다.
-     *
-     * @param message 출력할 메시지
-     */
     public static void printlnSuccess(String message) {
         System.out.println("=> [완료] " + message);
     }
 
-    /**
-     * 실패/오류 메시지를 출력한다.
-     *
-     * @param message 출력할 오류 메시지
-     */
     public static void printlnError(String message) {
         System.out.println("=> [실패] " + message);
     }
