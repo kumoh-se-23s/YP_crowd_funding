@@ -2,6 +2,10 @@ package ypfunding.client;
 
 import ypfunding.client.session.ClientSession;
 import ypfunding.client.util.ConsoleIO;
+import ypfunding.client.view.AdminCliView;
+import ypfunding.client.view.AuthCliView;
+import ypfunding.client.view.MakerCliView;
+import ypfunding.client.view.ProjectDetailCliView;
 import ypfunding.common.type.UserType;
 import ypfunding.server.bootstrap.AppContext;
 
@@ -13,11 +17,12 @@ public class ClientMain {
 
     public static void main(String[] args) {
         try (AppContext context = new AppContext()) {
+            AuthCliView authView = new AuthCliView(context);
 
             boolean running = true;
             while (running) {
                 if (!ClientSession.isLoggedIn()) {
-                    // before login CLI ( also control running )
+                    running = authView.showAnonymousMenu();
                 } else {
                     UserType role = ClientSession.getUserType();
                     if (role == UserType.MAKER) {
@@ -31,8 +36,7 @@ public class ClientMain {
             }
             System.out.println("프로그램을 종료합니다. 이용해 주셔서 감사합니다.");
         } catch (Exception e) {
-            ConsoleIO.printlnError("시스템 초기화 또는 실행 중 오류가 발생했습니다: " + e.getMessage());
+            ConsoleIO.printlnError("시스템 초기화 또는 실행 중 치명적 오류가 발생했습니다: " + e.getMessage());
         }
     }
-
 }
