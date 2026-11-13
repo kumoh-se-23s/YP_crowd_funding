@@ -18,6 +18,8 @@ public class ClientMain {
     public static void main(String[] args) {
         try (AppContext context = new AppContext()) {
             AuthCliView authView = new AuthCliView(context);
+            ProjectDetailCliView detailView = new ProjectDetailCliView(context);
+            MakerCliView makerView = new MakerCliView(context, authView, detailView);
 
             boolean running = true;
             while (running) {
@@ -26,7 +28,7 @@ public class ClientMain {
                 } else {
                     UserType role = ClientSession.getUserType();
                     if (role == UserType.MAKER) {
-                        // maker CLI
+                        makerView.showMainMenu();
                     } else if (role == UserType.ADMIN) {
                         // admin CLI
                     } else if (role == UserType.SUPPORTER) {
