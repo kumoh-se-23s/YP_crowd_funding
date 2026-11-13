@@ -5,7 +5,6 @@ import ypfunding.common.type.Category;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.text.NumberFormat;
 import java.util.Locale;
 import java.util.Scanner;
 
