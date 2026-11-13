@@ -101,8 +101,8 @@ public final class TestData {
                                       ApprovalStatus status, LocalDateTime startDate) throws SQLException {
         // end_date는 생성 컬럼이라 넣지 않는다 (넣으면 에러 3105)
         String sql = """
-                INSERT INTO projects (user_id, title, description, goal, duration, start_date, approval_status)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO projects (user_id, title, description, category_name, goal, duration, start_date, approval_status)
+                VALUES (?, ?, ?, 'FOOD', ?, ?, ?, ?)
                 """;
         try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setLong(1, makerId);
