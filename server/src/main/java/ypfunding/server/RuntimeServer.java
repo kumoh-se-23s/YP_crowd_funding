@@ -19,6 +19,7 @@ import java.nio.channels.SocketChannel;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class RuntimeServer implements AutoCloseable {
 
@@ -37,9 +38,9 @@ public class RuntimeServer implements AutoCloseable {
 
     private RuntimeServer(SSLContext sslContext) {
         this.sslContext = sslContext;
-        userMap = new HashMap<>();
-        sslEngineMap = new HashMap<>();
-        tlsConnectionMap = new HashMap<>();
+        userMap = new ConcurrentHashMap<>();
+        sslEngineMap = new ConcurrentHashMap<>();
+        tlsConnectionMap = new ConcurrentHashMap<>();
         context = new AppContext();
     }
 
