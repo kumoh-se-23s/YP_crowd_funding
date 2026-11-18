@@ -2,7 +2,8 @@ package ypfunding.client;
 
 import ypfunding.client.network.ClientNetworkConnector;
 import ypfunding.client.network.ClientTCPConnector;
-import ypfunding.common.protocol.packets.MessagePacket;
+import ypfunding.common.protocol.packets.request.MessagePacket;
+import ypfunding.common.protocol.packets.response.NotificationPacket;
 import ypfunding.common.util.LogUtil;
 
 import java.io.IOException;
@@ -24,9 +25,9 @@ public class Main {
                 pkt.setMessage(e);
 
                 try {
-                    pkt = connector.sendAndWaitReply(pkt, MessagePacket.class);
-                    pkt.setMessage(e);
-                    System.out.println("Response : " + pkt.getMessage());
+                    NotificationPacket pkt2 = connector.sendAndWaitReply(pkt, NotificationPacket.class);
+                    String msg = pkt2.getNotification().getMessage();
+                    System.out.println("Response : " + msg);
                 } catch (TimeoutException ex) {
                     LogUtil.log("Timeout : " + ex.getMessage());
                 }

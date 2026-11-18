@@ -1,8 +1,10 @@
 package ypfunding.server.network;
 
 import lombok.Getter;
-import ypfunding.common.protocol.packets.MessagePacket;
+import ypfunding.common.notifications.Notification;
+import ypfunding.common.notifications.NotificationType;
 import ypfunding.common.protocol.packets.Packet;
+import ypfunding.common.protocol.packets.response.NotificationPacket;
 import ypfunding.server.RuntimeServer;
 
 import java.nio.channels.SelectionKey;
@@ -42,10 +44,12 @@ public class RequestEvent {
 
     public void reply(String message) {
 
-        MessagePacket msgPkt = new MessagePacket();
-        msgPkt.setMessage(message);
-
-        reply(msgPkt);
+        NotificationPacket notificationPacket = new NotificationPacket();
+        Notification cn = new Notification();
+        cn.setType(NotificationType.INFO);
+        cn.setMessage(message);
+        notificationPacket.setNotification(cn);
+        reply(notificationPacket);
     }
 
 

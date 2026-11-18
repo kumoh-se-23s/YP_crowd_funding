@@ -3,11 +3,9 @@ package ypfunding.common.notifications;
 import lombok.Getter;
 import lombok.Setter;
 
-public abstract class Notification {
-
-    @Getter
-    @Setter
+@Getter
+@Setter
+public class Notification {
     protected NotificationType type;
-
-    public abstract String getMessage();
+    private String message;
 }

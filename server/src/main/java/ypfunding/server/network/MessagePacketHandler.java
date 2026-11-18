@@ -1,9 +1,7 @@
 package ypfunding.server.network;
 
-import ypfunding.common.protocol.packets.MessagePacket;
+import ypfunding.common.protocol.packets.request.MessagePacket;
 import ypfunding.common.util.LogUtil;
-
-import java.nio.ByteBuffer;
 
 public class MessagePacketHandler implements RequestHandler<MessagePacket>{
     @Override

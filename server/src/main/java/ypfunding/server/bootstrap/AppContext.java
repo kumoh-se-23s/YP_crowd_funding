@@ -98,7 +98,7 @@ public class AppContext implements AutoCloseable {
             this.userService = new UserService(transactionManager, usersDAO);
             this.adminService = new AdminService(transactionManager, usersDAO, projectsDAO, rejectsDAO);
             this.makerService = new MakerService(transactionManager, usersDAO);
-            this.projectService = new ProjectService(transactionManager, projectsDAO, categoryDAO, rewardsDAO, imageDAO, reviewsDAO);
+            this.projectService = new ProjectService(transactionManager, projectsDAO, rewardsDAO, imageDAO, reviewsDAO);
             this.projectQueryService = new ProjectQueryService(transactionManager);
             this.rewardService = new RewardService(transactionManager, projectsDAO, rewardsDAO, imageDAO);
             this.supporterService = new SupporterService(transactionManager, usersDAO);

@@ -1,23 +1,17 @@
-package ypfunding.common.protocol.packets;
+package ypfunding.common.protocol.packets.request;
 
 import lombok.Getter;
 import lombok.Setter;
+import ypfunding.common.protocol.packets.RequestPacket;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
 @Getter
 @Setter
-public class MessagePacket implements Packet{
+public class MessagePacket implements RequestPacket {
 
     private String message;
-
-
-    @Override
-    public PacketType getType() {
-        //TODO
-        return PacketType.RESPONSE;
-    }
 
     @Override
     public void decode(ByteBuffer in) {

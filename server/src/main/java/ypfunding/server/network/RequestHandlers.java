@@ -3,13 +3,13 @@ package ypfunding.server.network;
 import ypfunding.common.protocol.PacketManager;
 import ypfunding.common.protocol.packets.Packet;
 import ypfunding.common.protocol.packets.Packets;
+import ypfunding.common.protocol.packets.RequestPackets;
 
 import java.nio.ByteBuffer;
 
 public enum RequestHandlers {
-    LOGIN(Packets.LOGIN, new LoginPacketHandler()),
-    MESSAGE(Packets.MESSAGE, new MessagePacketHandler()),
-    NOTIFICATION(Packets.NOTIFICATION, new NotificationPacketHandler()),
+    LOGIN(RequestPackets.LOGIN, new LoginPacketHandler()),
+    MESSAGE(RequestPackets.MESSAGE, new MessagePacketHandler()),
     ;
 
     private final Class<? extends Packet> packetClass;

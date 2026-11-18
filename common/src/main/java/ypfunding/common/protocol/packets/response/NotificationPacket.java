@@ -1,22 +1,19 @@
-package ypfunding.common.protocol.packets;
+package ypfunding.common.protocol.packets.response;
 
+import lombok.Getter;
 import lombok.Setter;
-import ypfunding.common.notifications.CompleteNotification;
+import ypfunding.common.notifications.Notification;
 import ypfunding.common.notifications.NotificationType;
+import ypfunding.common.protocol.packets.ResponsePacket;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
+@Getter
 @Setter
-public class NotificationPacket implements Packet {
+public class NotificationPacket implements ResponsePacket {
 
-    private CompleteNotification notification;
-
-    @Override
-    public PacketType getType() {
-        //TODO
-        return PacketType.RESPONSE;
-    }
+    private Notification notification = new Notification();
 
     @Override
     public void decode(ByteBuffer in) {

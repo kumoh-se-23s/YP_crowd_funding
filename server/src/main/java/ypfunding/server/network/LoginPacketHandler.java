@@ -1,6 +1,6 @@
 package ypfunding.server.network;
 
-import ypfunding.common.protocol.packets.LoginPacket;
+import ypfunding.common.protocol.packets.request.LoginPacket;
 import ypfunding.server.auth.LoginUser;
 import ypfunding.server.exception.BusinessException;
 

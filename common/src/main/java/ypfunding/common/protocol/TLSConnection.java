@@ -86,7 +86,10 @@ public class TLSConnection implements AutoCloseable {
      */
     public <P extends Packet> P popReceivedPacket(Class<P> packetClass) {
         RawPacketTemp temp = receivedPacketQueue.peek();
-        if (temp == null || packetClass != temp.packetClass()) {
+        if(temp == null){
+            return null;
+        }
+        if (packetClass != temp.packetClass()) {
             LogUtil.logError("Invalid packet type!");
             receivedPacketQueue.clear();
             return null;

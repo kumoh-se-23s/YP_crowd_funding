@@ -1,9 +1,7 @@
 package ypfunding.common.protocol;
 
 import ypfunding.common.constant.NetworkConstants;
-import ypfunding.common.protocol.packets.Packet;
-import ypfunding.common.protocol.packets.PacketType;
-import ypfunding.common.protocol.packets.Packets;
+import ypfunding.common.protocol.packets.*;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -16,15 +14,30 @@ import java.util.function.Function;
 public class PacketManager {
 
 
-    private static final Packets[] ALL_PACKETS = Packets.values();
+    private static final PacketType[] ALL_PACKET_TYPES = PacketType.values();
+    private static final RequestPackets[] ALL_REQUEST_PACKETS = RequestPackets.values();
+    private static final ResponsePackets[] ALL_RESPONSE_PACKETS = ResponsePackets.values();
+    private static final ResultPackets[] ALL_RESULT_PACKETS = ResultPackets.values();
     private static final Map<Class<? extends Packet>, Constructor<? extends Packet>> PKT_CONSTRUCTORS = new HashMap<>();
     private static final Map<Class<? extends Packet>, Function<Constructor<? extends Packet>, Packet>> PKT_GENERATORS = new HashMap<>();
-    private static final Map<Class<? extends Packet>, Packets> PKT_TO_REQUESTS_MAP = new HashMap<>();
+    private static final Map<Class<? extends Packet>, RequestPackets> PKT_TO_REQUESTS_MAP = new HashMap<>();
+    private static final Map<Class<? extends Packet>, ResponsePackets> PKT_TO_RESPONSE_MAP = new HashMap<>();
+    private static final Map<Class<? extends Packet>, ResultPackets> PKT_TO_RESULT_MAP = new HashMap<>();
 
     static {
         try {
-            for (Packets value : Packets.values()) {
+            for (RequestPackets value : RequestPackets.values()) {
                 PKT_TO_REQUESTS_MAP.put(value.getPacketClass(), value);
+                PKT_CONSTRUCTORS.put(value.getPacketClass(), value.getPacketClass().getDeclaredConstructor());
+                PKT_GENERATORS.put(value.getPacketClass(), PacketManager::constructPacket);
+            }
+            for (ResponsePackets value : ResponsePackets.values()) {
+                PKT_TO_RESPONSE_MAP.put(value.getPacketClass(), value);
+                PKT_CONSTRUCTORS.put(value.getPacketClass(), value.getPacketClass().getDeclaredConstructor());
+                PKT_GENERATORS.put(value.getPacketClass(), PacketManager::constructPacket);
+            }
+            for (ResultPackets value : ResultPackets.values()) {
+                PKT_TO_RESULT_MAP.put(value.getPacketClass(), value);
                 PKT_CONSTRUCTORS.put(value.getPacketClass(), value.getPacketClass().getDeclaredConstructor());
                 PKT_GENERATORS.put(value.getPacketClass(), PacketManager::constructPacket);
             }
@@ -40,7 +53,17 @@ public class PacketManager {
     public static ByteBuffer mux(Packet packet) throws IOException {
         ByteBuffer out = ByteBuffer.allocate(NetworkConstants.MAX_BUFFER_SIZE);
         out.put((byte) packet.getType().ordinal()); //request type
-        out.put((byte) PKT_TO_REQUESTS_MAP.get(packet.getClass()).ordinal()); //request code
+
+        switch (packet) {
+            case RequestPacket _ ->
+                    out.put((byte) PKT_TO_REQUESTS_MAP.get(packet.getClass()).ordinal());
+            case ResponsePacket _ ->
+                    out.put((byte) PKT_TO_RESPONSE_MAP.get(packet.getClass()).ordinal());
+            case ResultPacket _ ->
+                    out.put((byte) PKT_TO_RESULT_MAP.get(packet.getClass()).ordinal());
+            default -> throw new IllegalStateException("Invalid packet type: " + packet.getClass());
+        }
+
         out.putShort((short) 0); //length of packet
         int size0 = out.position();
         packet.encode(out);
@@ -55,6 +78,39 @@ public class PacketManager {
         return out;
     }
 
+    private static RawPacketTemp demuxRequestPacket(int packetCode, int payloadLen, ByteBuffer buffer) {
+        if (packetCode >= ALL_REQUEST_PACKETS.length) {
+            throw new IllegalStateException("Invalid request number: " + packetCode);
+        }
+
+        byte[] payloadBuf = new byte[payloadLen];
+        buffer.get(payloadBuf);
+        return new RawPacketTemp(PacketType.REQUEST, packetCode, ALL_REQUEST_PACKETS[packetCode].getPacketClass(), ByteBuffer.wrap(payloadBuf));
+
+    }
+
+    private static RawPacketTemp demuxResponsePacket(int packetCode, int payloadLen, ByteBuffer buffer) {
+        if (packetCode >= ALL_RESPONSE_PACKETS.length) {
+            throw new IllegalStateException("Invalid request number: " + packetCode);
+        }
+
+        byte[] payloadBuf = new byte[payloadLen];
+        buffer.get(payloadBuf);
+        return new RawPacketTemp(PacketType.RESPONSE, packetCode, ALL_RESPONSE_PACKETS[packetCode].getPacketClass(), ByteBuffer.wrap(payloadBuf));
+
+    }
+
+    private static RawPacketTemp demuxResultPacket(int packetCode, int payloadLen, ByteBuffer buffer) {
+        if (packetCode >= ALL_RESULT_PACKETS.length) {
+            throw new IllegalStateException("Invalid request number: " + packetCode);
+        }
+
+        byte[] payloadBuf = new byte[payloadLen];
+        buffer.get(payloadBuf);
+        return new RawPacketTemp(PacketType.RESULT, packetCode, ALL_RESULT_PACKETS[packetCode].getPacketClass(), ByteBuffer.wrap(payloadBuf));
+
+    }
+
     public static RawPacketTemp demux(ByteBuffer buffer) {
         int headerSize = NetworkConstants.PACKET_LEN_HEADER_SIZE + NetworkConstants.MESSAGE_TYPE_HEADER_SIZE;
 
@@ -63,7 +119,11 @@ public class PacketManager {
         }
         int position = buffer.position();
 
-        int packetType = Byte.toUnsignedInt(buffer.get());
+        int packetTypeNum = Byte.toUnsignedInt(buffer.get());
+        if (packetTypeNum >= ALL_PACKET_TYPES.length) {
+            throw new IllegalStateException("Invalid packet type: " + packetTypeNum);
+        }
+
         int packetCode = Byte.toUnsignedInt(buffer.get());
         int payloadLen = Short.toUnsignedInt(buffer.getShort());
 
@@ -72,14 +132,12 @@ public class PacketManager {
             return null;
         }
 
-        if (packetCode >= ALL_PACKETS.length) {
-            throw new IllegalStateException("Invalid request number: " + packetCode);
-        }
-
-
-        byte[] payloadBuf = new byte[payloadLen];
-        buffer.get(payloadBuf);
-        return new RawPacketTemp(PacketType.values()[packetType], packetCode, ALL_PACKETS[packetCode].getPacketClass(), ByteBuffer.wrap(payloadBuf));
+        PacketType packetType = ALL_PACKET_TYPES[packetTypeNum];
+        return switch (packetType) {
+            case REQUEST -> demuxRequestPacket(packetCode, payloadLen, buffer);
+            case RESPONSE -> demuxResponsePacket(packetCode, payloadLen, buffer);
+            case RESULT -> demuxResultPacket(packetCode, payloadLen, buffer);
+        };
     }
 
     @SuppressWarnings("unchecked")
