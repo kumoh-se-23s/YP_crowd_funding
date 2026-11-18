@@ -5,6 +5,7 @@ import lombok.Setter;
 import lombok.ToString;
 import ypfunding.common.type.ApprovalStatus;
 import ypfunding.common.type.ProjectFundingStatus;
+import ypfunding.common.type.Category;
 
 import java.time.LocalDateTime;
 
@@ -21,6 +22,7 @@ public class ProjectQueryDTO {
     private LocalDateTime startDate;
     private LocalDateTime endDate;
     private ApprovalStatus approvalStatus;
+    private Category categoryName;
     private Long supporterCount;
     private Long soldPrice;
     private Double fundProgress;

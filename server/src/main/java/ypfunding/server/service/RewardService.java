@@ -13,7 +13,7 @@ import ypfunding.server.persistence.TransactionManager;
 import ypfunding.server.persistence.dao.ImageDAO;
 import ypfunding.server.persistence.dao.ProjectsDAO;
 import ypfunding.server.persistence.dao.RewardsDAO;
-import ypfunding.server.util.FileUtil;
+import ypfunding.common.util.FileUtil;
 
 import java.sql.Connection;
 import java.sql.SQLException;

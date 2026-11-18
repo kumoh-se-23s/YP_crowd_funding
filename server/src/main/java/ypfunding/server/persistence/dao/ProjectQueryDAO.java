@@ -251,6 +251,7 @@ public class ProjectQueryDAO extends DAO {
                 new ColumnFromTokenSelector(ProjectsDAO.Columns.START_DATE, new TableRefColumnToken(projectsTable, ProjectsDAO.Columns.START_DATE)),
                 new ColumnFromTokenSelector(ProjectsDAO.Columns.END_DATE, new TableRefColumnToken(projectsTable, ProjectsDAO.Columns.END_DATE)),
                 new ColumnFromTokenSelector(ProjectsDAO.Columns.APPROVAL_STATUS, new TableRefColumnToken(projectsTable, ProjectsDAO.Columns.APPROVAL_STATUS)),
+                new ColumnFromTokenSelector(ProjectsDAO.Columns.CATEGORY_NAME, new TableRefColumnToken(projectsTable, ProjectsDAO.Columns.CATEGORY_NAME)),
                 new ColumnFromTokenSelector(Columns.SUPPORTER_COUNT, new TableRefColumnToken(cteProjectsWithStatus, Columns.SUPPORTER_COUNT)),
                 new ColumnFromTokenSelector(Columns.PROJECT_SOLD_PRICE, new TableRefColumnToken(cteProjectsWithStatus, Columns.PROJECT_SOLD_PRICE)),
                 new ColumnFromTokenSelector(Columns.PROJECT_FUND_PROGRESS, new TableRefColumnToken(cteProjectsWithStatus, Columns.PROJECT_FUND_PROGRESS)),
@@ -667,6 +668,7 @@ public class ProjectQueryDAO extends DAO {
         dto.setGoal(rs.getLong(ProjectsDAO.Columns.GOAL.toString()));
         dto.setDuration(rs.getInt(ProjectsDAO.Columns.DURATION.toString()));
         dto.setApprovalStatus(ApprovalStatus.valueOf(rs.getString(ProjectsDAO.Columns.APPROVAL_STATUS.toString())));
+        dto.setCategoryName((Category) rs.getObject(ProjectsDAO.Columns.CATEGORY_NAME.toString())); // 이거 체크한번 바람니다
         dto.setStartDate(rs.getObject(ProjectsDAO.Columns.START_DATE.toString(), LocalDateTime.class));
         dto.setEndDate(rs.getObject(ProjectsDAO.Columns.END_DATE.toString(), LocalDateTime.class));
         dto.setSupporterCount(rs.getLong(Columns.SUPPORTER_COUNT.toString()));

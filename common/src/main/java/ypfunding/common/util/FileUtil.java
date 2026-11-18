@@ -1,4 +1,4 @@
-package ypfunding.server.util;
+package ypfunding.common.util;
 
 import ypfunding.common.dto.ImageDTO;
 import java.io.IOException;

@@ -16,7 +16,7 @@ import ypfunding.server.persistence.dao.ImageDAO;
 import ypfunding.server.persistence.dao.ProjectsDAO;
 import ypfunding.server.persistence.dao.ReviewsDAO;
 import ypfunding.server.persistence.dao.RewardsDAO;
-import ypfunding.server.util.FileUtil;
+import ypfunding.common.util.FileUtil;
 import ypfunding.server.util.UserUtils;
 
 import java.sql.Connection;
