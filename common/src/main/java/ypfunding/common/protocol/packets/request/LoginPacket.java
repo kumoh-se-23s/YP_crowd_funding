@@ -2,10 +2,7 @@ package ypfunding.common.protocol.packets.request;
 
 import lombok.Getter;
 import lombok.Setter;
-import ypfunding.common.protocol.packets.Packet;
-import ypfunding.common.protocol.packets.PacketType;
 import ypfunding.common.protocol.packets.RequestPacket;
-import ypfunding.common.protocol.packets.RequestPackets;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;

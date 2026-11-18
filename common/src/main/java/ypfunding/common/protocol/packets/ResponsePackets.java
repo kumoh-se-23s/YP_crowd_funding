@@ -7,18 +7,16 @@ import ypfunding.common.protocol.packets.response.NotificationPacket;
 
 @Getter
 public enum ResponsePackets implements Packets{
-    LOGIN(LoginPacket.class),
-    MESSAGE(MessagePacket.class),
     NOTIFICATION(NotificationPacket.class),
     ;
-    private final Class<? extends Packet> packetClass;
+    private final Class<? extends ResponsePacket> packetClass;
 
-    ResponsePackets(Class<? extends Packet> packetClass) {
+    ResponsePackets(Class<? extends ResponsePacket> packetClass) {
         this.packetClass = packetClass;
     }
 
     @Override
-    public Class<? extends Packet> getPacketClass() {
+    public Class<? extends ResponsePacket> getPacketClass() {
         return packetClass;
     }
 }

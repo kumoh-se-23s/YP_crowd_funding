@@ -9,14 +9,14 @@ public enum RequestPackets implements Packets{
     LOGIN(LoginPacket.class),
     MESSAGE(MessagePacket.class),
     ;
-    private final Class<? extends Packet> packetClass;
+    private final Class<? extends RequestPacket> packetClass;
 
-    RequestPackets(Class<? extends Packet> packetClass) {
+    RequestPackets(Class<? extends RequestPacket> packetClass) {
         this.packetClass = packetClass;
     }
 
     @Override
-    public Class<? extends Packet> getPacketClass() {
+    public Class<? extends RequestPacket> getPacketClass() {
         return packetClass;
     }
 }
