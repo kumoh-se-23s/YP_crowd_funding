@@ -277,41 +277,12 @@ public class ProjectQueryDAO extends DAO {
     }
 
     private SQLSelect createCategoryFilteredProjectStatusSQLBuilder(Category category) {
-        ProjectStatusTableReference reference = new ProjectStatusTableReference();
-        createProjectStatusSQLBuilder(reference, false);
-        DirectReferenceTable categoryTable = new DirectReferenceTable(Tables.CATEGORY);
-        DirectReferenceTable projectsTable = reference.projectsTable;
-        PredefinedReferenceTable cteRewardStatus = reference.cteRewardStatus;
-        PredefinedReferenceTable cteProjectsWithStatus = reference.cteProjectsWithStatus;
-
-        return new SQLSelect(
-                new ColumnSelector[]{
-                        new ColumnFromTokenSelector(ProjectsDAO.Columns.PROJECT_ID, new TableRefColumnToken(projectsTable, ProjectsDAO.Columns.PROJECT_ID)),
-                        new ColumnFromTokenSelector(ProjectsDAO.Columns.USER_ID, new TableRefColumnToken(projectsTable, ProjectsDAO.Columns.USER_ID)),
-                        new ColumnFromTokenSelector(ProjectsDAO.Columns.TITLE, new TableRefColumnToken(projectsTable, ProjectsDAO.Columns.TITLE)),
-                        new ColumnFromTokenSelector(ProjectsDAO.Columns.DESCRIPTION, new TableRefColumnToken(projectsTable, ProjectsDAO.Columns.DESCRIPTION)),
-                        new ColumnFromTokenSelector(ProjectsDAO.Columns.GOAL, new TableRefColumnToken(projectsTable, ProjectsDAO.Columns.GOAL)),
-                        new ColumnFromTokenSelector(ProjectsDAO.Columns.DURATION, new TableRefColumnToken(projectsTable, ProjectsDAO.Columns.DURATION)),
-                        new ColumnFromTokenSelector(ProjectsDAO.Columns.START_DATE, new TableRefColumnToken(projectsTable, ProjectsDAO.Columns.START_DATE)),
-                        new ColumnFromTokenSelector(ProjectsDAO.Columns.END_DATE, new TableRefColumnToken(projectsTable, ProjectsDAO.Columns.END_DATE)),
-                        new ColumnFromTokenSelector(ProjectsDAO.Columns.APPROVAL_STATUS, new TableRefColumnToken(projectsTable, ProjectsDAO.Columns.APPROVAL_STATUS)),
-                        new ColumnFromTokenSelector(Columns.SUPPORTER_COUNT, new TableRefColumnToken(cteProjectsWithStatus, Columns.SUPPORTER_COUNT)),
-                        new ColumnFromTokenSelector(Columns.PROJECT_SOLD_PRICE, new TableRefColumnToken(cteProjectsWithStatus, Columns.PROJECT_SOLD_PRICE)),
-                        new ColumnFromTokenSelector(Columns.PROJECT_FUND_PROGRESS, new TableRefColumnToken(cteProjectsWithStatus, Columns.PROJECT_FUND_PROGRESS)),
-                        new ColumnFromTokenSelector(Columns.PROJECT_FUND_STATUS, new TableRefColumnToken(cteProjectsWithStatus, Columns.PROJECT_FUND_STATUS)),
-                },
-                new JoinedTable(joinProjectsWithStatus(projectsTable, cteProjectsWithStatus), JoinType.INNER, categoryTable,
-                        Condition.and(new BasicCondition(
-                                        new TableRefColumnToken(categoryTable, CategoryDAO.Columns.PROJECT_ID),
-                                        ArithmeticConditionOperator.EQ,
-                                        new TableRefColumnToken(projectsTable, ProjectsDAO.Columns.PROJECT_ID)
-                                ), new BasicCondition(
-                                        new TableRefColumnToken(categoryTable, CategoryDAO.Columns.CATEGORY_NAME),
-                                        ArithmeticConditionOperator.EQ,
-                                        new UserValueToken(category.toString())
-                                )
-                        )), cteRewardStatus, cteProjectsWithStatus
-        );
+        return createProjectStatusSQLBuilder()
+                .addCondition(new BasicCondition(
+                        new ColumnValueToken(ProjectsDAO.Columns.CATEGORY_NAME),
+                        ArithmeticConditionOperator.EQ,
+                        new UserValueToken(category.name())
+                ));
     }
 
     // =================================================================
