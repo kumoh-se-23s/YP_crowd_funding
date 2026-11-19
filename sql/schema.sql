@@ -26,7 +26,6 @@ DROP TABLE IF EXISTS likes;
 DROP TABLE IF EXISTS image;
 DROP TABLE IF EXISTS rewards;
 DROP TABLE IF EXISTS reject;
-DROP TABLE IF EXISTS category;
 DROP TABLE IF EXISTS projects;
 DROP TABLE IF EXISTS users;
 
@@ -63,6 +62,12 @@ CREATE TABLE projects (
     start_date       DATETIME      NULL,                        -- 승인 시각 = 펀딩 시작 시각
     end_date         DATETIME      GENERATED ALWAYS AS (start_date + INTERVAL duration DAY) STORED,
     approval_status  ENUM('PENDING', 'APPROVED', 'REJECTED') NOT NULL,  -- 신청, 승인, 반려
+    category_name    ENUM(
+        'TECH_HOME_APPLIANCES', 'HOME_LIVING', 'BEAUTY', 'FASHION', 'FOOD',
+        'BOOK', 'KIDS', 'SPORTS', 'GOODS', 'TRAVEL', 'FANDOM',
+        'PET', 'DESIGN', 'ART', 'CAR', 'GAME', 'MOVIE', 'MUSIC',
+        'PHOTO', 'WEBTOON', 'MEMBERSHIP', 'SOCIAL'
+    ) NOT NULL,                                                 -- 단일 카테고리 (Java enum Category와 이름 일치)
 
     PRIMARY KEY (project_id),
     CONSTRAINT fk_projects_users FOREIGN KEY (user_id) REFERENCES users (user_id)
@@ -74,20 +79,21 @@ CREATE TABLE projects (
 --    프로젝트당 2개라는 규칙은 DB로 표현할 수 없으므로 Service에서 검사
 --    enum 수정할 때 TYPE 파일이랑 맞춰야 됨 (대소문자까지)
 -- ---------------------------------------------------------------------
-CREATE TABLE category (
-    category_id    INT  NOT NULL AUTO_INCREMENT,
-    project_id     INT  NOT NULL,
-    category_name  ENUM(
-        'TECH_HOME_APPLIANCES', 'HOME_LIVING', 'BEAUTY', 'FASHION', 'FOOD',
-        'BOOK', 'KIDS', 'SPORTS', 'GOODS', 'TRAVEL', 'FANDOM',
-        'PET', 'DESIGN', 'ART', 'CAR', 'GAME', 'MOVIE', 'MUSIC',
-        'PHOTO', 'WEBTOON', 'MEMBERSHIP', 'SOCIAL'
-    ) NOT NULL,
-
-    PRIMARY KEY (category_id),
-    CONSTRAINT uk_category_project_name UNIQUE (project_id, category_name), -- 같은 프로젝트에 같은 카테고리를 두 번 넣기 X
-    CONSTRAINT fk_category_projects FOREIGN KEY (project_id) REFERENCES projects (project_id)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+-- 혹시 몰라서 삭제 안하고 일단 주석 처리
+-- CREATE TABLE category (
+--     category_id    INT  NOT NULL AUTO_INCREMENT,
+--     project_id     INT  NOT NULL,
+--     category_name  ENUM(
+--         'TECH_HOME_APPLIANCES', 'HOME_LIVING', 'BEAUTY', 'FASHION', 'FOOD',
+--         'BOOK', 'KIDS', 'SPORTS', 'GOODS', 'TRAVEL', 'FANDOM',
+--         'PET', 'DESIGN', 'ART', 'CAR', 'GAME', 'MOVIE', 'MUSIC',
+--         'PHOTO', 'WEBTOON', 'MEMBERSHIP', 'SOCIAL'
+--     ) NOT NULL,
+--
+--     PRIMARY KEY (category_id),
+--     CONSTRAINT uk_category_project_name UNIQUE (project_id, category_name), -- 같은 프로젝트에 같은 카테고리를 두 번 넣기 X
+--     CONSTRAINT fk_category_projects FOREIGN KEY (project_id) REFERENCES projects (project_id)
+-- ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
 
 -- ---------------------------------------------------------------------
@@ -101,7 +107,7 @@ CREATE TABLE rewards (
     name         VARCHAR(50)  NOT NULL,
     price        INT          NOT NULL,                         -- 1개당 후원 금액
     description  TEXT         NOT NULL,                         -- 제공 내용
-    stock        INT          NOT NULL,                             -- 잔여 수량 (NULL = 무제한)
+    stock        INT          NOT NULL,                         -- 초기 제공 수량 (0 = 무제한)
 
     PRIMARY KEY (reward_id),
 
