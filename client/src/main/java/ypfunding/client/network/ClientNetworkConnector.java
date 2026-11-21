@@ -10,6 +10,7 @@ public interface ClientNetworkConnector extends AutoCloseable{
 
     <S extends Packet, R extends Packet> R sendAndWaitReply(S packetToSend, Class<R> packetToReceiveClass) throws TimeoutException;
 
+    Packet request(Packet packetToSend) throws TimeoutException;
     void sendPacket(Packet packet);
 
     void start();

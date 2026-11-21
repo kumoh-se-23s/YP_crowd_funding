@@ -22,20 +22,20 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class TestInfraTest extends DbTestBase {
 
     @Test
-    @DisplayName("schema.sql의 테이블 10개가 모두 만들어진다")
+    @DisplayName("schema.sql의 테이블 9개가 모두 만들어진다")
     void createsAllTables() {
         int count = tx.execute(conn -> {
             try (ResultSet rs = conn.createStatement().executeQuery("""
                     SELECT COUNT(*) FROM information_schema.tables
                      WHERE table_schema = DATABASE()
-                       AND table_name IN ('users', 'projects', 'category', 'rewards', 'image',
+                       AND table_name IN ('users', 'projects', 'rewards', 'image',
                                           'reject', 'likes', 'funds', 'canceled_funds', 'reviews')
                     """)) {
                 rs.next();
                 return rs.getInt(1);
             }
         });
-        assertEquals(10, count);
+        assertEquals(9, count);
     }
 
     @Test

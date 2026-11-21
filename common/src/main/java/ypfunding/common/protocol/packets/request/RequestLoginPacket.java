@@ -9,7 +9,7 @@ import java.nio.charset.StandardCharsets;
 
 @Getter
 @Setter
-public class LoginPacket implements RequestPacket {
+public class RequestLoginPacket implements RequestPacket {
 
     String id;
     String password;

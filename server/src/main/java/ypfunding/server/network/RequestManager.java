@@ -6,6 +6,7 @@ import ypfunding.common.parallel.ThreadPool;
 import ypfunding.common.protocol.RawPacketTemp;
 import ypfunding.common.protocol.TLSConnection;
 import ypfunding.common.protocol.packets.Packet;
+import ypfunding.common.protocol.packets.PacketType;
 import ypfunding.common.util.LogUtil;
 import ypfunding.server.RuntimeServer;
 
@@ -163,6 +164,13 @@ public class RequestManager implements AutoCloseable {
     }
 
     private void handle(Session s, RawPacketTemp raw) {
+        if (raw.packetType() != PacketType.REQUEST) {              // 클라이언트는 REQUEST만 보냄
+            LogUtil.logError("Not a request packet: TYPE=" + raw.packetType() + ", CODE=" + raw.ordinal());
+            s.abort = true;
+            selector.wakeup();
+            return;
+        }
+
         int ord = raw.ordinal();
         if (ord < 0 || ord >= HANDLERS.length) {                   // 클라이언트 입력은 신뢰하지 않음
             LogUtil.logError("Unknown packet type: " + ord);

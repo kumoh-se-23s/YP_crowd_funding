@@ -1,11 +1,13 @@
 package ypfunding.common.protocol.packets.result;
 
+import lombok.Getter;
 import lombok.Setter;
 import ypfunding.common.protocol.packets.ResultPacket;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
+@Getter
 @Setter
 public class ResultFailedPacket implements ResultPacket {
 

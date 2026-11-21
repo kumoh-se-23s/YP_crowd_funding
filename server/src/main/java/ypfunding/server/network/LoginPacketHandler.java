@@ -1,24 +1,29 @@
 package ypfunding.server.network;
 
-import ypfunding.common.protocol.packets.request.LoginPacket;
+import ypfunding.common.dto.UserDTO;
+import ypfunding.common.protocol.packets.request.RequestLoginPacket;
+import ypfunding.common.protocol.packets.response.ResponseLoginPacket;
 import ypfunding.server.auth.LoginUser;
-import ypfunding.server.exception.BusinessException;
+import ypfunding.server.bootstrap.AppContext;
 
-import java.nio.channels.SocketChannel;
+public class LoginPacketHandler implements RequestHandler<RequestLoginPacket> {
+    static final String ALREADY_LOGGED_IN_MESSAGE = "이미 로그인되어 있습니다. 로그아웃 후 다시 로그인하세요.";
 
-public class LoginPacketHandler implements RequestHandler<LoginPacket> {
     @Override
-    public void handle(RequestEvent event, LoginPacket packet) {
-        LoginUser user;
-        try {
-            user = event.getServer().getAppContext().getAuthService().login(packet.getId(), packet.getPassword());
-        } catch (BusinessException e) {
-            event.reply(e.getMessage());
+    public void handle(RequestEvent event, RequestLoginPacket packet) {
+        if (event.getLoginUser() != null) {
+            event.fail(ALREADY_LOGGED_IN_MESSAGE);
             return;
         }
 
-        SocketChannel socket = event.getSrcSocket();
-        event.getServer().addUser(socket, user);
-        event.reply("Login successful!");
+        AppContext context = event.getServer().getAppContext();
+        LoginUser user = context.getAuthService().login(packet.getId(), packet.getPassword());
+        UserDTO info = context.getUserService().getMyInfo(user);
+
+        event.login(user);                             // 이 연결 = 이 사용자 (이후 요청은 userId 없이 처리)
+
+        ResponseLoginPacket response = new ResponseLoginPacket();
+        response.setUser(info);
+        event.reply(response);
     }
 }

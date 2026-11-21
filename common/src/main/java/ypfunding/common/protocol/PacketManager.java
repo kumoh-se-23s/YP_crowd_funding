@@ -75,6 +75,10 @@ public class PacketManager {
 
         out.putShort(2, (short) (size1 - size0));
         out.flip();
+
+        //로깅
+        PacketLogger.logSend(packet, out);
+
         return out;
     }
 
@@ -133,11 +137,15 @@ public class PacketManager {
         }
 
         PacketType packetType = ALL_PACKET_TYPES[packetTypeNum];
-        return switch (packetType) {
+        RawPacketTemp raw = switch (packetType) {
             case REQUEST -> demuxRequestPacket(packetCode, payloadLen, buffer);
             case RESPONSE -> demuxResponsePacket(packetCode, payloadLen, buffer);
             case RESULT -> demuxResultPacket(packetCode, payloadLen, buffer);
         };
+
+        //로깅
+        PacketLogger.logReceive(raw);
+        return raw;
     }
 
     @SuppressWarnings("unchecked")

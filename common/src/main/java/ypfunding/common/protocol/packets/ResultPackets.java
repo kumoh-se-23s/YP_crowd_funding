@@ -1,8 +1,6 @@
 package ypfunding.common.protocol.packets;
 
 import lombok.Getter;
-import ypfunding.common.protocol.packets.request.LoginPacket;
-import ypfunding.common.protocol.packets.request.MessagePacket;
 import ypfunding.common.protocol.packets.result.ResultFailedPacket;
 import ypfunding.common.protocol.packets.result.ResultSuccessPacket;
 

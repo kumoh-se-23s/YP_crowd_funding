@@ -3,6 +3,7 @@ package ypfunding.client.network;
 import ypfunding.common.constant.NetworkConstants;
 import ypfunding.common.parallel.ThreadPool;
 import ypfunding.common.protocol.PacketManager;
+import ypfunding.common.protocol.RawPacketTemp;
 import ypfunding.common.protocol.TLSConnection;
 import ypfunding.common.protocol.packets.Packet;
 import ypfunding.common.util.LogUtil;
@@ -116,6 +117,22 @@ public class ClientTCPConnector implements ClientNetworkConnector {
             Thread.currentThread().interrupt();
             throw new IllegalStateException("Interrupted while waiting for reply", e);
         }
+    }
+
+    @Override
+    public Packet request(Packet packetToSend) throws TimeoutException {
+        sendPacket(packetToSend);
+        RawPacketTemp raw;
+        try {
+            raw = connection.awaitPacket(NetworkConstants.TIMEOUT_MS);   // 클래스와 상관없이 다음 패킷 하나
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Interrupted while waiting for reply", e);
+        }
+        if (raw == null) {
+            throw new TimeoutException("서버 응답이 없습니다.");
+        }
+        return PacketManager.decodePacket(raw.payload(), raw.packetClass());
     }
 
     public void sendPacket(Packet packet) {

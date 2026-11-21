@@ -1,12 +1,14 @@
 package ypfunding.common.protocol.packets;
 
 import lombok.Getter;
-import ypfunding.common.protocol.packets.request.LoginPacket;
+import ypfunding.common.protocol.packets.request.RequestLoginPacket;
+import ypfunding.common.protocol.packets.request.RequestFundPacket;
 import ypfunding.common.protocol.packets.request.MessagePacket;
 
 @Getter
 public enum RequestPackets implements Packets{
-    LOGIN(LoginPacket.class),
+    LOGIN(RequestLoginPacket.class),
+    FUND(RequestFundPacket.class),
     MESSAGE(MessagePacket.class),
     ;
     private final Class<? extends RequestPacket> packetClass;

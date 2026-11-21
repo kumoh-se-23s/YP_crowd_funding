@@ -5,7 +5,10 @@ import ypfunding.common.notifications.Notification;
 import ypfunding.common.notifications.NotificationType;
 import ypfunding.common.protocol.packets.Packet;
 import ypfunding.common.protocol.packets.response.NotificationPacket;
+import ypfunding.common.protocol.packets.result.ResultFailedPacket;
+import ypfunding.common.protocol.packets.result.ResultSuccessPacket;
 import ypfunding.server.RuntimeServer;
+import ypfunding.server.auth.LoginUser;
 
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -52,5 +55,21 @@ public class RequestEvent {
         reply(notificationPacket);
     }
 
+    public void success() {
+        reply(new ResultSuccessPacket());
+    }
 
+    public void fail(String reason) {
+        ResultFailedPacket packet = new ResultFailedPacket();
+        packet.setReason(reason);
+        reply(packet);
+    }
+
+    public LoginUser getLoginUser() {
+        return server.getUser(srcSocket);
+    }
+
+    public void login(LoginUser user) {
+        server.addUser(srcSocket, user);
+    }
 }
